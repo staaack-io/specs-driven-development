@@ -8,7 +8,7 @@
 | ACs total     | 6                                      |
 | ACs failed    | 0                                      |
 | Open questions | 0                                     |
-| Next command  | `/plan 2025-01-15-gift-card-checkout`  |
+| Next command  | `$plan 2025-01-15-gift-card-checkout`  |
 
 ## Checklist
 
@@ -35,4 +35,4 @@ remaining-balance accounting test from the apply-to-cart test.
 
 ## Verdict
 
-**PASS** — proceed to `/plan`.
+**PASS** — proceed to `$plan`.

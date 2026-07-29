@@ -1,6 +1,8 @@
 # Spec-Driven Development for Spring Boot 4 + Angular
 
-A tri-platform toolkit (Claude Code · GitHub Copilot · Windsurf) that drives **Spring Framework 7 / Spring Boot 4** and **Angular** full-stack development through a documented, self-validating workflow:
+A Codex toolkit that drives **Spring Framework 7 / Spring Boot 4** and
+**Angular** full-stack development through a documented, self-validating
+workflow:
 
 > **specify → review → plan → implement (TDD) → test → validate → review → commit**
 
@@ -8,14 +10,14 @@ The agent validates its own work via a layered harness (build, static analysis, 
 
 ```mermaid
 flowchart LR
-    A["/spec"] --> B["/spec-review"]
-    B --> C["/plan"]
-    C --> D["/build T-NNN"]
-    D --> E["/test"]
-    E --> F["/validate"]
-    F --> G["/review"]
+    A["$spec"] --> B["$spec-review"]
+    B --> C["$plan"]
+    C --> D["$build T-NNN"]
+    D --> E["$test"]
+    E --> F["$validate"]
+    F --> G["$review"]
     G --> H["git commit"]
-    H --> I["/ship"]
+    H --> I["$ship"]
 ```
 
 ## Why
@@ -25,7 +27,8 @@ flowchart LR
 - **Traceable.** Every acceptance criterion (`AC-NNN`) maps to tests, code, and the harness gates that exercised it.
 - **Self-validating.** A single `.github/scripts/harness.sh` runs locally and in CI; the agent reads its reports and writes a structured validation report.
 - **Pre-commit code review** by an agent that uses a Spring-specific rubric.
-- **Tri-platform** with a platform-neutral core; thin wrappers for each tool.
+- **Codex-native.** Instructions, skills, agents, and hooks use Codex project
+  conventions without duplicated platform copies.
 
 ## Install
 
@@ -35,13 +38,10 @@ This toolkit is a **set of files you drop into your repo**, not a package you `n
 
 - **Backend:** Java 25 + Maven 3.9+ (for the Spring harness to run).
 - **Frontend:** Node.js 22+ and Angular CLI 20+ (for the Angular harness — lint, typecheck, unit tests, build, e2e).
-- At least one supported agent surface installed:
-  - [Claude Code](https://docs.claude.com/en/docs/claude-code) (uses `.claude/`)
-  - [GitHub Copilot in VS Code](https://code.visualstudio.com/docs/copilot/overview) with chat enabled (uses `.github/`)
-  - [Windsurf](https://windsurf.com/) (uses `.windsurf/`)
+- [Codex](https://developers.openai.com/codex/) installed and authenticated.
 - `bash`, `git`, `jq` on your `PATH` (the harness scripts use them).
 
-You only need the directories for the agent(s) you actually use; the others can be deleted. For backend-only projects, Angular tooling is not required (and vice versa).
+For backend-only projects, Angular tooling is not required (and vice versa).
 
 ### Option A — Start a new project from this toolkit
 
@@ -52,12 +52,12 @@ cd my-service
 rm -rf .git && git init
 
 # 2. Drop in your own Spring Boot 4 application code under src/
-#    Merge .github/maven/parent-pom-fragment.xml into your pom.xml
+#    Merge .codex/maven/parent-pom-fragment.xml into your pom.xml
 #    (it pins the 10-layer harness: Surefire, Failsafe, JaCoCo, PIT, Checkstyle,
 #    SpotBugs, ArchUnit deps, OWASP dep-check, OpenAPI generator).
 
 # 3. Make the scripts and hooks executable
-chmod +x .github/scripts/*.sh .claude/hooks/*.sh
+chmod +x .github/scripts/*.sh .codex/hooks/*.sh
 
 # 4. Verify the harness wires up
 ./.github/scripts/harness.sh --report     # runs the harness and emits a JSON summary
@@ -69,96 +69,93 @@ chmod +x .github/scripts/*.sh .claude/hooks/*.sh
 # From the root of your existing repo:
 git clone --depth=1 https://github.com/loiane/specs-driven-development-spring-angular.git /tmp/sdd
 
-# Copy only what you need (skip the agent dirs you won't use):
-cp -r /tmp/sdd/docs /tmp/sdd/examples .
-cp -r /tmp/sdd/.claude   .   # if you use Claude Code
-cp -r /tmp/sdd/.github   .   # if you use Copilot   (merges with existing .github/)
-cp -r /tmp/sdd/.windsurf .   # if you use Windsurf
+# Copy the Codex workflow and its documentation:
+cp /tmp/sdd/AGENTS.md .
+cp -r /tmp/sdd/.agents /tmp/sdd/.codex /tmp/sdd/docs /tmp/sdd/examples .
+mkdir -p .github
+cp -r /tmp/sdd/.github/scripts .github/
 
-chmod +x .github/scripts/*.sh .claude/hooks/*.sh
+chmod +x .github/scripts/*.sh .codex/hooks/*.sh
 
-# Then merge .github/maven/parent-pom-fragment.xml into your pom.xml.
-# Then run the brownfield onboarding command from your agent (see Use below).
+# Then merge .codex/maven/parent-pom-fragment.xml into your pom.xml.
+# Then run the brownfield onboarding skill from Codex (see Use below).
 ```
 
-> **Note on `.github/`** — if you already have `.github/workflows/`, review
-> `.github/workflows/ci.yml` before copying so it doesn't clobber yours.
-> The shipped `ci.yml` validates **the toolkit itself** (shellcheck, markdown
-> lint, broken links, tri-platform parity). In a Spring consumer project you
-> should **delete it** and add your own workflow that calls
-> `./.github/scripts/harness.sh` to run the 10-layer Spring harness.
+> **Note on `.github/`** — only `.github/scripts/` belongs to the framework's
+> runtime harness. Merge that directory with your existing GitHub configuration;
+> the framework does not install a workflow or a Copilot configuration.
 
-### Verify per-platform wiring
+### Verify Codex wiring
 
-| Platform | Smoke test |
-| --- | --- |
-| Claude Code | Open the repo, run `/help` — you should see the command catalog. |
-| Copilot | Open Copilot Chat, type `/spec` — you should see the chat-mode prompt from `.github/chatmodes/`. |
-| Windsurf | Open Cascade, type `/spec` — Windsurf loads the workflow from `.windsurf/workflows/`. |
+1. Open the repository as a trusted Codex project.
+2. Run `/skills` and confirm the repo skills are listed separately.
+3. Run `/hooks`, review the project hook commands, and trust them.
+4. Invoke `$help` to display the framework workflow.
 
 ## Use
 
-Once installed, you drive everything from your agent's chat using slash commands. The same commands work on all three platforms.
+Once installed, drive the workflow from Codex with repository skills. Explicit
+skill invocation uses `$skill-name`; Codex may also select a skill from a clear
+natural-language request.
 
 ### Day-zero (brownfield only)
 
 ```text
-/onboard
+$onboard
+$wire-harness
 ```
 
 Classifies the repo, captures a baseline harness run, writes
-`.specs/_onboarding.md` and `docs/known-debt.md`, and adds any missing harness
+`.specs/_onboarding.md` and `.specs/_known-debt.md`, and adds any missing harness
 layers as ratchets (so existing failures don't block you, but no new ones can
 land). See [examples/brownfield/README.md](examples/brownfield/README.md).
 
 ### Per-feature loop
 
 ```text
-/spec "Add gift-card checkout"      # or: /spec JIRA-123
-/spec-review                        # gate exit from Phase 1
-/epic-plan                          # for Epics: high-level design + slice roadmap
-/plan                               # design + tasks + .tdd-state.json
-/build T-001                        # red → green → refactor → simplify (one task at a time)
-/test --gap                         # close coverage / mutation gaps
-/validate                           # full 10-layer harness + traceability
-/review                             # pre-commit code review against the Spring rubric
+$spec "Add gift-card checkout"      # or: $spec JIRA-123
+$spec-review                        # gate exit from Phase 1
+$epic-plan                          # for Epics: high-level design + slice roadmap
+$plan                               # design + tasks + .tdd-state.json
+$build T-001                        # red → green → refactor → simplify (one task at a time)
+$test --gap                         # close coverage / mutation gaps
+$validate                           # full 10-layer harness + traceability
+$review                             # pre-commit code review against the Spring rubric
 git commit                          # YOU run this — the agent never commits
-/ship                               # post-commit ship plan + release notes (never deploys)
+$ship                               # post-commit ship plan + release notes (never deploys)
 ```
 
-Repeat `/build T-NNN` for each task in `04-tasks.md`. The agent refuses to edit
+Repeat `$build T-NNN` for each task in `04-tasks.md`. The agent refuses to edit
 `src/main/**` unless `.specs/<feature-id>/.tdd-state.json` shows a failing test
 for the active task.
 
-For Epic-sized initiatives, run `/epic-plan` after `/spec-review`, then run `/plan`
+For Epic-sized initiatives, run `$epic-plan` after `$spec-review`, then run `$plan`
 to produce slice-level detailed design and tasks from the approved roadmap.
 
 ### Read-only helpers
 
-- `/status` — see where each feature sits in the pipeline.
-- `/help [command]` — print the command catalog or a single command spec.
+- `$status` — see where each feature sits in the pipeline.
+- `$help [workflow]` — print the framework catalog or a single workflow spec.
 
 ### Natural-language aliases
 
-You don't have to remember the slash names. These phrases are routed to the
-right command by [.claude/hooks/route-natural-language-aliases.sh](.claude/hooks/route-natural-language-aliases.sh)
-and the equivalent Copilot ([.github/instructions/always-on.instructions.md](.github/instructions/always-on.instructions.md))
-and Windsurf ([.windsurf/rules/always-on.md](.windsurf/rules/always-on.md)) instructions:
+You don't have to remember every skill name. The skill descriptions let Codex
+route clear natural-language requests to the matching workflow:
 
 | You type | Runs |
 | --- | --- |
-| "spec this" / "turn this ticket into requirements" | `/spec` |
-| "review the spec" | `/spec-review` |
-| "plan this epic" / "design this epic" / "slice this epic" | `/epic-plan` |
-| "plan this" / "design this" | `/plan` |
-| "implement T-003" / "build T-003" | `/build T-003` |
-| "validate" / "run the harness" | `/validate` |
-| "review the code" / "pre-commit review" | `/review` |
-| "simplify the code" / "remove the cleverness" | `/code-simplify` |
-| "ship it" / "release this" / "prepare release" | `/ship` |
-| "onboard this repo" | `/onboard` |
+| "spec this" / "turn this ticket into requirements" | `$spec` |
+| "review the spec" | `$spec-review` |
+| "plan this epic" / "design this epic" / "slice this epic" | `$epic-plan` |
+| "plan this" / "design this" | `$plan` |
+| "implement T-003" / "build T-003" | `$build T-003` |
+| "validate" / "run the harness" | `$validate` |
+| "review the code" / "pre-commit review" | `$review` |
+| "simplify the code" / "remove the cleverness" | `$code-simplify` |
+| "ship it" / "release this" / "prepare release" | `$ship` |
+| "onboard this repo" | `$onboard` |
 
-Full list: [.github/prompts/](.github/prompts/) (Copilot), [.claude/commands/](.claude/commands/) (Claude Code), [.windsurf/workflows/](.windsurf/workflows/) (Windsurf).
+Full list: [.agents/skills/](.agents/skills/).
 
 ### Running the harness directly
 
@@ -174,18 +171,16 @@ The same gates the agent runs are reachable from a normal terminal:
 ## Repository layout
 
 ```text
-docs/             methodology · harness-principles · spec-format · platform-mapping · artifact-contract
-.claude/          agents · skills · commands · hooks · templates · checklists · maven · settings.json   (Claude Code)
-.github/          chatmodes · prompts · instructions · skills · templates · checklists · maven · scripts · workflows/   (Copilot + CI)
-.windsurf/        rules · workflows · skills · templates · checklists · maven   (Windsurf)
+AGENTS.md         persistent Codex project instructions
+.agents/skills/   one directory per domain or workflow skill
+.codex/           agents · hooks · templates · checklists · maven
+.github/scripts/  deterministic harness scripts (not Copilot configuration)
+docs/             methodology · harness · spec format · Codex migration · artifact contract
 examples/         greenfield (worked end-to-end specs) · brownfield (onboarding report)
 ```
 
-Each platform directory currently carries its own copy of the skills,
-templates, checklists, and Maven parent-pom fragment. The CI workflow
-(`.github/workflows/ci.yml`) enforces that these copies stay in lockstep via
-`diff -rq` parity checks. A future `shared/` directory will become the single
-source of truth — see [CONTRIBUTING.md](CONTRIBUTING.md).
+There is one source of truth for every skill. Workflow skills reference domain
+skills by name and never merge their instructions.
 
 ## Workflow artifacts
 
@@ -207,13 +202,16 @@ Each feature lives under `.specs/<feature-id>/`:
 
 ### Stack routing
 
-Each command defaults to the Spring agent but **automatically delegates to the Angular counterpart** based on feature scope:
+Each workflow skill defaults to the Spring agent but delegates to the Angular
+counterpart based on feature scope:
 
 - **Backend-only** → Spring agents
 - **Frontend-only** → Angular agents
 - **Full-stack** → both agents collaborate, splitting tasks by stack
 
-The routing contract is documented in each command's `## Stack routing` section. See [.claude/commands/plan.md](.claude/commands/plan.md) for an example.
+The routing contract is documented in each workflow skill's `## Stack routing`
+section. See [.agents/skills/plan/SKILL.md](.agents/skills/plan/SKILL.md) for an
+example.
 
 ## Documentation
 
@@ -221,7 +219,7 @@ The routing contract is documented in each command's `## Stack routing` section.
 - [docs/methodology.md](docs/methodology.md) — the 7-phase workflow in detail
 - [docs/harness-principles.md](docs/harness-principles.md) — self-validation philosophy and gate layers
 - [docs/spec-format.md](docs/spec-format.md) — EARS-lite spec format with examples
-- [docs/platform-mapping.md](docs/platform-mapping.md) — how Claude/Copilot/Windsurf artifacts map
+- [docs/codex-migration.md](docs/codex-migration.md) — verified Claude-to-Codex migration mapping
 - [docs/artifact-contract.md](docs/artifact-contract.md) — `.specs/<id>/` file layout and `.tdd-state.json` schema
 - [examples/greenfield/README.md](examples/greenfield/README.md) — full worked feature
 - [examples/brownfield/README.md](examples/brownfield/README.md) — onboarding-only walkthrough

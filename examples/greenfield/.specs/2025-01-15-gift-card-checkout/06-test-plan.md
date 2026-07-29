@@ -30,7 +30,7 @@ report and either killed or justified.
 
 ## Gap-NNN entries
 
-*(empty — `/test --gap` after `/build T-004` produced no remaining gaps;
+*(empty — `$test --gap` after `$build T-004` produced no remaining gaps;
 new-code coverage is 100% on this feature's lines.)*
 
 ## What is intentionally NOT tested

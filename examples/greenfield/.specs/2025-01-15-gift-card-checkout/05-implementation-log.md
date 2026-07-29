@@ -169,4 +169,4 @@ stale `// TODO: pagination` comment.
     "T-004": { "phase": "done" } } }
 ```
 
-All four tasks complete. Proceed to `/test --gap` (none expected) then `/validate`.
+All four tasks complete. Proceed to `$test --gap` (none expected) then `$validate`.

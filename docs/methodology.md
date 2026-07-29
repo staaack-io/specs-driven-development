@@ -6,7 +6,7 @@ The toolkit organizes feature delivery into **seven phases**. Each phase has:
 - a numbered **markdown artifact** stored under `.specs/<feature-id>/`,
 - an **entry contract** (what must already exist),
 - an **exit contract** (what must be true to advance),
-- and a **gate** that is enforced by hooks / rules / chatmode tool allowlists.
+- and a **gate** enforced by Codex project instructions, skills, agents, and hooks.
 
 ```text
 1. Specify  →  2. Review specs  →  3. Plan (design + tasks)  →
@@ -29,7 +29,8 @@ For large features (Epics), Phase 3 runs as two substeps:
 - **Phase-exit gate.** A phase cannot advance while `Q-NNN` items are unresolved, unless the user explicitly marks them `deferred` with a recorded rationale.
 - **Implementation invariant.** `spring-implementer` and `spring-test-engineer` refuse to act on tasks whose source AC or design section still references an unresolved `Q-NNN`.
 
-This is enforced by templates (`templates/`), checklists (`checklists/`), and the `block-progress-on-open-questions` hook.
+This is enforced by `.codex/templates/`, `.codex/checklists/`, and the
+`block-progress-on-open-questions` Codex hook.
 
 ## Phase 1 — Specify
 
@@ -114,14 +115,14 @@ Epic mode rules:
 
 **Owner:** `spring-test-engineer` + `spring-implementer`
 **Artifacts:** `05-implementation-log.md`, `.specs/<feature-id>/.tdd-state.json`
-**Command:** `/build <task-id>`
+**Command:** `$build <task-id>`
 **Skills:** `tdd-red-green-refactor`, `junit5-testcontainers-patterns`, `clarity-over-cleverness`
 
-Strict **red → green → refactor** per task, orchestrated by `/build`:
+Strict **red → green → refactor** per task, orchestrated by `$build`:
 
 1. **Red.** `spring-test-engineer` writes the smallest failing test(s) for the task's `Test-IDs`. Run them. They MUST fail for the expected reason. Append a red entry to `05-implementation-log.md` and update `.tdd-state.json`.
 2. **Green.** `spring-implementer` writes the minimum production code to turn them green. Rerun. Append a green entry.
-3. **Refactor + Simplify.** Refactor with the suite green; then `/code-simplify` automatically runs the clarity-over-cleverness pass. Rerun tests + `mvn -q verify` for the touched module. Append the refactor + simplify entries.
+3. **Refactor + Simplify.** Refactor with the suite green; then `$code-simplify` automatically runs the clarity-over-cleverness pass. Rerun tests + `mvn -q verify` for the touched module. Append the refactor + simplify entries.
 
 The `block-impl-without-failing-test` hook enforces the red-before-green invariant; production code edits are refused until a new test is observed failing.
 
@@ -186,7 +187,7 @@ Commit is gated on **zero blockers/majors** or a documented waiver. Request-chan
 
 **Owner:** `spring-code-reviewer` (reused; no new persona)
 **Artifact:** `09-ship-plan.md`
-**Command:** `/ship`
+**Command:** `$ship`
 **Skills:** `shipping-and-launch`, `spring-security-baseline`, `flyway-or-liquibase-detection`
 
 A structured pre-deploy plan that verifies the seven prior phases are green, classifies migrations (forward-only / expand / contract / breaking), captures feature-flag posture, signs off observability (metrics + alerts + dashboards), records a concrete rollback plan, plans a staged rollout (canary → % steps → 100%), and drafts release notes (external + internal).

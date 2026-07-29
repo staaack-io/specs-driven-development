@@ -6,7 +6,8 @@
 
 Generative agents are confident even when wrong. The only durable defense is a deterministic, layered harness that runs the same way every time and is parsed automatically by the agent before it claims a task is done. If a layer regresses, the agent must address it before progressing — not narrate around it.
 
-Hooks (Claude), guardrails (Copilot, Windsurf), and CI all invoke the **same** `.github/scripts/harness.sh`. There is no second source of truth.
+Codex agents, local development, and CI all invoke the **same**
+`.github/scripts/harness.sh`. There is no second source of truth.
 
 ## Properties
 
@@ -32,7 +33,7 @@ Hooks (Claude), guardrails (Copilot, Windsurf), and CI all invoke the **same** `
 | 9 | Contract | OpenAPI generator + diff | Breaking API change |
 | 10 | Security | OWASP Dependency Check | Known CVE in dependency tree |
 
-Layers 1–6 always run. 7–10 are required for `/validate`. PIT is incremental locally, full in CI nightly.
+Layers 1–6 always run. 7–10 are required for `$validate`. PIT is incremental locally, full in CI nightly.
 
 ## Coverage policy
 
@@ -73,4 +74,5 @@ A failure is a **regression** only if it is not in the baseline. Adding a baseli
 - Removing assertions or `verify(*)` calls without an ADR is a `blocker`.
 - `08-code-review.md` must exist and be fresh (newer than the most recent code change) before `git commit`.
 
-These are enforced by the `block-*` and `forbid-*` hooks in `.claude/hooks/`, mirrored in `.windsurf/rules/` and `.github/instructions/`.
+These are enforced by the `block-*` and `forbid-*` hooks configured in
+`.codex/hooks.json` and implemented under `.codex/hooks/`.

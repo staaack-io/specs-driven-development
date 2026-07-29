@@ -28,7 +28,8 @@ Unwanted:       If <unwanted condition>, then the system shall <mitigation>.
 
 ## Spec template
 
-See [shared/templates/spec.template.md](../shared/templates/spec.template.md). Skeleton:
+See [`.codex/templates/spec.template.md`](../.codex/templates/spec.template.md).
+Skeleton:
 
 ```markdown
 # Spec: <feature-id> — <short title>

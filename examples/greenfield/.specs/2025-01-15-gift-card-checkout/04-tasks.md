@@ -1,9 +1,9 @@
 # Tasks: gift-card-checkout
 
-Tasks are executed one at a time via `/build T-NNN`. Each task collapses
+Tasks are executed one at a time via `$build T-NNN`. Each task collapses
 red → green → refactor → simplify into a single command. Files outside the
-declared `files_in_scope` are blocked by `.claude/hooks/enforce-files-in-scope.sh`
-and the equivalent rules on Copilot/Windsurf.
+declared `files_in_scope` are blocked by
+`.codex/hooks/enforce-files-in-scope.sh`.
 
 ## T-001: Persistence + hashing primitives
 

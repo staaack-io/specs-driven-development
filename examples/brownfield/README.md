@@ -2,12 +2,12 @@
 
 A pre-existing Spring service the toolkit was dropped into. It compiles but
 the harness is missing several layers, the migration tool isn't wired, and
-test coverage is patchy. This example shows what `/onboard` produces and the
+test coverage is patchy. This example shows what `$onboard` produces and the
 recommended retrofit path before any new feature work begins.
 
 ## Pretend project state
 
-- Spring Boot 3.2 (needs upgrade to 4.x — out of scope for `/onboard`).
+- Spring Boot 3.2 (needs upgrade to 4.x — out of scope for `$onboard`).
 - Maven, single module, ~30k LoC under `src/main/java/com/legacy/orders/...`.
 - One root package, no module boundaries.
 - JUnit 5 present; **no Testcontainers**; **H2 in-memory** for IT (forbidden by the methodology when a real engine is detected in production config).
@@ -16,7 +16,7 @@ recommended retrofit path before any new feature work begins.
 - Spotless, Checkstyle, SpotBugs, JaCoCo, PIT all **absent** from `pom.xml`.
 - ~480 unit tests, ~12 IT, line coverage unknown until baseline runs.
 
-## What `/onboard` does
+## What `$onboard` does
 
 1. Runs `.github/scripts/detect-stack.sh`, writes `.specs/_stack.json`.
 2. Detects `migration == "none"` despite Postgres in prod → flags as a
@@ -28,7 +28,7 @@ recommended retrofit path before any new feature work begins.
 
 ## Recommended retrofit sequence (read the full report)
 
-`/onboard` will tell the user, roughly:
+`$onboard` will tell the user, roughly:
 
 1. **Add Flyway**, baseline against the current production schema, freeze
    schema-by-DBA.
@@ -38,7 +38,7 @@ recommended retrofit path before any new feature work begins.
 3. **Replace H2 IT with Testcontainers Postgres** for tests that touch SQL.
 4. **Introduce ArchUnit** with a single rule: no cycles. Ratchet additional
    once package boundaries are clearer.
-5. Only after 1–4 are green do you run `/spec` for a new feature.
+5. Only after 1–4 are green do you run `$spec` for a new feature.
 
 The point: the methodology never demands you fix a brownfield project to its
 ideal state in one pass. It captures reality, then improves it deliberately.

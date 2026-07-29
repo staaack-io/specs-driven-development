@@ -1,0 +1,54 @@
+{
+  "description": "Spec-driven development guardrails for Codex.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/block-impl-without-failing-test.sh\"",
+            "statusMessage": "Checking TDD state"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-files-in-scope.sh\"",
+            "statusMessage": "Checking task scope"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/block-progress-on-open-questions.sh\"",
+            "statusMessage": "Checking open questions"
+          }
+        ]
+      },
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/forbid-skip-flags.sh\"",
+            "statusMessage": "Checking forbidden flags"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/auto-format-touched.sh\"",
+            "statusMessage": "Formatting touched Java files"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/log-tdd-state-transition.sh\"",
+            "statusMessage": "Recording TDD transition"
+          }
+        ]
+      }
+    ]
+  }
+}

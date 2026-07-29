@@ -50,7 +50,7 @@ Each artifact starts from the matching template under `templates/`:
 
 ## `.tdd-state.json`
 
-Runtime file maintained by `/build` and read by the `block-impl-without-failing-test` hook.
+Runtime file maintained by `$build` and read by the `block-impl-without-failing-test` hook.
 
 ```json
 {

@@ -6,15 +6,15 @@ body:
     id: platform
     attributes:
       label: Platform
-      description: Which agent surface are you using?
-      placeholder: Claude Code | GitHub Copilot | Windsurf | N/A (docs)
+      description: Which Codex surface are you using?
+      placeholder: Codex app | CLI | IDE extension | cloud | N/A (docs)
     validations:
       required: true
   - type: input
     id: asset
     attributes:
       label: Affected file(s)
-      description: Path(s) inside the repo (e.g. `.claude/hooks/block-impl-without-failing-test.sh`).
+      description: Path(s) inside the repo (e.g. `.codex/hooks/block-impl-without-failing-test.sh`).
     validations:
       required: true
   - type: textarea
@@ -34,7 +34,7 @@ body:
     attributes:
       label: Steps to reproduce
       placeholder: |
-        1. Run `/spec ...`
+        1. Run `$spec ...`
         2. ...
     validations:
       required: true
@@ -44,5 +44,5 @@ body:
       label: Environment
       placeholder: |
         - OS:
-        - Agent + version:
+        - Codex surface + version:
         - jq / bash / Java / Maven versions (if relevant):

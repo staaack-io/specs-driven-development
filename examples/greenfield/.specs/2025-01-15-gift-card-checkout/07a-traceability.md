@@ -15,4 +15,4 @@ Generated: 2025-01-22T14:31:09Z
 
 - Every AC has at least one `@Tag("AC-NNN")` test.
 - Production-code column derived heuristically from test imports; verified
-  manually during `/review`.
+  manually during `$review`.

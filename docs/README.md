@@ -5,7 +5,7 @@
 Ce projet n'est ni une bibliothèque Java, ni un paquet npm, ni un générateur
 d'application. C'est un ensemble de fichiers à intégrer dans un dépôt :
 
-- des commandes qui guident chaque étape du développement ;
+- des skills Codex qui guident chaque étape du développement ;
 - des rôles d'agents spécialisés ;
 - des modèles pour produire des documents au format stable ;
 - des règles qui empêchent de sauter les étapes importantes ;
@@ -54,20 +54,20 @@ Le cycle normal d'une fonctionnalité est le suivant :
 
 | Étape                    | Commande       | Résultat principal                               | Condition de sortie                                     |
 |--------------------------|----------------|--------------------------------------------------|---------------------------------------------------------|
-| 1. Spécifier             | `/spec`        | `01-spec.md`                                     | Critères identifiés, aucune question ouverte            |
-| 2. Relire la spec        | `/spec-review` | `02-spec-review.md`                              | Checklist validée et accord enregistré                  |
-| 3. Planifier             | `/plan`        | `03-design.md`, `04-tasks.md`                    | Chaque critère est relié à une tâche et à des tests     |
-| 4. Implémenter           | `/build T-NNN` | `05-implementation-log.md`                       | Cycle rouge, vert, refactorisation consigné             |
-| 5. Tester                | `/test`        | `06-test-plan.md`                                | Tests transverses et cas manquants couverts             |
-| 6. Valider               | `/validate`    | `07-validation-report.md`, `07a-traceability.md` | Harness vert et traçabilité complète                    |
-| 7. Relire le code        | `/review`      | `08-code-review.md`                              | Aucun problème bloquant ou majeur                       |
-| 8. Préparer la livraison | `/ship`        | `09-ship-plan.md`                                | Plan de livraison complet, sans déploiement automatique |
+| 1. Spécifier             | `$spec`        | `01-spec.md`                                     | Critères identifiés, aucune question ouverte            |
+| 2. Relire la spec        | `$spec-review` | `02-spec-review.md`                              | Checklist validée et accord enregistré                  |
+| 3. Planifier             | `$plan`        | `03-design.md`, `04-tasks.md`                    | Chaque critère est relié à une tâche et à des tests     |
+| 4. Implémenter           | `$build T-NNN` | `05-implementation-log.md`                       | Cycle rouge, vert, refactorisation consigné             |
+| 5. Tester                | `$test`        | `06-test-plan.md`                                | Tests transverses et cas manquants couverts             |
+| 6. Valider               | `$validate`    | `07-validation-report.md`, `07a-traceability.md` | Harness vert et traçabilité complète                    |
+| 7. Relire le code        | `$review`      | `08-code-review.md`                              | Aucun problème bloquant ou majeur                       |
+| 8. Préparer la livraison | `$ship`        | `09-ship-plan.md`                                | Plan de livraison complet, sans déploiement automatique |
 
-Pour une initiative composée de plusieurs tranches verticales, `/epic-plan`
-précède `/plan`. Il produit une conception globale et une roadmap avant le
+Pour une initiative composée de plusieurs tranches verticales, `$epic-plan`
+précède `$plan`. Il produit une conception globale et une roadmap avant le
 découpage détaillé de chaque tranche.
 
-La commande `/onboard` joue un rôle différent : elle prépare un dépôt existant,
+Le skill `$onboard` joue un rôle différent : il prépare un dépôt existant,
 enregistre sa dette actuelle comme baseline et propose une adoption progressive
 des contrôles manquants.
 
@@ -86,16 +86,16 @@ scaffold.
 Après avoir copié les dossiers adaptés à votre outil, exécutez :
 
 ```text
-/onboard
-/wire-harness
+$onboard
+$wire-harness
 ```
 
-`/onboard` détecte le module Maven, la stack et les éventuelles applications
+`$onboard` détecte le module Maven, la stack et les éventuelles applications
 front voisines. Il classe le projet en greenfield ou brownfield et produit les
 artefacts de départ sous `.specs/`, notamment `_stack.json`, `_onboarding.md` et,
 si des tests existent, `_baseline.json`.
 
-`/wire-harness` raccorde ensuite les plugins Maven, les conventions de tests,
+`$wire-harness` raccorde ensuite les plugins Maven, les conventions de tests,
 la couverture, le mutation testing et les contrôles de dépendances. Il refuse
 de choisir silencieusement un outil de migration ou une version incompatible :
 la décision doit être fournie ou documentée dans un ADR.
@@ -169,7 +169,7 @@ avancer en parallèle dès que le contrat partagé est approuvé.
 
 ## Le TDD contrôlé par état
 
-Pour chaque tâche, `/build T-NNN` orchestre la boucle suivante :
+Pour chaque tâche, `$build T-NNN` orchestre la boucle suivante :
 
 1. le test engineer écrit un test minimal ;
 2. le test est exécuté et doit échouer pour la raison prévue ;
@@ -178,10 +178,10 @@ Pour chaque tâche, `/build T-NNN` orchestre la boucle suivante :
 5. les tests sont rejoués jusqu'au vert ;
 6. le code est refactoré et simplifié avec la suite toujours verte.
 
-Les mécanismes de protection diffèrent selon l'outil : hooks dans Claude Code,
-instructions et permissions dans Copilot, règles et validation de workflow dans
-Windsurf. Les trois intégrations partagent néanmoins les mêmes commandes,
-modèles, checklists et scripts de contrôle.
+Codex charge les instructions de `AGENTS.md`, les skills séparés sous
+`.agents/skills/`, les agents sous `.codex/agents/` et les hooks projet sous
+`.codex/hooks.json`. Les hooks doivent être examinés et approuvés avec `/hooks`
+avant de servir de protection mécanique.
 
 Comme la spec, la conception, la liste des tâches, l'état TDD et le journal
 d'implémentation sont enregistrés dans Git, une session d'agent n'a pas besoin
@@ -215,7 +215,7 @@ le framework sans devoir résorber toute la dette technique dès le premier jour
 
 ## Connecter les sources de contexte
 
-`/spec` peut partir d'une description saisie dans le chat ou d'un ticket. Avec
+`$spec` peut partir d'une description saisie dans le chat ou d'un ticket. Avec
 un connecteur adapté, l'agent peut lire directement une GitHub Issue, un ticket
 Jira ou une autre source et enregistrer son identifiant dans `01-spec.md`.
 
@@ -227,22 +227,22 @@ inaccessible par une supposition.
 
 ## Commencer sur une première fonctionnalité
 
-Après avoir intégré les dossiers correspondant à votre outil et raccordé le
+Après avoir intégré les dossiers Codex et raccordé le
 harness au projet, un premier parcours peut rester très simple :
 
 ```text
-/spec "Permettre à un client d'appliquer une carte cadeau"
-/spec-review
-/plan
-/build T-001
-/test --gap
-/validate
-/review
+$spec "Permettre à un client d'appliquer une carte cadeau"
+$spec-review
+$plan
+$build T-001
+$test --gap
+$validate
+$review
 ```
 
-Répétez `/build T-NNN` pour chaque tâche présente dans `04-tasks.md`. Une fois
+Répétez `$build T-NNN` pour chaque tâche présente dans `04-tasks.md`. Une fois
 la validation et la revue au vert, **le commit reste une action humaine**. La
-commande `/ship`, si elle est utilisée, prépare le plan de livraison mais ne
+commande `$ship`, si elle est utilisée, prépare le plan de livraison mais ne
 déploie rien.
 
 Pour découvrir le résultat attendu sans installer le framework, consultez
@@ -257,15 +257,15 @@ Les prérequis et les deux modes d'installation sont détaillés dans le
 
 ```text
 docs/       documentation de la méthode et des contrats
-.claude/    commandes, rôles, hooks, skills et modèles pour Claude Code
-.github/    prompts Copilot, scripts du harness et configuration GitHub
-.windsurf/  workflows, règles, skills et modèles pour Windsurf
+AGENTS.md   instructions persistantes du projet
+.agents/    un dossier distinct par skill Codex
+.codex/     agents, hooks, modèles, checklists et fragment Maven
+.github/    scripts du harness et configuration GitHub standard
 examples/   exemples documentaires greenfield et brownfield
 ```
 
-Les contenus communs sont actuellement dupliqués entre les trois plateformes.
-Lorsqu'un skill, un modèle ou une checklist change, les copies doivent rester
-synchronisées.
+Chaque skill possède une seule source de vérité sous `.agents/skills/`. Les
+workflows référencent les skills métier dont ils ont besoin sans les fusionner.
 
 ## Aller plus loin
 
@@ -275,5 +275,5 @@ synchronisées.
 - [Principes du harness](harness-principles.md) — contrôles, seuils et rapports
 - [Format des spécifications](spec-format.md) — critères EARS-lite et conventions
 - [Contrat des artefacts](artifact-contract.md) — fichiers et état TDD
-- [Correspondance des plateformes](platform-mapping.md) — Claude Code, Copilot et Windsurf
+- [Migration vers Codex](codex-migration.md) — correspondances et vérifications officielles
 - [Exemples complets](../examples/README.md) — parcours greenfield et brownfield

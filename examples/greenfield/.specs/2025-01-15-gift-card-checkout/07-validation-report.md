@@ -44,4 +44,4 @@
 
 ## Recommended next action
 
-`/review 2025-01-15-gift-card-checkout`
+`$review 2025-01-15-gift-card-checkout`

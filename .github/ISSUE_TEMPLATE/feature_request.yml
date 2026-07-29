@@ -1,5 +1,5 @@
 name: Feature / skill request
-description: Propose a new skill, command, template section, or methodology change.
+description: Propose a new skill, agent, template section, or methodology change.
 labels: [enhancement]
 body:
   - type: dropdown
@@ -8,7 +8,7 @@ body:
       label: Kind of change
       options:
         - New skill
-        - New slash command
+        - New workflow skill
         - New template / template section
         - Methodology change (phases, exit contracts)
         - Harness / hook change
@@ -33,10 +33,10 @@ body:
     attributes:
       label: Alternatives considered
   - type: checkboxes
-    id: parity
+    id: skill_isolation
     attributes:
-      label: Tri-platform parity
-      description: Confirm you'll mirror this across `.claude/`, `.github/`, `.windsurf/`.
+      label: Codex skill isolation
+      description: Confirm that a new skill remains a separate Codex skill.
       options:
-        - label: I will update all three platform directories in the PR
+        - label: I will keep it under its own `.agents/skills/<name>/` directory
         - label: N/A (docs / CI / example only)

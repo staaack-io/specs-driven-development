@@ -62,5 +62,5 @@ Validation: PASS (10/10 gates, 100% new-code coverage, PIT 86%).
 
 ## Recommended next action
 
-Apply the two should-fix items and the three nits, then run `/validate` once
+Apply the two should-fix items and the three nits, then run `$validate` once
 more before committing.

@@ -175,7 +175,7 @@ Instead, it separates context into layers:
 A structured context architecture improves:
 
 - Precision: less irrelevant context, fewer invented defaults
-- Portability: same method across Copilot, Claude, and Windsurf
+- Portability: same method across the Codex app, CLI, and IDE extension
 - Maintainability: behavior lives in files, not only in human memory
 - Governance: risky actions are constrained by explicit rules
 
