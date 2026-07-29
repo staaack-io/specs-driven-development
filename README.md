@@ -217,6 +217,7 @@ The routing contract is documented in each command's `## Stack routing` section.
 
 ## Documentation
 
+- [docs/README.md](docs/README.md) — vue d'ensemble du framework en français et premier parcours
 - [docs/methodology.md](docs/methodology.md) — the 7-phase workflow in detail
 - [docs/harness-principles.md](docs/harness-principles.md) — self-validation philosophy and gate layers
 - [docs/spec-format.md](docs/spec-format.md) — EARS-lite spec format with examples
