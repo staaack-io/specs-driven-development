@@ -1,38 +1,37 @@
-# Spec review: gift-card-checkout
+# Revue de spécification : gift-card-checkout
 
-| Field         | Value                                  |
-|---------------|----------------------------------------|
-| Reviewer      | spec-author (review hat)        |
-| Reviewed      | `01-spec.md` rev 2                     |
-| Verdict       | **PASS**                               |
-| ACs total     | 6                                      |
-| ACs failed    | 0                                      |
-| Open questions | 0                                     |
-| Next command  | `$plan 2025-01-15-gift-card-checkout`  |
+| Champ | Valeur |
+|---|---|
+| Relecteur | spec-author, posture de revue |
+| Révision | `01-spec.md` rev 2 |
+| Verdict | **PASS** |
+| Nombre d'AC | 6 |
+| AC en échec | 0 |
+| Questions ouvertes | 0 |
+| Commande suivante | `$plan 2025-01-15-gift-card-checkout` |
 
 ## Checklist
 
-| # | Item                                                                | Verdict | Note |
-|---|---------------------------------------------------------------------|---------|------|
-| 1 | Business goal stated in one paragraph, includes user benefit         | pass    | "Lift conversion … as a tender type." |
-| 2 | Primary actor named                                                  | pass    | Authenticated customer at /checkout. |
-| 3 | In-scope and out-of-scope are explicit and disjoint                  | pass    | Multi-card explicitly deferred. |
-| 4 | Every AC follows an EARS form                                        | pass    | AC-001 state-driven; AC-002..004 event-driven; AC-005 state-driven; AC-006 event-driven. |
-| 5 | Every AC is independently testable                                   | pass    | Note added to AC-005 to justify split from AC-001. |
-| 6 | No compound ACs (no "and shall also …")                              | pass    |        |
-| 7 | Non-functional requirements have concrete numbers                    | pass    | p95, RPS, hashing algo specified. |
-| 8 | Security touches called out                                          | pass    | Code is PII-class; hashed at rest. |
-| 9 | Observability signals listed                                         | pass    | Two metrics + one structured log line. |
-| 10 | No invented answers; all assumptions are Open Questions or resolved | pass    | Both Qs resolved with decisions captured. |
-| 11 | Idempotency is addressed where retries are possible                  | pass    | AC-006 covers it. |
-| 12 | Error model is explicit (codes, status)                              | pass    | 422 + `gift_card.{unknown,expired,depleted}`. |
+| N° | Élément | Verdict | Note |
+|---|---|---|---|
+| 1 | Objectif métier en un paragraphe avec bénéfice utilisateur | pass | Conversion grâce à un nouveau moyen de paiement. |
+| 2 | Acteur principal nommé | pass | Client authentifié au paiement. |
+| 3 | Périmètres inclus et exclus explicites | pass | Plusieurs cartes différées. |
+| 4 | Chaque AC suit une forme EARS | pass | Formes état ou événement. |
+| 5 | Chaque AC est testable indépendamment | pass | AC-005 isolé volontairement. |
+| 6 | Aucun AC composé | pass | |
+| 7 | Exigences non fonctionnelles chiffrées | pass | p95, RPS et hachage. |
+| 8 | Sécurité explicitée | pass | Code secret et haché. |
+| 9 | Signaux d'observabilité listés | pass | Deux métriques et un journal. |
+| 10 | Aucune réponse inventée | pass | Deux questions résolues. |
+| 11 | Idempotence couverte | pass | AC-006. |
+| 12 | Modèle d'erreur explicite | pass | HTTP 422 et codes métier. |
 
 ## Findings
 
-None blocking. Minor observation (not a fail): AC-005 partially overlaps AC-001
-by design; the duplicated coverage is acceptable because it isolates the
-remaining-balance accounting test from the apply-to-cart test.
+Aucun constat bloquant. Observation mineure : AC-005 recoupe volontairement
+AC-001 afin d'isoler le test de comptabilité du solde.
 
 ## Verdict
 
-**PASS** — proceed to `$plan`.
+**PASS** — passer à `$plan`.

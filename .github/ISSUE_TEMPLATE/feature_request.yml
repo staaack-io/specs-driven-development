@@ -1,42 +1,42 @@
-name: Feature / skill request
-description: Propose a new skill, agent, template section, or methodology change.
+name: Demande de fonctionnalité ou de skill
+description: Proposer un nouveau skill, agent, modèle ou changement de méthodologie.
 labels: [enhancement]
 body:
   - type: dropdown
     id: kind
     attributes:
-      label: Kind of change
+      label: Type de changement
       options:
-        - New skill
-        - New workflow skill
-        - New template / template section
-        - Methodology change (phases, exit contracts)
-        - Harness / hook change
-        - Other
+        - Nouveau skill
+        - Nouveau skill de workflow
+        - Nouveau modèle ou nouvelle section
+        - Changement de méthodologie, phases ou contrats de sortie
+        - Changement du harness ou d’un hook
+        - Autre
     validations:
       required: true
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: What's missing or painful today?
+      label: Problème
+      description: Qu'est-ce qui manque ou pose problème aujourd'hui ?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: Proposal
+      label: Proposition
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives considered
+      label: Solutions envisagées
   - type: checkboxes
     id: skill_isolation
     attributes:
-      label: Codex skill isolation
-      description: Confirm that a new skill remains a separate Codex skill.
+      label: Isolation du skill Codex
+      description: Confirmer qu'un nouveau skill reste séparé des autres.
       options:
-        - label: I will keep it under its own `.agents/skills/<name>/` directory
-        - label: N/A (docs / CI / example only)
+        - label: Je le conserverai dans son propre dossier `.agents/skills/<name>/`
+        - label: N/A, documentation, CI ou exemple uniquement

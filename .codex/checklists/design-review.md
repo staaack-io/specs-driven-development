@@ -1,55 +1,55 @@
-# Design Review Checklist
+# Checklist de revue de conception
 
-Used by `spring-architect` to gate exit from Phase 3 (`03-design.md` + `04-tasks.md`).
+Utilisée par `spring-architect` pour autoriser la sortie de la phase 3 (`03-design.md` + `04-tasks.md`).
 
 ## Architecture
 
-- [ ] Component map present (controllers, services, repositories, events).
-- [ ] Components are grouped by feature/domain (top-level package = bounded context with `api`/`internal`); no top-level `controller`/`service`/`repository`/`model` packages introduced.
-- [ ] Module boundaries documented (top-level packages with `internal` sub-packages, enforced by ArchUnit).
-- [ ] Layer rules respected (no controller → repository skip; no inversion).
-- [ ] OpenAPI sketch present for every new/changed endpoint.
+- [ ] La carte des composants est présente (contrôleurs, services, dépôts, événements).
+- [ ] Les composants sont regroupés par fonctionnalité/domaine (package de premier niveau = contexte délimité avec `api`/`internal`) ; aucun package de premier niveau `controller`/`service`/`repository`/`model` n'est introduit.
+- [ ] Les frontières de modules sont documentées (packages de premier niveau avec sous-packages `internal`, contrôlés par ArchUnit).
+- [ ] Les règles de couches sont respectées (pas de raccourci contrôleur → dépôt ni d'inversion).
+- [ ] Une esquisse OpenAPI existe pour chaque endpoint nouveau ou modifié.
 
-## Data
+## Données
 
-- [ ] Entity relationship model is present and aligns with `01-spec.md` entities/relationships.
-- [ ] Relationship cardinalities are explicit and consistent across API, data model, and tasks.
-- [ ] Migration tool detected and consistent (Flyway OR Liquibase, never both).
-- [ ] Migrations forward-only with reason, OR reversible.
-- [ ] PII fields identified.
+- [ ] Le modèle de relations entre entités est présent et cohérent avec les entités et relations de `01-spec.md`.
+- [ ] Les cardinalités sont explicites et cohérentes entre l'API, le modèle de données et les tâches.
+- [ ] L'outil de migration est détecté et cohérent (Flyway OU Liquibase, jamais les deux).
+- [ ] Les migrations sont uniquement progressives avec justification, OU réversibles.
+- [ ] Les champs contenant des données personnelles sont identifiés.
 
-## Security
+## Sécurité
 
-- [ ] AuthN approach stated.
-- [ ] AuthZ rules stated for each AC that requires them.
-- [ ] Secrets storage stated.
+- [ ] L'approche d'authentification est indiquée.
+- [ ] Les règles d'autorisation sont indiquées pour chaque AC qui en nécessite.
+- [ ] Le stockage des secrets est indiqué.
 
-## Tasks
+## Tâches
 
-- [ ] Every AC from `01-spec.md` is covered by ≥1 task.
-- [ ] Every task has `Test-IDs` and `Files in scope`.
-- [ ] Every task lists the gates it must run.
-- [ ] Tasks are sized at roughly 1–4 hours.
-- [ ] Cross-cutting tests are noted as Phase 5 (not duplicated in tasks).
+- [ ] Chaque AC de `01-spec.md` est couverte par au moins une tâche.
+- [ ] Chaque tâche possède des `Test-IDs` et des `Files in scope`.
+- [ ] Chaque tâche liste les portes de qualité à exécuter.
+- [ ] Chaque tâche représente environ 1 à 4 heures.
+- [ ] Les tests transverses sont réservés à la phase 5, sans duplication dans les tâches.
 
-## Epic mode (when applicable)
+## Mode Epic (si applicable)
 
-- [ ] `03-epic-design.md` exists and captures shared cross-cutting decisions.
-- [ ] `03a-epic-roadmap.md` exists and sequences vertical slices with dependencies.
-- [ ] Slice boundaries are vertical (user-visible outcomes), not layer-by-layer slices.
-- [ ] Detailed `04-tasks.md` decomposition starts only after Epic artifacts are approved.
+- [ ] `03-epic-design.md` existe et consigne les décisions transverses partagées.
+- [ ] `03a-epic-roadmap.md` existe et ordonne les tranches verticales avec leurs dépendances.
+- [ ] Les frontières de tranche sont verticales (résultats visibles par l'utilisateur), et non couche par couche.
+- [ ] La décomposition détaillée de `04-tasks.md` ne commence qu'après approbation des artefacts Epic.
 
-## ADRs
+## ADR
 
-- [ ] Every non-obvious design decision has an ADR (status `proposed` is fine).
-- [ ] ADRs link back to the design section that triggered them.
+- [ ] Chaque décision de conception non évidente possède un ADR (le statut `proposed` convient).
+- [ ] Les ADR renvoient à la section de conception qui les a déclenchés.
 
-## No-invention
+## Absence d'invention
 
-- [ ] No NFR or behavior introduced that is not in `01-spec.md` or codebase.
-- [ ] All `Q-NNN` resolved or deferred-with-rationale.
+- [ ] Aucun comportement ni exigence non fonctionnelle absent de `01-spec.md` ou du code existant n'a été introduit.
+- [ ] Toutes les `Q-NNN` sont résolues ou différées avec justification.
 
-## Sign-off
+## Validation
 
-- [ ] Reviewed by user.
-- [ ] Verdict recorded.
+- [ ] Revue effectuée par l'utilisateur.
+- [ ] Verdict consigné.

@@ -1,50 +1,48 @@
 ---
 name: adr-authoring
-description: Author MADR-style Architecture Decision Records under `.specs/<feature-id>/adr/`. Use whenever a non-obvious technical decision is made, a default is overridden, or a waiver is granted.
+description: Rédiger des décisions d’architecture au format MADR sous `.specs/<feature-id>/adr/`. Utiliser pour toute décision technique non évidente, valeur par défaut remplacée ou dérogation accordée.
 when_to_use:
-  - Phase 3 (Plan) — capturing every design decision that has alternatives.
-  - Phase 6 (Validate) — when waiving a harness gate.
-  - Phase 7 (Code review) — when accepting a finding without fixing it.
+  - Phase 3, Plan — consigner toute décision de conception qui présente des alternatives.
+  - Phase 6, Validate — déroger à une porte du harness.
+  - Phase 7, revue de code — accepter un constat sans le corriger.
 authoritative_references:
   - https://adr.github.io/madr/
   - .codex/templates/adr.template.md
 ---
 
-# ADR authoring
+# Rédaction des ADR
 
-## When to write one
+## Quand en écrire un
 
-Write an ADR if **any** of:
+Écrire un ADR si au moins une condition est vraie :
 
-- The decision has plausible alternatives a future engineer might prefer.
-- The decision overrides a default in this toolkit (skill says X, we do Y).
-- The decision waives a harness gate (mutation, coverage, OpenAPI breaking, CVE).
-- The decision constrains future work (e.g. "we will not use Kafka in this module").
+- la décision présente des alternatives plausibles qu'un autre ingénieur pourrait préférer ;
+- elle remplace une valeur par défaut du framework ;
+- elle accorde une dérogation à une porte du harness : mutation, couverture, rupture OpenAPI ou CVE ;
+- elle contraint les travaux futurs, par exemple l'exclusion de Kafka d'un module.
 
-Do **not** write an ADR for:
+Ne pas écrire d'ADR pour un choix imposé de façon unique par le ticket source ou
+pour une décision mécanique triviale comme le nom d'une variable.
 
-- Choices uniquely forced by the source ticket.
-- Trivial mechanical decisions (variable naming).
+## Emplacement
 
-## File layout
+`.specs/<feature-id>/adr/NNN-<slug>.md`, où `NNN` est complété par des zéros et unique dans la fonctionnalité.
 
-`.specs/<feature-id>/adr/NNN-<slug>.md` where `NNN` is zero-padded and unique per feature.
+## Sections requises par MADR
 
-## Required sections (MADR)
-
-- **Title** — short, decision-shaped: "Use Liquibase for schema migrations".
+- **Title** — court et formulé comme une décision.
 - **Status** — `proposed` | `accepted` | `rejected` | `superseded by NNN` | `deprecated`.
-- **Context** — what problem, what constraints, what we know.
-- **Decision drivers** — the forces (perf, team familiarity, cost, security).
-- **Considered options** — at least two.
-- **Decision outcome** — chosen option and one-paragraph justification.
-- **Consequences** — positive AND negative.
-- **Pros and cons of each option** — symmetric table.
-- **Links** — back to `01-spec.md`, `03-design.md` section, related ADRs, external references.
+- **Context** — problème, contraintes et informations connues.
+- **Decision drivers** — forces en présence : performance, expérience de l'équipe, coût, sécurité.
+- **Considered options** — au moins deux.
+- **Decision outcome** — option choisie et justification en un paragraphe.
+- **Consequences** — positives ET négatives.
+- **Pros and cons of each option** — tableau symétrique.
+- **Links** — vers `01-spec.md`, la section de `03-design.md`, les ADR liés et les références externes.
 
-## Naming examples
+## Exemples de noms
 
-```
+```text
 .specs/shop-1422-gift-card-checkout/adr/
 ├── 001-use-liquibase-for-migrations.md
 ├── 002-redeem-balance-stored-as-cents-int.md
@@ -54,18 +52,19 @@ Do **not** write an ADR for:
 
 ## Anti-patterns
 
-- ADR with one option (it's a memo, not a decision).
-- ADR with no `Consequences` section, especially no negatives.
-- "We chose X because it's better" — give a driver and a measurable reason.
-- ADR written **after** the code is merged — write it during Plan, refine during Validate.
-- Editing an `accepted` ADR. Mark it `superseded by NNN` and write a new one instead.
+- Un ADR avec une seule option : c'est une note, pas une décision.
+- Un ADR sans section `Consequences`, notamment sans conséquence négative.
+- « X est meilleur » sans facteur ni raison mesurable.
+- Un ADR écrit après la fusion du code ; l'écrire pendant Plan et l'affiner pendant Validate.
+- Modifier un ADR `accepted` ; le marquer `superseded by NNN` et en écrire un nouveau.
 
-## Status flow
+## Cycle des statuts
 
-```
-proposed → accepted → (later) superseded
+```text
+proposed → accepted → (plus tard) superseded
                 ↓
               rejected
 ```
 
-A `proposed` ADR is fine to merge; it documents the current direction. A `rejected` ADR is also valuable — it records why the obvious option was not chosen, saving the next person from re-asking.
+Un ADR `proposed` peut être fusionné car il documente la direction actuelle. Un
+ADR `rejected` reste utile : il explique pourquoi l'option évidente a été écartée.

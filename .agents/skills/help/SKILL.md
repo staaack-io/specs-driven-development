@@ -1,34 +1,42 @@
 ---
 name: help
-description: "Explain the available SDD workflow skills. Use when the user invokes $help or asks how to use this framework."
+description: "Expliquer les skills disponibles du workflow SDD. Utiliser lorsque l’utilisateur invoque $help ou demande comment utiliser le framework."
 ---
 
 # $help
 
-**Phase:** meta — read-only
-**Owning agent:** none
+**Phase :** méta — lecture seule
+**Agent responsable :** aucun
 
-## Purpose
-Print the workflow-skill catalog and the recommended phase order. Optionally
-explain one workflow skill in depth.
+## Objectif
 
-## Inputs
-- Optional `<skill-name>` (without the leading `$`).
+Afficher le catalogue des skills de workflow et l’ordre recommandé. Expliquer
+facultativement un skill en détail.
 
-## Reads
-- `.agents/skills/`
-- `.agents/skills/<skill-name>/SKILL.md` if a name was supplied.
+## Entrées
 
-## Writes
-Nothing.
+- `<skill-name>` facultatif, sans le préfixe `$`.
 
-## Process
-- No argument → print the workflow-skill table and the natural-language alias list.
-- With argument → read the matching `SKILL.md` and summarize Purpose, Inputs,
-  Reads, Writes, Process, Refuse if, and Done when.
+## Lectures
 
-## Refuse if
-Never.
+- `.agents/skills/` ;
+- le `SKILL.md` demandé le cas échéant.
 
-## Done when
-Help text is rendered.
+## Écritures
+
+Aucune.
+
+## Processus
+
+- Sans argument, afficher le tableau des workflows et les formulations en
+  langage naturel.
+- Avec un argument, résumer objectif, entrées, lectures, écritures, processus,
+  refus et condition de fin du skill.
+
+## Refuser si
+
+Jamais.
+
+## Terminé lorsque
+
+L’aide est affichée.

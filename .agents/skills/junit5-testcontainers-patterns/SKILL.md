@@ -1,33 +1,33 @@
 ---
 name: junit5-testcontainers-patterns
-description: JUnit 5 + Spring Boot 4 test slice patterns and Testcontainers integration test patterns with `@ServiceConnection`. Use when writing or reviewing any test, especially when choosing between unit / slice / integration scope.
+description: Modèles de tests JUnit 5 et Spring Boot 4, tranches et intégration Testcontainers avec `@ServiceConnection`. Utiliser pour écrire ou relire un test et choisir entre unitaire, tranche et intégration.
 when_to_use:
-  - Phase 4 (red step of `$build`) — writing the failing test.
-  - Phase 5 (Test) — adding cross-cutting suites.
-  - Anywhere a `@SpringBootTest` could be replaced with a slice test.
+  - Phase 4, étape red de `$build` — écrire le test en échec.
+  - Phase 5, Test — ajouter les suites transverses.
+  - Chaque fois qu’un `@SpringBootTest` pourrait être remplacé par un test par tranche.
 authoritative_references:
   - https://docs.spring.io/spring-boot/reference/testing/index.html
   - https://java.testcontainers.org/
 ---
 
-# JUnit 5 + Testcontainers patterns
+# Modèles JUnit 5 et Testcontainers
 
-## Choose the smallest scope that covers the AC
+## Choisir le plus petit périmètre couvrant l'AC
 
-| AC type | Use |
+| Type d'AC | Utiliser |
 |---|---|
-| Pure logic (calculator, validator, mapper) | Plain JUnit 5, no Spring |
-| Controller validation, status codes, JSON shape | `@WebMvcTest` |
-| JPA query / mapping | `@DataJpaTest` + Testcontainers (`@ServiceConnection`) |
-| End-to-end through HTTP, with DB / external | `@SpringBootTest(webEnvironment = RANDOM_PORT)` + Testcontainers |
-| Cache, security filter chain, bean wiring | targeted slice (e.g. `@WebMvcTest` + `@Import`) |
+| Logique pure, calcul, validation, mapping | JUnit 5 seul, sans Spring |
+| Validation du contrôleur, statuts, forme JSON | `@WebMvcTest` |
+| Requête ou mapping JPA | `@DataJpaTest` + Testcontainers avec `@ServiceConnection` |
+| Bout en bout HTTP avec base ou service externe | `@SpringBootTest(webEnvironment = RANDOM_PORT)` + Testcontainers |
+| Cache, sécurité, câblage de beans | tranche ciblée, par exemple `@WebMvcTest` + `@Import` |
 
-**`@SpringBootTest` is a last resort.** If a slice test can cover it, use the slice.
+**`@SpringBootTest` est un dernier recours.** Utiliser une tranche lorsqu'elle suffit.
 
-## Naming + traceability
+## Nommage et traçabilité
 
-- **Every `@Test` and `@ParameterizedTest` method MUST carry `@DisplayName`.** No exceptions — write the display name *before* the test body so articulating it forces clarity about what the test verifies. (Project rule: `feedback_displayname_on_every_test.md`.)
-- The full annotation block on every test method is **all three** lines, in this order:
+- Chaque méthode `@Test` ou `@ParameterizedTest` possède obligatoirement `@DisplayName`.
+- Le bloc complet contient, dans cet ordre :
 
   ```java
   @Test
@@ -36,12 +36,12 @@ authoritative_references:
   void appliesExpiredGiftCard() { ... }
   ```
 
-- Display-name format for AC-traced tests: `"<T-ID>: given <precondition>, when <action>, then <outcome>"`. Short BDD-style sentence is acceptable for utility/regression tests not tied to a specific AC.
-- `@Tag("AC-NNN")` makes the test machine-readable for the traceability matrix.
-- One AC per test method when feasible.
-- The simplify phase audits every newly-authored or modified test in the diff for `@DisplayName` — that's the safety net if the red phase missed it.
+- Pour un test tracé, utiliser `"<T-ID>: given <precondition>, when <action>, then <outcome>"`.
+- `@Tag("AC-NNN")` rend le test lisible par la matrice de traçabilité.
+- Un AC par méthode lorsque possible.
+- La phase simplify vérifie `@DisplayName` sur tous les tests nouveaux ou modifiés.
 
-## Testcontainers with `@ServiceConnection` (Spring Boot 4)
+## Testcontainers avec `@ServiceConnection`
 
 ```java
 @DataJpaTest
@@ -54,8 +54,8 @@ class GiftCardRepositoryTest {
     @Autowired GiftCardRepository repo;
 
     @Test
-    @DisplayName("AC-004: given a new gift card, when saved and reloaded, then balance is preserved")
     @Tag("AC-004")
+    @DisplayName("AC-004: given a new gift card, when saved and reloaded, then balance is preserved")
     void persistsBalance() {
         var saved = repo.save(GiftCard.with(BigDecimal.valueOf(100)));
         assertThat(repo.findById(saved.id()).orElseThrow().balance())
@@ -64,25 +64,26 @@ class GiftCardRepositoryTest {
 }
 ```
 
-Key points:
+Points clés :
 
-- `@ServiceConnection` replaces `@DynamicPropertySource` boilerplate in Boot 3+.
-- One container **per test class** (or static across the suite via a base class).
-- Pin the image tag (`postgres:17-alpine`, never `postgres:latest`).
-- For Kafka, RabbitMQ, Redis — same pattern, official Testcontainers module + `@ServiceConnection`.
+- `@ServiceConnection` remplace le code répétitif `@DynamicPropertySource` depuis Boot 3.
+- Un conteneur par classe de test, ou statique pour la suite via une classe de base.
+- Figer le tag de l'image, par exemple `postgres:17-alpine`, jamais `latest`.
+- Pour Kafka, RabbitMQ ou Redis, utiliser le même modèle avec le module Testcontainers officiel.
 
-## When Testcontainers is mandatory
+## Quand Testcontainers est obligatoire
 
-If the repo declares any `org.testcontainers:*` dependency, the harness considers Testcontainers IT mandatory for any feature that touches:
+Si le dépôt déclare une dépendance `org.testcontainers:*`, le harness exige un
+test d'intégration pour toute fonctionnalité qui touche :
 
-- A repository implementation
-- A `@RestController` whose handler reads/writes the database
-- A migration script
-- A message broker producer/consumer
+- une implémentation de dépôt ;
+- un `@RestController` qui lit ou écrit la base ;
+- un script de migration ;
+- un producteur ou consommateur de messages.
 
-Skipping is allowed only with an ADR (`adr/NNN-no-testcontainers-for-<reason>.md`).
+Seul un ADR `adr/NNN-no-testcontainers-for-<reason>.md` permet une dérogation.
 
-## Slice test patterns
+## Exemple de test par tranche
 
 ```java
 @WebMvcTest(CheckoutController.class)
@@ -92,8 +93,8 @@ class CheckoutControllerTest {
     @MockitoBean CheckoutService service;
 
     @Test
-    @DisplayName("AC-003: given unknown order id, when GET /{id}, then returns 404")
     @Tag("AC-003")
+    @DisplayName("AC-003: given unknown order id, when POST, then returns 404")
     void unknownOrder() throws Exception {
         when(service.applyGiftCard(any(), any())).thenThrow(OrderNotFound.class);
         mvc.perform(post("/checkout/{id}/gift-card", "missing")
@@ -104,27 +105,27 @@ class CheckoutControllerTest {
 }
 ```
 
-Use Spring Boot 4's `@MockitoBean` (replaces deprecated `@MockBean`).
+Utiliser `@MockitoBean` de Spring Boot 4 à la place de `@MockBean`, déprécié.
 
 ## Fixtures
 
-- Prefer **builders** (`GiftCardFixtures.fullyRedeemed()`) over raw constructors.
-- Fixtures live in `src/test/java/.../testsupport/`.
-- No production code in test sources. No test code in production sources.
+- Préférer des builders comme `GiftCardFixtures.fullyRedeemed()` aux constructeurs bruts.
+- Placer les fixtures sous `src/test/java/.../testsupport/`.
+- Aucun code de production dans les tests, ni code de test dans la production.
 
-## Forbidden in tests
+## Interdictions dans les tests
 
-- `Thread.sleep` for synchronization → use Awaitility.
-- Hard-coded host ports.
-- Mocking the SUT.
-- `@Disabled` without a `# DisabledReason: <ticket-or-ADR-link>` comment on the line above.
-- Removing assertions to make a test pass.
-- Catching `Exception` and asserting nothing.
+- `Thread.sleep` pour synchroniser ; utiliser Awaitility.
+- Ports hôtes codés en dur.
+- Mock du système sous test.
+- `@Disabled` sans commentaire `# DisabledReason: <ticket-or-ADR-link>` au-dessus.
+- Assertion supprimée pour faire passer un test.
+- `catch (Exception)` sans assertion.
 
-## Spring MVC Test 7 — deprecated APIs (do not use)
+## API dépréciées dans Spring MVC Test 7
 
-| Deprecated | Replacement | Reason |
+| Déprécié | Remplacement | Raison |
 |---|---|---|
-| `status().isUnprocessableEntity()` | `status().is(422)` | Removed in Spring MVC Test 7.0 |
-| `new MappingJackson2HttpMessageConverter()` in `standaloneSetup` | Remove the `.setMessageConverters()` call entirely | `MappingJackson2HttpMessageConverter` is removed in Spring 7; `standaloneSetup` auto-registers Jackson from the classpath — no explicit converter needed |
-| `@MockBean` | `@MockitoBean` | Deprecated in Spring Boot 4; import from `org.springframework.test.context.bean.override.mockito` |
+| `status().isUnprocessableEntity()` | `status().is(422)` | Supprimé dans Spring MVC Test 7.0 |
+| `new MappingJackson2HttpMessageConverter()` dans `standaloneSetup` | Supprimer `.setMessageConverters()` | Le convertisseur est supprimé et Jackson est auto-enregistré |
+| `@MockBean` | `@MockitoBean` | Déprécié dans Spring Boot 4 |

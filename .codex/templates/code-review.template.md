@@ -1,98 +1,98 @@
-# Code Review: <FEATURE-ID>
+# Revue de code : <FEATURE-ID>
 
-> Owner: `spring-code-reviewer` · Phase 7 · Skills: `spring-code-review-rubric`, `clarity-over-cleverness`, `spring-security-baseline`
+> Responsable : `spring-code-reviewer` · Phase 7 · Skills : `spring-code-review-rubric`, `clarity-over-cleverness`, `spring-security-baseline`
 >
-> Pre-commit. The commit is gated on **zero blockers/majors** or a documented waiver.
+> Avant commit. Le commit est bloqué tant qu'il reste un constat `blocker` ou `major`, sauf dérogation documentée.
 
 ## Inputs
 
-- Spec: `01-spec.md`
-- Design: `03-design.md`, ADRs under `adr/`
-- Validation: `07-validation-report.md`, `07a-traceability.md`
-- Diff: <git range>
+- Spécification : `01-spec.md`
+- Conception : `03-design.md`, ADR sous `adr/`
+- Validation : `07-validation-report.md`, `07a-traceability.md`
+- Diff : <plage git>
 
 ## Rubric application
 
-### 1. Spec / AC traceability
+### 1. Traçabilité de la spécification et des AC
 
-- [ ] Every AC mapped to test(s) (verified via `07a-traceability.md`).
-- [ ] No orphan tests, no orphan code.
+- [ ] Chaque AC correspond à un ou plusieurs tests, vérifié via `07a-traceability.md`.
+- [ ] Aucun test orphelin ni code orphelin.
 
 ### 2. Architecture
 
-- [ ] Layers respected (controller → service → repository).
-- [ ] Module boundaries respected; no cross-module access bypassing the published API package (no `..internal..` imports across packages).
+- [ ] Les couches sont respectées : contrôleur → service → dépôt.
+- [ ] Les frontières de modules sont respectées ; aucun accès intermodule ne contourne le package d'API publié et aucun import de `..internal..` entre packages.
 
-### 3. Spring idioms
+### 3. Conventions Spring
 
-- [ ] Constructor injection only (no field `@Autowired`).
-- [ ] Package by feature/domain (no top-level `controller`/`service`/`repository`/`model` packages added).
-- [ ] No Lombok (no `lombok.*` imports anywhere in the diff).
-- [ ] `@Transactional` boundaries correct; no nested transactions accidental.
-- [ ] No `@SpringBootTest` where a slice would suffice.
+- [ ] Injection par constructeur uniquement, sans `@Autowired` sur les champs.
+- [ ] Regroupement par fonctionnalité/domaine, sans nouveau package de premier niveau `controller`/`service`/`repository`/`model`.
+- [ ] Aucun Lombok, donc aucun import `lombok.*` dans le diff.
+- [ ] Frontières `@Transactional` correctes, sans transaction imbriquée accidentelle.
+- [ ] Aucun `@SpringBootTest` lorsqu'un test par tranche suffit.
 
-### 4. Error handling & API surface
+### 4. Gestion des erreurs et surface API
 
-- [ ] Errors map to a documented `code` and HTTP status.
-- [ ] No raw `RuntimeException` thrown across boundaries.
-- [ ] OpenAPI matches reality (verified by contract gate).
+- [ ] Les erreurs correspondent à un `code` documenté et à un statut HTTP.
+- [ ] Aucune `RuntimeException` brute ne traverse les frontières.
+- [ ] OpenAPI reflète la réalité, vérifié par la porte de contrat.
 
-### 5. Data access
+### 5. Accès aux données
 
-- [ ] No N+1 queries (verified by IT or by inspection).
-- [ ] Pagination present where lists can grow.
-- [ ] Migrations forward-only OR reversible with reason.
+- [ ] Aucune requête N+1, vérifié par un test d'intégration ou par inspection.
+- [ ] Une pagination existe lorsque les listes peuvent grandir.
+- [ ] Les migrations sont uniquement progressives OU réversibles avec justification.
 
-### 6. Security
+### 6. Sécurité
 
-- [ ] Inputs validated at controller boundary.
-- [ ] No secrets in code or config.
-- [ ] AuthZ enforced where AC requires.
+- [ ] Les entrées sont validées à la frontière du contrôleur.
+- [ ] Aucun secret dans le code ou la configuration.
+- [ ] L'autorisation est imposée lorsque les AC l'exigent.
 
-### 7. Test quality
+### 7. Qualité des tests
 
-- [ ] Assertions are strong (no `assertNotNull` masquerading as a real check).
-- [ ] No `Thread.sleep` in tests.
-- [ ] Surviving mutants in changed packages are addressed or ADR-justified.
-- [ ] No `@Disabled` without `# DisabledReason: <link>`.
+- [ ] Les assertions sont fortes ; un simple `assertNotNull` ne remplace pas une vraie vérification.
+- [ ] Aucun `Thread.sleep` dans les tests.
+- [ ] Les mutants survivants dans les packages modifiés sont traités ou justifiés par ADR.
+- [ ] Aucun `@Disabled` sans `# DisabledReason: <link>`.
 
-### 8. Clarity over cleverness
+### 8. Clarté plutôt qu'astuce
 
-- [ ] No needless indirection or single-use helpers (skill: `clarity-over-cleverness`).
-- [ ] Standard library / Spring idioms preferred over bespoke abstractions.
-- [ ] Names obvious; over-qualified names shortened.
-- [ ] Early returns / guard clauses used to flatten nesting.
+- [ ] Aucune indirection inutile ni helper à usage unique, selon le skill `clarity-over-cleverness`.
+- [ ] Les idiomes de la bibliothèque standard et de Spring sont préférés aux abstractions spécifiques.
+- [ ] Les noms sont évidents et les noms inutilement qualifiés sont raccourcis.
+- [ ] Les retours anticipés et clauses de garde réduisent l'imbrication.
 
-### 9. Migration & backwards compatibility
+### 9. Migration et rétrocompatibilité
 
-- [ ] Schema changes are backward-compatible OR an ADR documents the cut-over.
-- [ ] Public API changes are additive OR documented as breaking.
+- [ ] Les changements de schéma sont rétrocompatibles OU un ADR documente la bascule.
+- [ ] Les changements d'API publique sont additifs OU documentés comme cassants.
 
 ## Findings
 
-| ID | Severity | File:Line | Description | Suggested fix |
+| ID | Sévérité | Fichier:Ligne | Description | Correction proposée |
 |---|---|---|---|---|
 | F-001 | blocker | `X.java:42` | … | … |
 | F-002 | major | `Y.java:13` | … | … |
 | F-003 | minor | `Z.java:5` | … | … |
 | F-004 | nit | `W.java:1` | … | … |
 
-Severities:
+Sévérités :
 
-- **blocker** — must be fixed before commit. No waivers.
-- **major** — must be fixed OR explicitly waived with rationale (and an ADR if structural).
-- **minor** — should be fixed; can be deferred with a follow-up issue ID.
-- **nit** — author discretion.
+- **blocker** — doit être corrigé avant le commit ; aucune dérogation.
+- **major** — doit être corrigé OU explicitement dérogé avec justification et ADR si la décision est structurelle.
+- **minor** — devrait être corrigé ; peut être différé avec l'identifiant d'une issue de suivi.
+- **nit** — laissé à l'appréciation de l'auteur.
 
 ## Waivers
 
-- W-001 (against F-NNN): rationale: <text>; ADR: <link>; approved by user: <YYYY-MM-DD>
+- W-001 (pour F-NNN) : justification : <texte> ; ADR : <lien> ; approuvé par l'utilisateur le : <YYYY-MM-DD>
 
 ## Verdict
 
-- [ ] **approve** — proceed to `/commit`
-- [ ] **request-changes** — return to `spring-implementer` (or `spring-test-engineer`); rerun `$build`/`$test`/`$validate`/`$review` as needed.
+- [ ] **approve** — passer à `/commit`
+- [ ] **request-changes** — revenir à `spring-implementer` ou `spring-test-engineer`, puis relancer `$build`/`$test`/`$validate`/`$review` selon le besoin.
 
-Reviewer: `spring-code-reviewer`
-Date: <YYYY-MM-DD>
-Diff hash: <git-sha-range>
+Relecteur : `spring-code-reviewer`
+Date : <YYYY-MM-DD>
+Hash du diff : <git-sha-range>

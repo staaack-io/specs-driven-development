@@ -1,6 +1,6 @@
-# Layouts and Route Slots
+# Layouts et emplacements de route
 
-Use `layout.tsx` to render shared UI around descendant routes:
+Utiliser `layout.tsx` pour rendre l'interface partagée autour des routes descendantes :
 
 ```tsx
 export default function DashboardLayout({
@@ -17,14 +17,12 @@ export default function DashboardLayout({
 }
 ```
 
-Nested folders and layouts replace nested router outlets. Use Parallel Routes
-only when one URL must render independently navigable slots. Parallel slot
-folders start with `@` and are passed as named layout props.
+Les dossiers et layouts imbriqués remplacent les outlets. Utiliser Parallel Routes
+uniquement si une URL rend des emplacements navigables indépendamment. Leurs dossiers commencent par `@`.
 
-Do not introduce Parallel Routes for ordinary component composition. Define a
-`default.tsx` fallback for a slot when a hard reload could otherwise leave the
-slot unmatched.
+Ne pas introduire Parallel Routes pour une composition ordinaire. Définir un
+fallback `default.tsx` si un rechargement pourrait laisser un emplacement sans correspondance.
 
-Official references:
+Références officielles :
 [Layouts and pages](https://nextjs.org/docs/app/getting-started/layouts-and-pages) and
 [Parallel Routes](https://nextjs.org/docs/app/api-reference/file-conventions/parallel-routes).

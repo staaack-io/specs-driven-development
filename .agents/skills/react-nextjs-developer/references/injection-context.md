@@ -1,19 +1,18 @@
-# Context Boundaries
+# Frontières de contexte
 
-`useContext` is a React Hook. Call it only at the top level of a function
-component or custom hook, never conditionally or inside an event handler.
+`useContext` est un Hook React. L'appeler uniquement au premier niveau d'un
+composant fonction ou hook personnalisé, jamais conditionnellement ni dans un handler.
 
-Context is resolved from the closest matching provider above the consumer in the
-render tree. A provider returned by the same component cannot affect a context
-read made earlier in that component.
+Context est résolu depuis le provider correspondant le plus proche au-dessus du
+consommateur. Un provider retourné par le même composant ne peut pas modifier une
+lecture effectuée plus tôt dans ce composant.
 
-In Next.js, React context is a client-side capability. Put the provider in a
-Client Component and render it from a Server Component layout. Pass serializable
-initial values across that boundary.
+Dans Next.js, React Context est côté client. Placer le provider dans un Client
+Component rendu depuis un layout serveur et transmettre des valeurs sérialisables.
 
-Do not use Context as a hidden service locator. Expose a focused custom hook that
-validates provider presence and gives consumers a typed API.
+Ne pas transformer Context en service locator caché. Exposer un hook ciblé qui
+valide la présence du provider et fournit une API typée.
 
-Official references:
+Références officielles :
 [useContext](https://react.dev/reference/react/useContext) and
 [Context providers in Next.js](https://nextjs.org/docs/app/getting-started/server-and-client-components#context-providers).

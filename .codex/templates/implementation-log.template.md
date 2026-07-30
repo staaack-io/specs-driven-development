@@ -1,42 +1,42 @@
-# Implementation Log: <FEATURE-ID>
+# Journal d'implémentation : <FEATURE-ID>
 
-> Owner: `spring-test-engineer` + `spring-implementer` · Phase 4 · Append-only
+> Responsables : `spring-test-engineer` + `spring-implementer` · Phase 4 · Ajouts uniquement
 
-Each task contributes a `red`, `green`, `refactor`, and `simplify` block. Format below.
+Chaque tâche contribue un bloc `red`, `green`, `refactor` et `simplify`, au format ci-dessous.
 
 ---
 
-## T-001 — <task title>
+## T-001 — <titre de la tâche>
 
 ### red — <YYYY-MM-DDTHH:MM:SSZ>
 
-- Tests added: `src/test/java/<...>/XTest#shouldRejectExpiredCard` (T-001-T1)
-- Command: `mvn -q -Dtest=XTest#shouldRejectExpiredCard test`
-- Result: **failed as expected** — `AssertionFailedError: expected status 400 but was 200`
-- Notes: <if anything is unusual>
+- Tests ajoutés : `src/test/java/<...>/XTest#shouldRejectExpiredCard` (T-001-T1)
+- Commande : `mvn -q -Dtest=XTest#shouldRejectExpiredCard test`
+- Résultat : **échec attendu** — `AssertionFailedError: expected status 400 but was 200`
+- Notes : <si un élément est inhabituel>
 
 ### green — <YYYY-MM-DDTHH:MM:SSZ>
 
-- Files edited: `src/main/java/<...>/X.java`
-- Diff size: +12 −0
-- Command: `mvn -q -Dtest=XTest#shouldRejectExpiredCard test`
-- Result: **passed**
-- Notes: <minimum implementation; nothing extra>
+- Fichiers modifiés : `src/main/java/<...>/X.java`
+- Taille du diff : +12 −0
+- Commande : `mvn -q -Dtest=XTest#shouldRejectExpiredCard test`
+- Résultat : **réussi**
+- Notes : <implémentation minimale, rien de plus>
 
 ### refactor — <YYYY-MM-DDTHH:MM:SSZ>
 
-- Files edited: `src/main/java/<...>/X.java`
-- Changes: extracted private helper `validateExpiry`; no behavior change.
-- Command: `mvn -q verify -pl <module>`
-- Result: **passed** (suite green)
+- Fichiers modifiés : `src/main/java/<...>/X.java`
+- Modifications : extraction du helper privé `validateExpiry`, sans changement de comportement.
+- Commande : `mvn -q verify -pl <module>`
+- Résultat : **réussi** (suite verte)
 
 ### simplify — <YYYY-MM-DDTHH:MM:SSZ>
 
-- Files edited: `src/main/java/<...>/X.java`
-- Changes:
-  - inlined single-use helper `formatErrorCode` (clarity-over-cleverness)
-  - replaced ternary chain with switch-expression
-- Command: `mvn -q verify -pl <module>`
-- Result: **passed**
+- Fichiers modifiés : `src/main/java/<...>/X.java`
+- Modifications :
+  - intégration du helper à usage unique `formatErrorCode` (clarté plutôt qu'astuce) ;
+  - remplacement d'une chaîne de ternaires par une expression `switch`.
+- Commande : `mvn -q verify -pl <module>`
+- Résultat : **réussi**
 
 ---

@@ -1,7 +1,7 @@
-# Native Uncontrolled Forms
+# Formulaires natifs non contrôlés
 
-Use native uncontrolled controls for simple forms. Give every submitted control
-a `name` and read values from `FormData` in the action or submit handler.
+Utiliser des contrôles natifs non contrôlés pour les formulaires simples. Donner
+un `name` à chaque contrôle soumis et lire `FormData` dans l'action ou le handler.
 
 ```tsx
 export function SearchForm() {
@@ -15,13 +15,12 @@ export function SearchForm() {
 }
 ```
 
-Use `defaultValue` or `defaultChecked` for initial uncontrolled values. Do not
-later switch the same input to controlled ownership.
+Utiliser `defaultValue` ou `defaultChecked` pour l'initialisation. Ne pas basculer ensuite la même entrée en mode contrôlé.
 
-Prefer native validation attributes for immediate browser feedback, but repeat
-all validation on the server. Use semantic labels, fieldsets, legends, and
-described error messages. Avoid imperative DOM reads when `FormData` is enough.
+Préférer les attributs de validation natifs pour un retour immédiat, mais répéter
+toute validation côté serveur. Utiliser libellés sémantiques, fieldsets, legends
+et erreurs décrites. Éviter la lecture impérative du DOM si `FormData` suffit.
 
-Official references:
+Références officielles :
 [React form](https://react.dev/reference/react-dom/components/form) and
 [Next.js forms](https://nextjs.org/docs/app/guides/forms).

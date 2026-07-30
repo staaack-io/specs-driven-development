@@ -1,33 +1,34 @@
 ---
 name: issue-tracker-ingestion
-description: Pull issue/PR/ticket details from Jira, GitHub Issues, Linear, or Azure Boards via MCP into `01-spec.md` `## Source`. Use at the start of `$spec` whenever the user references an external ticket.
+description: Récupérer via MCP les détails d’une issue, pull request ou ticket Jira, GitHub, Linear ou Azure Boards dans `## Source` de `01-spec.md`. Utiliser au début de `$spec` lorsqu’un ticket externe est référencé.
 when_to_use:
-  - Phase 1 (Specify) — converting a tracker ID into a spec.
-  - Verifying that a spec's `## Source` accurately reflects the ticket.
+  - Phase 1, Specify — transformer un identifiant de ticket en spécification.
+  - Vérifier que `## Source` reflète fidèlement le ticket.
 authoritative_references:
-  - docs/codex-migration.md (MCP wiring)
+  - docs/codex-migration.md
   - .codex/templates/spec.template.md
 ---
 
-# Issue tracker ingestion
+# Ingestion d'un ticket
 
-## Supported sources
+## Sources prises en charge
 
-| Source | MCP server | Identifier shape |
+| Source | Serveur MCP | Forme de l'identifiant |
 |---|---|---|
 | Jira (Atlassian) | `atlassian` | `SHOP-1422` |
-| GitHub Issues | `github` | `owner/repo#42` or URL |
-| GitHub Pull Requests | `github` | `owner/repo!42` or URL |
+| GitHub Issues | `github` | `owner/repo#42` ou URL |
+| GitHub Pull Requests | `github` | `owner/repo!42` ou URL |
 | Linear | `linear` | `ENG-123` |
 | Azure Boards | `azure-devops` | `AB#54321` |
 
-If no MCP is configured, fall back to user-provided text. Never invent a ticket.
+Si aucun MCP n'est configuré, utiliser le texte fourni par l'utilisateur. Ne jamais inventer de ticket.
 
-## Recipe (per source)
+## Procédure par source
 
-1. Resolve identifier → MCP fetch.
-2. Capture: title, description, status, labels, assignee, comments (last 10), attachments (filenames only), URL, fetched-at timestamp.
-3. Write a verbatim block in `01-spec.md`:
+1. Résoudre l'identifiant puis récupérer le ticket via MCP.
+2. Capturer le titre, la description, le statut, les labels, le responsable, les
+   dix derniers commentaires, les noms des pièces jointes, l'URL et l'horodatage.
+3. Écrire un bloc fidèle dans `01-spec.md` :
 
    ```markdown
    ## Source
@@ -35,42 +36,36 @@ If no MCP is configured, fall back to user-provided text. Never invent a ticket.
    - **System:** Jira
    - **ID:** SHOP-1422
    - **URL:** https://example.atlassian.net/browse/SHOP-1422
-   - **Title:** Apply gift card at checkout
+   - **Title:** Appliquer une carte cadeau au paiement
    - **Status:** In Progress
    - **Fetched:** 2026-04-18T10:00:00Z
 
    ### Description (verbatim)
-   > Users should be able to apply a gift card during checkout. It should reduce the order total. If the card has been used, show an error.
+   > Les utilisateurs peuvent appliquer une carte cadeau pendant le paiement.
 
    ### Comments (last N, verbatim)
-   > [PM, 2026-04-15]: Confirmed only authenticated buyers in scope.
-   > [Eng lead, 2026-04-16]: Use existing error envelope.
+   > [PM, 2026-04-15] : seuls les acheteurs authentifiés sont concernés.
    ```
 
-4. Extract candidate ACs **only from the verbatim text**. Do not paraphrase requirements; quote the source line and put your AC under it. If a candidate AC has no source line, it goes to `## Open Questions` as a `Q-NNN`.
+4. Extraire les AC candidats **uniquement du texte fidèle**. Ne pas reformuler les
+   exigences : citer la ligne source et placer l'AC dessous. Sans ligne source,
+   placer le candidat sous `## Open Questions` comme `Q-NNN`.
 
-## No-invention enforcement
+## Absence d'invention
 
-If a source field is missing (e.g. no acceptance criteria in the ticket), the agent does **not** fill it from imagination. It writes:
+Si un champ source manque, par exemple des critères d'acceptation, l'agent ne le
+complète pas. Il écrit une `Q-NNN`, puis `$spec` s'arrête et interroge l'utilisateur.
 
-```markdown
-- **Q-001** — Source ticket has no explicit acceptance criteria. Need user to confirm AC list before proceeding to AC drafting.
-```
+## Mise à jour après modification du ticket
 
-`$spec` then halts and asks the user.
-
-## Updating after the ticket changes
-
-If the user re-runs `$spec` and the ticket has changed:
-
-- Re-fetch.
-- Diff old vs new in `## Out-of-Band Inputs` ("ticket updated 2026-04-19; description gained paragraph about partial redemption").
-- Add `Q-NNN` for any new requirement not yet in AC.
+- Récupérer à nouveau le ticket.
+- Consigner le diff sous `## Out-of-Band Inputs` avec la date et la nature du changement.
+- Ajouter une `Q-NNN` pour toute nouvelle exigence absente des AC.
 
 ## Anti-patterns
 
-- "The ticket says X" without quoting it.
-- Summarizing comments instead of quoting.
-- Pulling AC from the ticket title alone.
-- Silently ignoring an unread comment that contradicts the description.
-- Assuming the ticket assignee = the spec author.
+- Affirmer que le ticket dit X sans le citer.
+- Résumer les commentaires au lieu de les citer.
+- Déduire un AC du seul titre.
+- Ignorer silencieusement un commentaire qui contredit la description.
+- Supposer que le responsable du ticket est l'auteur de la spécification.

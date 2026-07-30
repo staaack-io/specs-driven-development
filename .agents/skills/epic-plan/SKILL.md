@@ -1,43 +1,55 @@
 ---
 name: epic-plan
-description: "Create high-level design and a slice roadmap for an SDD Epic. Use when the user invokes $epic-plan or asks to plan a multi-slice initiative."
+description: "Créer la conception globale et la roadmap de tranches d’une Epic SDD. Utiliser lorsque l’utilisateur invoque $epic-plan ou planifie une initiative en plusieurs tranches."
 ---
 
 # $epic-plan
 
-**Phase:** 3a — Epic planning
-**Owning agent:** `.codex/agents/spring-architect.toml`
-**Skills used:** `epic-slicing-planning`, `spring-boot-4-conventions`, `openapi-contract-first`, `adr-authoring`, `performance-optimization`
+**Phase :** 3a — planification Epic
+**Agent responsable :** `.codex/agents/spring-architect.toml`
+**Skills utilisés :** `epic-slicing-planning`,
+`spring-boot-4-conventions`, `openapi-contract-first`, `adr-authoring`,
+`performance-optimization`
 
-## Purpose
-Create high-level Epic planning artifacts before detailed slice-level tasks.
+## Objectif
 
-## Inputs
+Créer les artefacts globaux d’une Epic avant les tâches détaillées.
+
+## Entrées
+
 - `<feature-id>`.
 
-## Reads
-- `.specs/<feature-id>/01-spec.md`
-- `.specs/<feature-id>/02-spec-review.md` (verdict must be `PASS`)
-- `.specs/_stack.json`
-- `.codex/templates/epic-design.template.md`
-- `.codex/templates/epic-roadmap.template.md`
+## Lectures
 
-## Writes
-- `.specs/<feature-id>/03-epic-design.md`
-- `.specs/<feature-id>/03a-epic-roadmap.md`
-- `.specs/<feature-id>/adr/NNN-*.md` (if needed)
+- `01-spec.md` ;
+- `02-spec-review.md`, dont le verdict doit être `PASS` ;
+- `.specs/_stack.json` ;
+- les modèles `epic-design.template.md` et `epic-roadmap.template.md`.
 
-## Process
-1. Refuse if spec review is not `PASS`.
-2. Refuse if `01-spec.md` has unresolved `Q-NNN`.
-3. Produce `03-epic-design.md`: boundaries, shared architecture decisions, integration points, risks, and ADR links.
-4. Produce `03a-epic-roadmap.md`: vertical slices, dependency order, milestone intent, and rollout strategy.
-5. Raise `Q-NNN` for any unresolved Epic-level decision and halt before detailed task decomposition.
+## Écritures
 
-## Refuse if
-- `02-spec-review.md` verdict is not `PASS`.
-- Any AC in `01-spec.md` is unaccounted for in Epic design/roadmap.
-- Epic-level `Q-NNN` remains unresolved at handoff.
+- `03-epic-design.md` ;
+- `03a-epic-roadmap.md` ;
+- les ADR `adr/NNN-*.md` nécessaires.
 
-## Done when
-`03-epic-design.md` and `03a-epic-roadmap.md` exist, are internally consistent, and the next recommended command is `$plan`.
+## Processus
+
+1. Refuser si la revue n’est pas `PASS`.
+2. Refuser si la spécification contient un `Q-NNN` non résolu.
+3. Produire la conception globale : frontières, décisions partagées, points
+   d’intégration, risques et liens ADR.
+4. Produire la roadmap : tranches verticales, dépendances, jalons et stratégie
+   de déploiement.
+5. Ouvrir un `Q-NNN` pour toute décision globale manquante et s’arrêter avant
+   le découpage détaillé.
+
+## Refuser si
+
+- le verdict n’est pas `PASS` ;
+- un critère n’est couvert ni par la conception ni par la roadmap ;
+- une question globale reste ouverte lors de la transmission.
+
+## Terminé lorsque
+
+Les deux artefacts existent, sont cohérents et l’étape recommandée est
+`$plan`.

@@ -1,7 +1,7 @@
 # Props
 
-Props carry data from a parent to a child. Define a specific TypeScript type and
-destructure only what the component needs.
+Les props transportent les données du parent vers l'enfant. Définir un type
+TypeScript précis et ne déstructurer que ce dont le composant a besoin.
 
 ```tsx
 type ProductCardProps = {
@@ -17,12 +17,11 @@ export function ProductCard({product, featured = false}: ProductCardProps) {
 }
 ```
 
-- Treat props as immutable.
-- Keep required props required; use optional props only when absence is valid.
-- Pass serializable values across a Server-to-Client boundary.
-- Prefer composition with `children` over many boolean configuration props.
-- Do not copy props into state unless the user can intentionally diverge from
-  the latest prop value.
+- Traiter les props comme immuables.
+- Garder obligatoires les props requises ; ne rendre optionnelle qu'une absence valide.
+- Transmettre des valeurs sérialisables du serveur au client.
+- Préférer la composition avec `children` à de nombreux booléens de configuration.
+- Ne pas copier les props dans l'état sauf divergence volontaire de l'utilisateur.
 
-Official reference:
+Référence officielle :
 [Passing props to a component](https://react.dev/learn/passing-props-to-a-component).

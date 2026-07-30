@@ -1,41 +1,41 @@
-# Presentation
+# Présentation
 
-This folder contains the presentation material for the specs-driven-development repository.
+Ce dossier contient les supports de présentation du dépôt.
 
-## Files
+## Fichiers
 
-- `sdd-repo-talk.md`: Marp-compatible Markdown version.
-- `reveal/index.html`: Reveal.js entrypoint.
-- `reveal/slides.md`: Reveal.js slide content.
-- `reveal/theme.css`: small custom theme overrides.
+- `sdd-repo-talk.md` : version Markdown compatible avec Marp ;
+- `reveal/index.html` : point d’entrée Reveal.js ;
+- `reveal/slides.md` : contenu des diapositives Reveal.js ;
+- `reveal/theme.css` : petites adaptations visuelles.
 
-## Recommended workflow
+## Workflow recommandé
 
-1. Edit content in `reveal/slides.md` for Reveal.js presentations.
-2. Open `reveal/index.html` in a local web server.
-3. Use `sdd-repo-talk.md` only if you want Marp export to PDF/PPTX.
+1. Modifier `reveal/slides.md` pour une présentation Reveal.js.
+2. Ouvrir `reveal/index.html` depuis un serveur web local.
+3. Utiliser `sdd-repo-talk.md` uniquement pour un export Marp vers PDF ou
+   PowerPoint.
 
-## Run Reveal.js locally
+## Exécuter Reveal.js en local
 
-From repo root:
+Depuis la racine du dépôt :
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then open:
+Ouvrir ensuite
+`http://localhost:8000/presentation/reveal/index.html`.
 
-- `http://localhost:8000/presentation/reveal/index.html`
+Utiliser les flèches du clavier pour naviguer.
 
-Tip: use arrow keys to navigate slides.
+## Durée conseillée
 
-## Suggested talk duration
+- 20 à 25 minutes au total ;
+- 8 à 10 minutes de démonstration ;
+- 3 à 5 minutes de questions.
 
-- 20-25 minutes total
-- 8-10 minutes demo
-- 3-5 minutes Q&A
-
-## Content sources in this repo
+## Sources utilisées
 
 - `docs/methodology.md`
 - `docs/harness-principles.md`

@@ -1,27 +1,20 @@
-# React Accessibility
+# Accessibilité React
 
-Prefer semantic HTML before adding ARIA. Use native `button`, `a`, `input`,
-`select`, `dialog`, headings, lists, and landmarks when they match the behavior.
-In JSX, `aria-*` attributes keep their hyphenated spelling.
+Préférer le HTML sémantique avant ARIA. Utiliser les contrôles natifs lorsqu'ils
+correspondent au comportement. En JSX, les attributs `aria-*` gardent leurs tirets.
 
-For a custom interactive pattern:
+Pour un pattern interactif personnalisé :
 
-1. Follow the relevant WAI-ARIA Authoring Practices pattern.
-2. Implement its keyboard interaction, focus movement, roles, states, and
-   properties together.
-3. Keep the accessible name stable and associate labels, descriptions, and
-   errors with native IDs.
-4. Test with role/name queries, keyboard input, focus assertions, and at least
-   one browser-level flow.
+1. Suivre le pattern WAI-ARIA Authoring Practices correspondant.
+2. Implémenter ensemble clavier, focus, rôles, états et propriétés.
+3. Garder le nom accessible stable et relier libellés, descriptions et erreurs par ID.
+4. Tester rôles, noms, clavier, focus et au moins un parcours navigateur.
 
-Do not replace a native control with a custom ARIA implementation for styling
-alone. Do not add a headless component package without explicit approval. If the
-project already uses one, follow its documented composition and preserve its
-keyboard behavior.
+Ne pas remplacer un contrôle natif par ARIA uniquement pour le style ni ajouter
+de package headless sans accord. Si le projet en utilise un, préserver sa composition et son clavier.
 
-For dynamic status or validation feedback, use an appropriate live region and
-avoid moving focus unless the interaction requires it.
+Pour les statuts dynamiques et validations, utiliser une live region adaptée et ne déplacer le focus que si nécessaire.
 
-Official references:
+Références officielles :
 [React DOM components](https://react.dev/reference/react-dom/components) and
 [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/patterns/).

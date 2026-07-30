@@ -1,21 +1,23 @@
 ---
 name: pit-mutation-tuning
-description: Configure and interpret PIT mutation testing scoped to changed code. Use when adding the mutation gate to a project, when interpreting `mutations.xml`, or when tuning thresholds.
+description: Configurer et interpréter les tests de mutation PIT ciblés sur le code modifié. Utiliser pour ajouter la porte de mutation, lire `mutations.xml` ou ajuster les seuils.
 when_to_use:
-  - Phase 5/6 — running `mvn -Ppit pitest:mutationCoverage` and analyzing results.
-  - Adding mutation testing to a brownfield project (incremental scope to avoid 30-minute waits).
+  - Phases 5 et 6 — exécuter `mvn -Ppit pitest:mutationCoverage` et analyser les résultats.
+  - Ajouter la mutation à un projet brownfield avec un périmètre incrémental.
 authoritative_references:
   - https://pitest.org/
   - https://github.com/hcoles/pitest
 ---
 
-# PIT mutation tuning
+# Réglage des mutations PIT
 
-## Why mutation testing
+## Pourquoi tester les mutations
 
-Coverage proves the code ran. **Mutation proves the test would have caught a real defect.** A mutant is a small change (negate a condition, return null, change `>` to `<=`); a "killed" mutant means a test failed; a "survived" mutant means your test suite is blind.
+La couverture prouve que le code a été exécuté. **La mutation prouve que le test
+aurait détecté un vrai défaut.** Un mutant modifie légèrement le code. Un mutant
+tué fait échouer un test ; un mutant survivant révèle un angle mort.
 
-## Default configuration
+## Configuration par défaut
 
 ```xml
 <plugin>
@@ -23,23 +25,12 @@ Coverage proves the code ran. **Mutation proves the test would have caught a rea
     <artifactId>pitest-maven</artifactId>
     <version>1.17.0</version>
     <configuration>
-        <targetClasses>
-            <param>com.example.shop.*</param>
-        </targetClasses>
-        <targetTests>
-            <param>com.example.shop.*</param>
-        </targetTests>
-        <mutators>
-            <mutator>STRONGER</mutator>
-        </mutators>
-        <outputFormats>
-            <param>HTML</param>
-            <param>XML</param>
-        </outputFormats>
+        <targetClasses><param>com.example.shop.*</param></targetClasses>
+        <targetTests><param>com.example.shop.*</param></targetTests>
+        <mutators><mutator>STRONGER</mutator></mutators>
+        <outputFormats><param>HTML</param><param>XML</param></outputFormats>
         <timestampedReports>false</timestampedReports>
-        <features>
-            <feature>+GIT(from[HEAD~1])</feature>     <!-- only changed files -->
-        </features>
+        <features><feature>+GIT(from[HEAD~1])</feature></features>
         <mutationThreshold>80</mutationThreshold>
         <coverageThreshold>90</coverageThreshold>
     </configuration>
@@ -53,52 +44,42 @@ Coverage proves the code ran. **Mutation proves the test would have caught a rea
 </plugin>
 ```
 
-## Scope: incremental, not full
+## Périmètre incrémental
 
-Full PIT runs are slow. Always scope to changed code:
+Les exécutions PIT complètes sont lentes. Toujours cibler le code modifié :
 
-- Locally / in `$build` refactor phase: `+GIT(from[HEAD~1])`.
-- In CI for PRs: `+GIT(from[origin/main])`.
-- Nightly: full run, results posted to dashboard but not blocking.
+- localement et pendant refactor : `+GIT(from[HEAD~1])` ;
+- en CI pour une PR : `+GIT(from[origin/main])` ;
+- la nuit : exécution complète, informative et non bloquante.
 
-## What to do with surviving mutants
+## Traiter les mutants survivants
 
-For every survived mutant in changed packages:
+Pour chaque mutant survivant dans les packages modifiés :
 
-1. Look at the mutated line and the mutation type (e.g. "negated conditional").
-2. Write a test that would have failed under the mutation.
-3. Re-run; the mutant should now be killed.
-4. Log the new test in `06-test-plan.md`.
+1. examiner la ligne et le type de mutation ;
+2. écrire un test qui aurait échoué sous cette mutation ;
+3. relancer PIT et vérifier que le mutant est tué ;
+4. consigner le nouveau test dans `06-test-plan.md`.
 
-If a mutant is genuinely equivalent (impossible to kill — e.g. a defensive `if` that can never be false), suppress it via `@CoverageIgnore` on the **specific method**, with a comment explaining why. Track in `08-code-review.md` waivers.
+Si un mutant est réellement équivalent, donc impossible à tuer, l'exclure avec
+`@CoverageIgnore` sur la **méthode précise**, avec un commentaire explicatif et
+une dérogation suivie dans `08-code-review.md`.
 
-## Common mutation types worth caring about
+## Mutations importantes
 
-| Mutator | Example | What it tells you |
+| Mutateur | Exemple | Signal |
 |---|---|---|
-| `NegateConditionals` | `if (x > 0)` → `if (x <= 0)` | Boundary tests missing. |
-| `ReturnVals` | `return x;` → `return null;` | Caller doesn't validate non-null. |
-| `MathMutator` | `a + b` → `a - b` | Arithmetic untested with non-zero values. |
-| `VoidMethodCalls` | removes a call | Side effect not asserted. |
+| `NegateConditionals` | `x > 0` devient `x <= 0` | Tests de frontière manquants. |
+| `ReturnVals` | `return x` devient `return null` | L'appelant ne vérifie pas la nullité. |
+| `MathMutator` | `a + b` devient `a - b` | Arithmétique insuffisamment testée. |
+| `VoidMethodCalls` | supprime un appel | Effet de bord non vérifié. |
 
-## Reading `mutations.xml`
-
-```xml
-<mutation status="SURVIVED" detected="false">
-  <sourceFile>PriceCalculator.java</sourceFile>
-  <mutatedClass>com.example.shop.checkout.PriceCalculator</mutatedClass>
-  <mutatedMethod>apply</mutatedMethod>
-  <mutator>org.pitest.mutationtest.engine.gregor.mutators.NegateConditionalsMutator</mutator>
-  <description>negated conditional</description>
-  <lineNumber>42</lineNumber>
-</mutation>
-```
-
-`spring-validator` parses this and lists every `SURVIVED` mutant in changed files in `07-validation-report.md`.
+`spring-validator` analyse `mutations.xml` et liste chaque mutant `SURVIVED` des
+fichiers modifiés dans `07-validation-report.md`.
 
 ## Anti-patterns
 
-- Lowering `mutationThreshold` to make the build green.
-- Excluding entire packages because they're "hard to test".
-- Marking equivalent mutants without a one-line justification.
-- Running PIT against the whole codebase on every build.
+- Abaisser `mutationThreshold` pour verdir le build.
+- Exclure des packages entiers parce qu'ils sont difficiles à tester.
+- Déclarer un mutant équivalent sans justification d'une ligne.
+- Exécuter PIT sur tout le code à chaque build.

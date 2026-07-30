@@ -1,39 +1,48 @@
 ---
 name: status
-description: "Report the current phase and next action for SDD features. Use when the user invokes $status or asks for framework workflow status."
+description: "Afficher la phase courante et la prochaine action des fonctionnalités SDD. Utiliser lorsque l’utilisateur invoque $status ou demande l’état du workflow."
 ---
 
 # $status
 
-**Phase:** meta — read-only
-**Owning agent:** none (pure reporting)
+**Phase :** méta — lecture seule
+**Agent responsable :** aucun
 
-## Purpose
-Show the user where every active feature stands. No writes, no side effects.
+## Objectif
 
-## Inputs
-- Optional `<feature-id>`; without it, summarize all features under `.specs/`.
+Montrer la position de chaque fonctionnalité active, sans écriture ni effet de
+bord.
 
-## Reads
-- `.specs/*/01-spec.md`, `02-spec-review.md`, `03-epic-design.md`, `03a-epic-roadmap.md`, `03-design.md`, `04-tasks.md`, `.tdd-state.json`, `07-validation-report.md`.
-- `target/harness-summary.json` if present.
+## Entrées
 
-## Writes
-Nothing.
+- `<feature-id>` facultatif ; sinon résumer toutes les fonctionnalités.
 
-## Process
-For each feature (or the supplied one), produce a one-row-per-feature table:
-- `feature_id`
-- `phase` — derived from which artifacts exist + verdicts (specify, spec-review, plan-epic, plan, build, test, validate, review, done).
-- `acs_total`, `acs_with_tests`
-- `tasks_done / tasks_total`
-- `last_validate_verdict` and timestamp
-- `active_task` from `.tdd-state.json` (if any) and its current `phase`
+## Lectures
 
-Then print a single sentence: "Recommended next action: …".
+- artefacts numérotés, état TDD et dernier rapport ;
+- `target/harness-summary.json` s’il existe.
 
-## Refuse if
-Never. This command never refuses; if data is missing it shows `—`.
+## Écritures
 
-## Done when
-Status table is printed and a recommended next command is suggested.
+Aucune.
+
+## Processus
+
+Pour chaque fonctionnalité, afficher une ligne avec :
+
+- `feature_id` ;
+- `phase`, déduite des artefacts et verdicts ;
+- `acs_total` et `acs_with_tests` ;
+- `tasks_done / tasks_total` ;
+- dernier verdict et horodatage ;
+- `active_task` et sa phase.
+
+Terminer par une phrase indiquant l’action suivante recommandée.
+
+## Refuser si
+
+Jamais. Afficher `—` lorsqu’une donnée manque.
+
+## Terminé lorsque
+
+La table et la prochaine commande sont affichées.

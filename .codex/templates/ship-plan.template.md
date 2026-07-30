@@ -1,112 +1,112 @@
-# Ship Plan: <FEATURE-ID>
+# Plan de livraison : <FEATURE-ID>
 
-> Owner: `spring-code-reviewer` · Phase 8 · Skills: `shipping-and-launch`, `spring-security-baseline`, `flyway-or-liquibase-detection`
+> Responsable : `spring-code-reviewer` · Phase 8 · Skills : `shipping-and-launch`, `spring-security-baseline`, `flyway-or-liquibase-detection`
 >
-> Pre-deploy hygiene. The agent never deploys; it produces this plan and prints the deploy command for the user.
+> Hygiène avant déploiement. L'agent ne déploie jamais : il produit ce plan et affiche la commande que l'utilisateur pourra exécuter.
 
 ## Inputs
 
-- Spec: `01-spec.md`
-- Design: `03-design.md`, ADRs under `adr/`
-- Tasks: `04-tasks.md`
-- Validation: `07-validation-report.md` (verdict must be `PASS`)
-- Code review: `08-code-review.md` (verdict must be `Approve` or `Approve with waivers`)
-- Diff: <git range, e.g. `origin/main...HEAD`>
+- Spécification : `01-spec.md`
+- Conception : `03-design.md`, ADR sous `adr/`
+- Tâches : `04-tasks.md`
+- Validation : `07-validation-report.md` ; le verdict doit être `PASS`
+- Revue de code : `08-code-review.md` ; le verdict doit être `Approve` ou `Approve with waivers`
+- Diff : <plage git, par exemple `origin/main...HEAD`>
 
 ## 1. Pre-ship gates
 
-| Gate | Source | Result | Notes |
+| Porte | Source | Résultat | Notes |
 |---|---|---|---|
-| Validation | `07-validation-report.md` | PASS / FAIL | <link> |
-| Code review | `08-code-review.md` | Approve / Approve-with-waivers / FAIL | <link> |
-| Open questions | spec + design `## Open Questions` | 0 / N | <list any> |
-| Baseline regression | `.specs/_baseline.json` vs harness | none / N | <list any> |
-| Diff scope | `files_in_scope` per task | in-scope / drift | <list any out-of-scope files> |
+| Validation | `07-validation-report.md` | PASS / FAIL | <lien> |
+| Revue de code | `08-code-review.md` | Approve / Approve-with-waivers / FAIL | <lien> |
+| Questions ouvertes | section `## Open Questions` de la spécification et de la conception | 0 / N | <liste> |
+| Régression de référence | `.specs/_baseline.json` comparé au harness | aucune / N | <liste> |
+| Périmètre du diff | `files_in_scope` de chaque tâche | conforme / dérive | <fichiers hors périmètre> |
 
-If any row is FAIL, **stop**. Do not fill the rest of this template.
+Si une ligne vaut FAIL, **s'arrêter** et ne pas remplir la suite du modèle.
 
 ## 2. Feature-flag posture
 
-- **Flag name:** <name or `none — reason: ...`>
-- **Default in production:** off / on
-- **Kill-switch:** <env var or remote config key>
-- **Owner:** <named human, not "the team">
-- **Removal plan:** <date or condition for retiring the flag>
+- **Nom du flag :** <nom ou `none — reason: ...`>
+- **Valeur par défaut en production :** off / on
+- **Interrupteur d'urgence :** <variable d'environnement ou clé de configuration distante>
+- **Responsable :** <personne nommée, pas « l'équipe »>
+- **Plan de retrait :** <date ou condition de suppression du flag>
 
-If `none`, justify in one line (e.g. "pure bug fix, additive only, covered by existing alert").
+Si la valeur est `none`, la justifier en une ligne, par exemple « correction purement additive couverte par l'alerte existante ».
 
 ## 3. Migration safety
 
-| Script | Class | Rollback procedure |
+| Script | Classe | Procédure de retour arrière |
 |---|---|---|
-| `Vxxx__name.sql` | forward-only / expand / contract / breaking | <SQL or contract step> |
+| `Vxxx__name.sql` | forward-only / expand / contract / breaking | <SQL ou étape de contrat> |
 
-Constraints:
+Contraintes :
 
-- [ ] No previously-released migration script was renamed or edited.
-- [ ] Every `breaking` script has a covering ADR.
-- [ ] Every `contract` step's matching `expand` has been in production for the agreed period.
+- [ ] Aucun script de migration déjà livré n'a été renommé ou modifié.
+- [ ] Chaque script `breaking` possède un ADR.
+- [ ] Pour chaque étape `contract`, l'étape `expand` correspondante est en production depuis la durée convenue.
 
 ## 4. Observability sign-off
 
-For each new endpoint, handler, or scheduled task:
+Pour chaque nouvel endpoint, handler ou tâche planifiée :
 
-| Surface | Metric (Micrometer) | Structured-log key | Alert | Dashboard |
+| Surface | Métrique Micrometer | Clé de journal structuré | Alerte | Tableau de bord |
 |---|---|---|---|---|
-| `<METHOD> <path>` | `<metric.name>` (Timer w/ histogram) | `feature_id`, `ac_id` | <alert name + threshold> | <link> |
+| `<METHOD> <path>` | `<metric.name>` (Timer avec histogramme) | `feature_id`, `ac_id` | <nom + seuil> | <lien> |
 
-If a row has no alert, record the explicit reason in the row.
+Si une ligne ne possède pas d'alerte, en indiquer explicitement la raison.
 
 ## 5. Rollback plan
 
-1. **Detection.** How do we know it's broken? <alert name + threshold; user-report channel; metric anomaly>
-2. **Stop the bleeding (≤ 5 min).** <flag flip; revert; scale-down; circuit breaker>
-3. **State recovery.** <revert commit; replay events from offset N; reconcile job; manual SQL>
+1. **Détection.** Comment savoir que le déploiement est défectueux ? <alerte et seuil ; canal de remontée utilisateur ; anomalie de métrique>
+2. **Limiter les dégâts en 5 minutes maximum.** <bascule du flag ; retour arrière ; réduction de capacité ; coupe-circuit>
+3. **Restaurer l'état.** <annuler le commit ; rejouer les événements depuis l'offset N ; tâche de réconciliation ; SQL manuel>
 
-A `revert the commit` answer to (3) is incomplete when a migration ran — spell out the contract step or SQL.
+« Annuler le commit » ne suffit pas au point 3 si une migration a été exécutée : préciser l'étape de contrat ou le SQL.
 
 ## 6. Staged rollout
 
-| Step | Cohort | Entry criteria | Abort criteria | Observation window | Watcher |
+| Étape | Cohorte | Critères d'entrée | Critères d'abandon | Fenêtre d'observation | Surveillant |
 |---|---|---|---|---|---|
-| Canary | ~1% (1 instance) | gates green | error rate > X%, p95 > Y ms | 30 min | <on-call> |
-| Step 1 | 10% | canary clean for window | same | 1 hr | <on-call> |
-| Step 2 | 50% | step 1 clean | same | 4 hr | <on-call> |
-| Full | 100% | step 2 clean | same | steady state | <on-call> |
+| Canary | ~1 % (1 instance) | portes vertes | taux d'erreur > X %, p95 > Y ms | 30 min | <astreinte> |
+| Étape 1 | 10 % | canari sain pendant la fenêtre | identiques | 1 h | <astreinte> |
+| Étape 2 | 50 % | étape 1 saine | identiques | 4 h | <astreinte> |
+| Complet | 100 % | étape 2 saine | identiques | régime permanent | <astreinte> |
 
-For flag-gated changes, "cohort" is the flag's user/tenant slice. Adjust the table accordingly; the shape stays the same.
+Pour un changement protégé par flag, la « cohorte » correspond au segment d'utilisateurs ou de tenants ciblé. Adapter le contenu du tableau sans en changer la structure.
 
 ## 7. Release notes
 
-### External (user-facing)
+### Externes, pour les utilisateurs
 
-- <plain English bullet 1>
-- <plain English bullet 2>
-- <plain English bullet 3, optional>
+- <point 1 en français simple>
+- <point 2 en français simple>
+- <point 3 facultatif>
 
-### Internal (engineering)
+### Internes, pour l'équipe technique
 
-- **AC covered:** <AC-NNN, AC-NNN, ...>
-- **Diff summary:** <one paragraph>
-- **ADRs:** <links>
-- **Migration class:** <forward-only / expand / contract / breaking>
-- **Flag name:** <name or `none`>
-- **Dashboard:** <link>
-- **Commits:** `git log <base>..HEAD --oneline`
+- **AC couverts :** <AC-NNN, AC-NNN, ...>
+- **Résumé du diff :** <un paragraphe>
+- **ADR :** <liens>
+- **Classe de migration :** <forward-only / expand / contract / breaking>
+- **Nom du flag :** <nom ou `none`>
+- **Tableau de bord :** <lien>
+- **Commits :** `git log <base>..HEAD --oneline`
 
 ## 8. Deploy command (for the user to run)
 
 ```
-<suggested command, e.g. team release-pipeline trigger, kubectl rollout, mvn deploy>
+<commande proposée, par exemple déclenchement du pipeline de livraison, kubectl rollout ou mvn deploy>
 ```
 
-The agent does not execute this. The user runs it.
+L'agent ne l'exécute pas. L'utilisateur l'exécute.
 
 ## Sign-off
 
-- [ ] All gates PASS.
-- [ ] Flag owner, alert thresholds, and rollout cohorts confirmed by a human.
-- [ ] External release notes edited by a human.
-- [ ] On-call notified and ack'd the deploy window.
+- [ ] Toutes les portes sont PASS.
+- [ ] Le responsable du flag, les seuils d'alerte et les cohortes ont été confirmés par une personne.
+- [ ] Les notes de livraison externes ont été relues par une personne.
+- [ ] L'astreinte a été informée et a confirmé la fenêtre de déploiement.
 
-Date: <YYYY-MM-DD> · Approved-by: <name>
+Date : <YYYY-MM-DD> · Approuvé par : <nom>

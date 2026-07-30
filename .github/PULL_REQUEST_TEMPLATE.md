@@ -1,38 +1,38 @@
-## Summary
+## Résumé
 
-<!-- What does this PR change and why? Link any related issues. -->
+<!-- Que change cette PR et pourquoi ? Lier les issues concernées. -->
 
-## Type of change
+## Type de changement
 
-- [ ] Docs / typo / non-behavioral
-- [ ] New skill / template / agent
-- [ ] Change to an existing skill / template / agent
-- [ ] Hook or harness script change
-- [ ] Maven parent-pom fragment change
-- [ ] Methodology change (phases, exit contracts, artifacts)
-- [ ] CI / repo hygiene
+- [ ] Documentation, typo ou changement sans effet fonctionnel
+- [ ] Nouveau skill, modèle ou agent
+- [ ] Modification d'un skill, modèle ou agent existant
+- [ ] Modification d'un hook ou du harness
+- [ ] Modification du fragment POM parent Maven
+- [ ] Modification de la méthodologie, des phases, contrats de sortie ou artefacts
+- [ ] CI ou hygiène du dépôt
 
-## Codex structure
+## Structure Codex
 
-If this change touches a skill, keep it in one distinct directory under
-`.agents/skills/`. Do not merge it with another skill or create platform copies.
+Si ce changement touche un skill, le conserver dans un dossier distinct sous
+`.agents/skills/`. Ne pas le fusionner avec un autre skill ni créer de copies par plateforme.
 
-- [ ] Skill remains isolated in `.agents/skills/<name>/`
-- [ ] Agent or hook references use `.codex/`
-- [ ] N/A (docs/CI/example only)
+- [ ] Le skill reste isolé dans `.agents/skills/<name>/`
+- [ ] Les références d'agents ou hooks utilisent `.codex/`
+- [ ] N/A, documentation, CI ou exemple uniquement
 
-## Checks
+## Contrôles
 
-- [ ] `shellcheck` clean (`shellcheck -S style .github/scripts/*.sh .codex/hooks/*.sh`)
-- [ ] Markdown lints (`npx markdownlint-cli2 "**/*.md"`)
-- [ ] `.codex/hooks.json` parses as JSON
-- [ ] [CHANGELOG.md](../CHANGELOG.md) updated under `## [Unreleased]`
-- [ ] If methodology changed: [docs/methodology.md](../docs/methodology.md) updated
-- [ ] If artifact contract changed: [docs/artifact-contract.md](../docs/artifact-contract.md) updated
+- [ ] `shellcheck` réussit : `shellcheck -S style .github/scripts/*.sh .codex/hooks/*.sh`
+- [ ] Markdown lint réussit : `npx markdownlint-cli2 "**/*.md"`
+- [ ] `.codex/hooks.json` est un JSON valide
+- [ ] [CHANGELOG.md](../CHANGELOG.md) est mis à jour sous `## [Unreleased]`
+- [ ] Si la méthodologie change : [docs/methodology.md](../docs/methodology.md) est mis à jour
+- [ ] Si le contrat des artefacts change : [docs/artifact-contract.md](../docs/artifact-contract.md) est mis à jour
 
-## Breaking change?
+## Changement cassant ?
 
-<!-- A change is breaking if it modifies a phase exit contract, an artifact's required schema, or hook enforcement semantics. See CONTRIBUTING.md#versioning. -->
+<!-- Un changement est cassant s'il modifie le contrat de sortie d'une phase, le schéma requis d'un artefact ou le comportement d'un hook. -->
 
-- [ ] Yes — describe migration:
-- [ ] No
+- [ ] Oui — décrire la migration :
+- [ ] Non

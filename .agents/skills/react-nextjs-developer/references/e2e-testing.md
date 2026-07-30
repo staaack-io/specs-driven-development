@@ -1,7 +1,7 @@
-# End-to-End Testing
+# Tests de bout en bout
 
-Use Playwright when it is configured by the project. Keep specs in the existing
-e2e location and use the repository's package script.
+Utiliser Playwright lorsqu'il est configuré par le projet. Garder les specs dans
+l'emplacement e2e existant et utiliser le script du dépôt.
 
 ```ts
 import {expect, test} from '@playwright/test';
@@ -16,12 +16,11 @@ test('opens a product', async ({page}) => {
 });
 ```
 
-- Prefer role, label, and text locators.
-- Seed or isolate data deterministically.
-- Wait for observable UI or network state, never a fixed timeout.
-- Cover Server Action submissions, redirects, loading UI, error boundaries, and
-  critical keyboard flows at the browser boundary.
-- Capture trace, screenshot, or video only according to the existing config.
+- Préférer les locators par rôle, libellé et texte.
+- Initialiser ou isoler les données de façon déterministe.
+- Attendre un état observable de l'interface ou du réseau, jamais un délai fixe.
+- Couvrir Server Actions, redirections, chargement, frontières d'erreur et parcours clavier critiques dans le navigateur.
+- Capturer trace, capture ou vidéo uniquement selon la configuration existante.
 
-Official reference:
+Référence officielle :
 [Playwright with Next.js](https://nextjs.org/docs/app/guides/testing/playwright).

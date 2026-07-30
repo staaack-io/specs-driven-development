@@ -1,8 +1,7 @@
-# Navigation State
+# État de navigation
 
-The App Router does not expose the former router event API. Compose current URL
-hooks in a small Client Component when analytics or UI state must react after
-navigation:
+App Router n'expose pas l'ancienne API d'événements. Composer les hooks de l'URL
+dans un petit Client Component lorsque les analytics ou l'interface doivent réagir après navigation :
 
 ```tsx
 'use client';
@@ -22,9 +21,8 @@ export function NavigationAnalytics() {
 }
 ```
 
-Use `loading.tsx`, Suspense, and `useLinkStatus` for pending navigation feedback.
-Do not recreate a global event bus for ordinary route loading. Keep analytics
-effects isolated and exclude sensitive query values.
+Utiliser `loading.tsx`, Suspense et `useLinkStatus` pour l'attente. Ne pas recréer
+un bus global pour un chargement ordinaire. Isoler les effets analytics et exclure les valeurs sensibles.
 
-Official reference:
+Référence officielle :
 [useRouter](https://nextjs.org/docs/app/api-reference/functions/use-router).

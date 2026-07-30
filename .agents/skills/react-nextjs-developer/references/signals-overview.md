@@ -1,30 +1,28 @@
-# React State Overview
+# Vue d'ensemble de l'état React
 
-Use the smallest state primitive that matches the behavior:
+Utiliser la plus petite primitive d'état adaptée :
 
-- `useState` for independent local state.
-- `useReducer` for related transitions with explicit actions.
-- Context for values needed by a distant subtree.
-- URL state for shareable navigation and filter state.
-- Server Components for server-owned data.
+- `useState` pour un état local indépendant.
+- `useReducer` pour des transitions liées et explicites.
+- Context pour un sous-arbre distant.
+- URL pour une navigation ou des filtres partageables.
+- Server Components pour les données possédées par le serveur.
 
-Derive values during render instead of storing duplicate state:
+Dériver les valeurs pendant le rendu au lieu de dupliquer l'état :
 
 ```tsx
 const visibleItems = items.filter((item) => item.active);
 ```
 
-State is a snapshot. Use functional updates when the next value depends on the
-previous one:
+L'état est un instantané. Utiliser une mise à jour fonctionnelle si la prochaine valeur dépend de la précédente :
 
 ```tsx
 setCount((count) => count + 1);
 ```
 
-Do not mutate arrays or objects held in state. Replace them with new values.
-Avoid global state packages unless the existing project already chose one or the
-user explicitly approves a dependency.
+Ne pas muter tableaux ou objets en état ; les remplacer. Éviter les packages
+d'état global sauf choix existant ou approbation explicite.
 
-Official references:
+Références officielles :
 [Managing state](https://react.dev/learn/managing-state) and
 [Built-in hooks](https://react.dev/reference/react/hooks).

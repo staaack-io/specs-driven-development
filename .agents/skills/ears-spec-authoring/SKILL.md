@@ -1,79 +1,82 @@
 ---
 name: ears-spec-authoring
-description: Author acceptance criteria using EARS-lite shapes with stable AC-NNN IDs and explicit Q-NNN open questions. Use when drafting or editing `01-spec.md`, when transforming a tracker ticket into ACs, or when a user asks for a spec / requirements doc.
+description: Rédiger des critères d’acceptation EARS-lite avec identifiants AC-NNN stables et questions Q-NNN explicites. Utiliser pour créer ou modifier `01-spec.md`, transformer un ticket en critères ou produire une spécification.
 when_to_use:
-  - Phase 1 (Specify) — converting a feature request into testable ACs.
-  - Anywhere a vague requirement ("must be fast", "should be secure") needs to be made concrete.
+  - Phase 1, Specify — transformer une demande de fonctionnalité en AC testables.
+  - Rendre concrète toute exigence vague comme « rapide » ou « sécurisé ».
 authoritative_references:
-  - https://alistair.cockburn.us/coffee-cups-and-the-EARS-syntax/  (EARS background)
+  - https://alistair.cockburn.us/coffee-cups-and-the-EARS-syntax/
   - .codex/templates/spec.template.md
   - docs/spec-format.md
 ---
 
-# EARS-lite spec authoring
+# Rédaction de spécifications EARS-lite
 
-## The five shapes
+## Les cinq formes
 
-Every AC is one of:
+Chaque AC suit une des formes suivantes :
 
-| Shape | Skeleton | Use when |
+| Forme | Squelette | Quand l'utiliser |
 |---|---|---|
-| **Ubiquitous** | The system shall `<response>`. | Always-true invariant. |
-| **Event-driven** | When `<trigger>`, the system shall `<response>`. | An external event causes a behavior. |
-| **State-driven** | While `<state>`, the system shall `<response>`. | Behavior holds throughout a state. |
-| **Optional feature** | Where `<feature included>`, the system shall `<response>`. | Conditional on configuration. |
-| **Unwanted behavior** | If `<unwanted condition>`, then the system shall `<mitigation>`. | Error / failure handling. |
+| **Universelle** | Le système doit `<réponse>`. | Invariant toujours vrai. |
+| **Événementielle** | Quand `<déclencheur>`, le système doit `<réponse>`. | Un événement externe provoque un comportement. |
+| **Pilotée par l'état** | Pendant `<état>`, le système doit `<réponse>`. | Le comportement tient pendant tout un état. |
+| **Fonctionnalité optionnelle** | Lorsque `<fonctionnalité incluse>`, le système doit `<réponse>`. | Dépend de la configuration. |
+| **Comportement indésirable** | Si `<condition indésirable>`, alors le système doit `<atténuation>`. | Gestion d'erreur ou d'échec. |
 
-## Rules (enforced by `spec-review.md`)
+## Règles imposées par `spec-review.md`
 
-1. **One AC = one condition + one outcome.** Split anything with "and".
-2. **Stable IDs.** Format `AC-NNN`. Never renumber. Insertions get the next number, even if it breaks reading order.
-3. **No implementation.** No class names, no DB columns, no library names, no defaults.
-4. **No vague NFRs.** "Fast" → `< 200 ms p95 under 50 RPS` OR demote to `Q-NNN`.
-5. **No silent defaults.** If the user did not say which behavior to pick, write a `Q-NNN`.
-6. **Feature-flag the risky cutovers.** For any cutover, migration, or behavior swap that is user-visible, raise a `Q-NNN` asking whether a feature flag with rollback procedure is required. Default to "yes, use a feature flag" unless the user explicitly waives it.
+1. **Un AC = une condition + un résultat.** Scinder tout critère qui combine plusieurs comportements.
+2. **Identifiants stables.** Format `AC-NNN`, sans jamais renuméroter. Une insertion prend le prochain numéro.
+3. **Aucune implémentation.** Ni classe, colonne, bibliothèque ni valeur par défaut.
+4. **Aucune exigence vague.** « Rapide » devient par exemple `< 200 ms p95 sous 50 RPS`, ou une `Q-NNN`.
+5. **Aucune valeur par défaut silencieuse.** Si l'utilisateur n'a pas choisi le comportement, écrire une `Q-NNN`.
+6. **Protéger les bascules risquées par un feature flag.** Pour toute migration ou
+   substitution visible par l'utilisateur, créer une `Q-NNN` sur le flag et la
+   procédure de retour arrière. Utiliser un flag par défaut, sauf dérogation explicite.
 
-## The Q-NNN escape hatch
+## Issue de secours Q-NNN
 
-When you would otherwise invent something, write:
+Lorsque vous devriez autrement inventer :
 
 ```markdown
 ## Open Questions
-- **Q-001** — Source ticket says "users get a discount" but does not specify whether unauthenticated users qualify. Need decision before AC-005 can be written.
+- **Q-001** — Le ticket indique que « les utilisateurs obtiennent une remise » sans préciser si les visiteurs non authentifiés sont concernés. Une décision est nécessaire avant d'écrire AC-005.
 ```
 
-Resolve via direct user answer, then move it to `## Resolved Questions` with the answer and date.
+Après la réponse directe de l'utilisateur, déplacer la question sous
+`## Resolved Questions` avec la réponse et la date.
 
-## Worked example
+## Exemple
 
-Source ticket:
-> *Users should be able to apply a gift card during checkout. It should reduce the order total. If the card has been used, show an error.*
+Ticket source : les utilisateurs peuvent appliquer une carte cadeau au paiement,
+elle réduit le total et une carte déjà utilisée provoque une erreur.
 
-Bad (what to avoid):
+Mauvais :
 
-> AC-001: The system uses a `GiftCard` entity with a `usedAt` timestamp and returns 400 when `usedAt != null`.
+> AC-001 : le système utilise une entité `GiftCard` avec une colonne `usedAt` et renvoie 400 lorsque `usedAt != null`.
 
-Why bad: invents a class name, invents a column, invents an HTTP status.
+Ce critère invente une classe, une colonne et un statut HTTP.
 
-Good:
+Bon :
 
 ```markdown
 ## Acceptance Criteria
 
-- **AC-001** — When an authenticated buyer submits a gift card code with their order, the system shall reduce the order total by the card's remaining balance, capped at the order subtotal.
-- **AC-002** — When an authenticated buyer submits a gift card code that has already been fully redeemed, the system shall reject the request and inform the buyer that the card has no remaining balance.
-- **AC-003** — When an authenticated buyer submits a gift card code that does not exist, the system shall reject the request and inform the buyer that the code is unknown.
-- **AC-004** — While a gift card has remaining balance, the system shall allow it to be applied to multiple orders until the balance reaches zero.
+- **AC-001** — Quand un acheteur authentifié fournit un code de carte cadeau avec sa commande, le système doit réduire le total du solde restant de la carte, sans dépasser le sous-total.
+- **AC-002** — Quand le solde d'une carte cadeau fournie est épuisé, le système doit refuser la demande et en informer l'acheteur.
+- **AC-003** — Quand le code fourni n'existe pas, le système doit refuser la demande et signaler que le code est inconnu.
+- **AC-004** — Tant qu'une carte possède un solde, le système doit permettre son utilisation sur plusieurs commandes jusqu'à épuisement.
 
 ## Open Questions
-- **Q-001** — Should unauthenticated/guest checkouts be allowed to use gift cards? Source ticket only mentions "users".
-- **Q-002** — Maximum number of gift cards per order? Default? (No source guidance.)
-- **Q-003** — What user-facing error format does the buyer see? Banner? Inline field? (UI not specified.)
+- **Q-001** — Les paiements invités peuvent-ils utiliser une carte cadeau ?
+- **Q-002** — Quel est le nombre maximal de cartes par commande ?
+- **Q-003** — Quel format d'erreur l'acheteur voit-il dans l'interface ?
 ```
 
-## Self-check before handing off to review
+## Auto-vérification avant la revue
 
-- [ ] Could a junior tester write a Given/When/Then for every AC without asking me a clarifying question?
-- [ ] If I removed the AC, would something user-visible change?
-- [ ] Does any AC contain "and" / "or" that should be two ACs?
-- [ ] Are all invented details (defaults, error formats, limits) demoted to `Q-NNN`?
+- [ ] Un testeur junior peut-il écrire un Étant donné/Quand/Alors pour chaque AC sans poser de question ?
+- [ ] La suppression d'un AC changerait-elle un comportement visible ?
+- [ ] Un AC combine-t-il plusieurs conditions ou résultats qui devraient être séparés ?
+- [ ] Tous les détails inventés ont-ils été transformés en `Q-NNN` ?

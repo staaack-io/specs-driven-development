@@ -1,7 +1,6 @@
-# Callback Props
+# Props de callback
 
-Use callback props for child-to-parent communication. Name callbacks for the
-event the parent handles.
+Utiliser des props de callback pour communiquer de l'enfant au parent. Nommer le callback d'après l'événement traité.
 
 ```tsx
 type QuantityPickerProps = {
@@ -18,11 +17,10 @@ export function QuantityPicker({value, onValueChange}: QuantityPickerProps) {
 }
 ```
 
-- Use native events for native controls.
-- Pass domain values rather than leaking implementation-specific DOM details.
-- Do not create state in both parent and child for the same source of truth.
-- For server mutations, prefer a form action or Server Action over threading a
-  client callback through a Server Component boundary.
+- Utiliser les événements natifs des contrôles natifs.
+- Transmettre des valeurs métier plutôt que des détails DOM.
+- Ne pas créer le même état dans le parent et l'enfant.
+- Pour une mutation serveur, préférer une action de formulaire ou Server Action à un callback traversant la frontière serveur.
 
-Official reference:
+Référence officielle :
 [Responding to events](https://react.dev/learn/responding-to-events).

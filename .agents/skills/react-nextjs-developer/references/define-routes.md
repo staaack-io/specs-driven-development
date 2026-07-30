@@ -1,6 +1,6 @@
-# App Router Routes
+# Routes App Router
 
-The Next.js App Router derives routes from folders under `app/` or `src/app/`.
+App Router déduit les routes des dossiers sous `app/` ou `src/app/`.
 
 ```text
 app/
@@ -18,15 +18,15 @@ app/
         └── route.ts
 ```
 
-- `page.tsx` exposes a route.
-- `layout.tsx` wraps descendant segments and preserves shared UI.
-- `[id]` is a dynamic segment; `[...slug]` is catch-all.
-- Route groups such as `(shop)` organize files without changing the URL.
-- `route.ts` defines a Route Handler with Web `Request` and `Response` APIs.
+- `page.tsx` expose une route.
+- `layout.tsx` enveloppe les segments descendants et conserve l'interface partagée.
+- `[id]` est dynamique ; `[...slug]` capture la suite du chemin.
+- Un groupe comme `(shop)` organise les fichiers sans changer l'URL.
+- `route.ts` définit un Route Handler avec les API Web `Request` et `Response`.
 
-Do not create a parallel Pages Router configuration for an App Router feature.
-Avoid a `route.ts` and `page.tsx` at the same segment level.
+Ne pas créer une configuration Pages Router parallèle pour une fonctionnalité App
+Router. Éviter `route.ts` et `page.tsx` au même niveau de segment.
 
-Official references:
+Références officielles :
 [Project structure](https://nextjs.org/docs/app/getting-started/project-structure) and
 [Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers).

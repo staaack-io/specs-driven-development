@@ -1,114 +1,102 @@
 ---
 name: tdd-red-green-refactor
-description: Strict red/green/refactor/simplify discipline for the `$build <task-id>` command. Use when implementing any task in Phase 4. The agent must NOT write production code without a failing test recorded in `.tdd-state.json`.
+description: Discipline stricte rouge, vert, refactorisation et simplification pour `$build <task-id>`. Utiliser pour toute tâche de phase 4. Ne jamais écrire de production sans test en échec consigné dans `.tdd-state.json`.
 when_to_use:
-  - Phase 4 — every task, every time.
-  - Whenever the agent is about to edit `src/main/**`.
+  - Phase 4 — pour chaque tâche, sans exception.
+  - Avant toute modification de `src/main/**`.
 authoritative_references:
   - .codex/checklists/implementation-dod.md
   - .codex/templates/implementation-log.template.md
 ---
 
-# TDD: red / green / refactor / simplify
+# TDD : red / green / refactor / simplify
 
-## The four phases (per task)
+## Les quatre phases de chaque tâche
 
-### 1. RED — write a failing test
+### 1. RED — écrire un test en échec
 
-- Read the task entry in `04-tasks.md`. Confirm `Test-IDs` and `AC-IDs`.
-- Write the smallest possible test that asserts the behavior described by the AC.
-  - **Annotation block on every `@Test` method is non-negotiable: `@Test` → `@Tag("AC-NNN")` → `@DisplayName("...")`.** Write the `@DisplayName` *before* the test body — the act of articulating the display name forces clarity about what the test verifies. Format for AC-traced tests: `"<T-ID>: given <precondition>, when <action>, then <outcome>"`. Short BDD-style sentence is acceptable for utility/regression tests not tied to a specific AC. (Project rule: `feedback_displayname_on_every_test.md`.)
-- Run only that test (`mvn -Dtest=ClassName#method test`).
-- The test **must fail**, and the failure must be **for the right reason** (the asserted behavior is missing, not a typo or compilation error).
-- Append a `red` block to `05-implementation-log.md` with the failing command and the **first 10 lines** of the failure output.
-- Update `.specs/<id>/.tdd-state.json`:
+- Lire la tâche dans `04-tasks.md` et confirmer ses `Test-IDs` et `AC-IDs`.
+- Écrire le plus petit test qui vérifie le comportement de l'AC.
+- Chaque méthode `@Test` porte obligatoirement, dans cet ordre, `@Test`,
+  `@Tag("AC-NNN")`, puis `@DisplayName("...")`. Écrire le nom avant le corps du
+  test. Pour un test tracé, utiliser
+  `"<T-ID>: given <precondition>, when <action>, then <outcome>"`.
+- Exécuter uniquement ce test avec `mvn -Dtest=ClassName#method test`.
+- Le test **doit échouer pour la bonne raison**, et non pour une faute ou une erreur de compilation.
+- Ajouter un bloc `red` à `05-implementation-log.md` avec la commande et les dix premières lignes de l'échec.
+- Mettre `.specs/<id>/.tdd-state.json` à jour :
 
   ```json
   { "active_task": "T-001", "tasks": { "T-001": { "phase": "red", "red_at": "2026-04-18T10:00:00Z", "red_test_signature": "...", "red_failure_excerpt": "..." } } }
   ```
 
-The `block-impl-without-failing-test` hook reads this file. **No `src/main/**` edit is allowed unless `phase == red` and `red_failure_excerpt` is non-empty.**
+Le hook `block-impl-without-failing-test` lit ce fichier. Aucune modification de
+`src/main/**` n'est autorisée sans `phase == red` et `red_failure_excerpt` non vide.
 
-### 2. GREEN — minimum production code
+### 2. GREEN — minimum de code de production
 
-- Edit only files in the task's `Files in scope`. The hook enforces this.
-- Write **the minimum code** to make the failing test pass. No speculative features. No "while I'm here" cleanups.
-- Re-run the test (`mvn -Dtest=...`). It must pass.
-- Run the **module's full Surefire suite** to ensure no regression (`mvn -q test -pl <module>`).
-- Append a `green` block to `05-implementation-log.md`.
-- Set `.tdd-state.json` `phase` to `green`.
+- Modifier uniquement les `Files in scope` de la tâche ; le hook l'impose.
+- Écrire **le minimum de code** pour faire passer le test, sans fonctionnalité spéculative ni nettoyage hors sujet.
+- Relancer le test ciblé, puis toute la suite Surefire du module avec `mvn -q test -pl <module>`.
+- Ajouter un bloc `green` au journal et passer `phase` à `green`.
 
-### 3. REFACTOR — improve internals, hold behavior
+### 3. REFACTOR — améliorer l'intérieur sans changer le comportement
 
-- Eliminate duplication, extract helpers, rename for clarity, push logic to the right layer.
-- Run the **full module suite** after **every** edit. Suite must stay green.
-- Allowed: extract method, extract class, inline variable, rename, move to module-internal package.
-- Forbidden: changing public signatures (breaks the test), changing behavior, adding features.
-- Append a `refactor` block per substantive change.
+- Éliminer les duplications, extraire des helpers, clarifier les noms et placer la logique dans la bonne couche.
+- Relancer toute la suite du module après **chaque** modification ; elle reste verte.
+- Sont permis : extraction de méthode ou classe, intégration de variable, renommage et déplacement vers un package interne.
+- Sont interdits : signatures publiques, comportement ou fonctionnalités modifiés.
+- Ajouter un bloc `refactor` par changement significatif.
 
-### 4. SIMPLIFY — `$code-simplify` pass
+### 4. SIMPLIFY — passe `$code-simplify`
 
-- Apply the `clarity-over-cleverness` skill: if there's a simpler way to express the same logic that a junior engineer would understand at a glance, use it.
-- Specifically watch for: nested ternaries, clever streams when a `for` loop is clearer, premature abstraction, dead options, "options bag" parameters with one used field, helper methods with one caller.
-- Also scan for repeated literals: any string or number appearing 2+ times in the same class (production OR test) must be extracted to a `private static final` constant at the top of the class with a domain-meaningful name. Avoids SonarQube `java:S1192` (string literal duplicated). Single-use literals are fine inline. (Rule: `feedback_extract_repeated_literals.md`.)
-- **Audit every newly-authored or modified test method in the diff for `@DisplayName`.** Any `@Test` or `@ParameterizedTest` without one gets it added here. This is the safety net for the red-phase rule — if a test slipped through without it, simplify is the last chance to catch it before the task is `done`. Pre-existing legacy tests in the same file that were not touched by this task are NOT retroactively rewritten (scope-creep guard). (Rule: `feedback_displayname_on_every_test.md`.)
-- Suite must stay green.
-- Append a `simplify` block. Set `phase` to `done`.
+- Appliquer `clarity-over-cleverness` : préférer la forme qu'un ingénieur junior
+  comprend immédiatement.
+- Rechercher ternaires imbriqués, streams astucieux, abstraction prématurée,
+  options mortes, paramètres inutiles et helpers à appelant unique.
+- Extraire toute chaîne ou valeur numérique répétée au moins deux fois dans une
+  même classe vers une constante `private static final` au nom métier.
+- Vérifier que chaque test nouveau ou modifié possède `@DisplayName`, sans réécrire les tests historiques non touchés.
+- Garder la suite verte, ajouter un bloc `simplify` et passer `phase` à `done`.
 
-### 5. COMMIT — surface stopping report
+### 5. COMMIT — afficher le rapport d'arrêt
 
-When `phase` reaches `done`, **STOP**. Do not auto-start the next task.
+Lorsque `phase` atteint `done`, **S'ARRÊTER**. Ne pas démarrer la tâche suivante.
+Afficher les fichiers modifiés, les tests réussis et un message de commit suggéré,
+puis recommander :
 
-Surface a stopping report:
-- Files changed (`git status`)
-- Tests passing (module suite green)
-- Suggested commit message (e.g., `feat(gift-card): T-001 apply gift card to order`)
-
-Recommend the 3-step follow-up:
-
-```
-git status               # review what changed
-git commit               # commit the task
-$build <next-task-id>    # start the next task
+```text
+git status               # relire les changements
+git commit               # commiter la tâche
+$build <next-task-id>    # démarrer la tâche suivante
 ```
 
-The agent never runs `git commit`; it suggests the command and message for the
-user.
+L'agent n'exécute jamais `git commit`. Le prochain `$build` refuse de démarrer si
+la tâche précédente laisse des modifications non commitées. L'utilisateur peut
+explicitement demander d'enchaîner sans commit ; respecter alors cette demande.
 
-Next `$build` includes a **pre-flight commit check**: if uncommitted changes from a prior task are detected, refuse to start and surface this reminder.
-
-**Exception:** The user can explicitly request task chaining (e.g., "chain to T-002", "continue without committing") — respect the explicit instruction.
-
-## Logging format
-
-Each block in `05-implementation-log.md`:
+## Format du journal
 
 ```markdown
 ### T-001 · red · 2026-04-18T10:00:00Z
 **Command:** `mvn -q -Dtest=ApplyGiftCardRequestTest#rejectsBlankCode test`
 **Result:** FAIL (expected)
-**Excerpt:**
-```
-[ERROR] ApplyGiftCardRequestTest.rejectsBlankCode:23 expected ConstraintViolationException but nothing was thrown
-```
+**Excerpt:** [premières lignes de l'échec]
 ```
 
-## What "minimum code" means
+## Sens de « minimum de code »
 
-- Hardcoding a constant to make the test pass is OK if there's only one test. The next test will force generalization.
-- Don't introduce an interface for a single implementation.
-- Don't introduce a config option for a single caller.
-- Don't add a parameter "for future use".
+- Une constante codée en dur peut suffire pour un seul test ; le suivant impose la généralisation.
+- Ne pas créer d'interface pour une seule implémentation.
+- Ne pas créer d'option de configuration pour un seul appelant.
+- Ne pas ajouter de paramètre « pour plus tard ».
 
-This pressure to triangulate is the entire point of TDD.
+## Anti-patterns bloqués par le hook
 
-## Anti-patterns the hook will block
-
-- Writing a test that already passes (no actual red).
-- Deleting a test to make CI green.
-- Editing files outside `Files in scope`.
-- Skipping the red step ("I'll add the test after").
-- Modifying an existing test's assertion to match new (wrong) behavior.
-- Marking a task `done` without all four blocks logged.
-- **Don't add a method without a real consumer.** A tautological test that asserts a method returns a fixed value is not a real consumer. If no genuine API boundary exists for the method, surface a `Q-NNN` design gap instead of writing the method.
-- **Auto-starting the next task without giving the user a chance to commit.** Always stop at `phase: done` and surface the commit reminder (Step 5). Only chain tasks when the user explicitly requests it.
+- Écrire un test qui réussit déjà.
+- Supprimer un test pour verdir la CI.
+- Modifier des fichiers hors des `Files in scope`.
+- Sauter red ou adapter une assertion existante au mauvais comportement.
+- Marquer `done` sans les quatre blocs du journal.
+- Ajouter une méthode sans consommateur réel, couverte uniquement par un test tautologique.
+- Démarrer automatiquement la tâche suivante sans laisser à l'utilisateur la possibilité de commiter.

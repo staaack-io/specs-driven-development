@@ -1,7 +1,7 @@
-# Context Providers
+# Providers de contexte
 
-Use a Context provider for dynamic values shared by a subtree, such as a client
-theme or an existing client-side store. Keep the provider as deep as possible.
+Utiliser un provider Context pour les valeurs dynamiques partagées dans un
+sous-arbre, comme le thème client. Placer le provider aussi bas que possible.
 
 ```tsx
 'use client';
@@ -25,9 +25,9 @@ export function useTheme() {
 }
 ```
 
-Do not use Context for server data that can be read directly by a Server
-Component. Keep provider values stable and split unrelated contexts so updates
-do not rerender unrelated consumers.
+Ne pas utiliser Context pour des données que le Server Component peut lire
+directement. Garder les valeurs stables et séparer les contextes sans lien pour
+éviter des rerenders inutiles.
 
-Official reference:
+Référence officielle :
 [Scaling up with reducer and context](https://react.dev/learn/scaling-up-with-reducer-and-context).

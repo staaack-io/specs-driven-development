@@ -45,7 +45,7 @@ champs obligatoires :
 
 ```toml
 name = "spring-validator"
-description = "Phase 6 — validate the implementation and its evidence."
+description = "Phase 6 — valider l'implémentation et ses preuves."
 developer_instructions = """
 Instructions propres au rôle.
 """

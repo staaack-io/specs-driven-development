@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# Print every path targeted by a Codex or legacy edit hook payload.
-# Codex reports apply_patch content in tool_input.command; older edit tools may
-# report a single tool_input.file_path or tool_input.path.
+# Afficher chaque chemin ciblé par une charge utile de hook Codex ou historique.
+# Codex transmet apply_patch dans tool_input.command ; les anciens outils peuvent
+# transmettre un seul tool_input.file_path ou tool_input.path.
 codex_hook_paths() {
   local input="$1"
   local direct_path

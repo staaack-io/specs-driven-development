@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # block-progress-on-open-questions.sh
-# Codex PreToolUse hook for apply_patch (also matched by Edit|Write aliases).
-# Refuses to create or edit a higher-numbered .specs artifact while a lower-numbered
-# artifact has unresolved Q-NNN open questions.
+# Hook Codex PreToolUse pour apply_patch, également associé aux alias Edit|Write.
+# Refuse de créer ou modifier un artefact .specs de numéro supérieur tant qu'un
+# artefact antérieur contient des questions Q-NNN non résolues.
 
 set -euo pipefail
 
@@ -16,24 +16,24 @@ paths="$(codex_hook_paths "$input")"
 [ -z "$paths" ] && exit 0
 
 while IFS= read -r file_path; do
-  # Only enforce on numbered .specs/<id>/NN-*.md artifacts.
+  # Appliquer uniquement aux artefacts numérotés .specs/<id>/NN-*.md.
   case "$file_path" in
     *.specs/*/[0-9][0-9]*-*.md) ;;
     *) continue ;;
   esac
 
-# Extract feature dir and target file's number prefix.
+# Extraire le dossier de la fonctionnalité et le préfixe numérique de la cible.
 feature_dir="$(dirname "$file_path")"
 target_basename="$(basename "$file_path")"
 target_num="${target_basename%%-*}"  # "03"
 
-# Find lower-numbered files in same feature dir.
+# Chercher les fichiers de numéro inférieur dans le même dossier.
 shopt -s nullglob
 for f in "$feature_dir"/[0-9][0-9]*-*.md; do
   base="$(basename "$f")"
   num="${base%%-*}"
   if [[ "$num" < "$target_num" ]]; then
-    # Look for unresolved Q-NNN: any line under "## Open Questions" until the next "## " header.
+    # Chercher les Q-NNN non résolues sous "## Open Questions", jusqu'au titre "## " suivant.
     open_count="$(awk '
       /^## Open Questions[[:space:]]*$/ { capture=1; next }
       /^## / { capture=0 }
@@ -41,7 +41,7 @@ for f in "$feature_dir"/[0-9][0-9]*-*.md; do
       END { print count+0 }
     ' "$f")"
     if [ "$open_count" -gt 0 ]; then
-      echo "BLOCKED: $f has $open_count unresolved Q-NNN open question(s). Resolve them (move to ## Resolved Questions with answer + date) before editing $file_path." >&2
+      echo "BLOQUÉ : $f contient $open_count question(s) Q-NNN non résolue(s). Résolvez-les en les déplaçant sous ## Resolved Questions avec réponse et date avant de modifier $file_path." >&2
       exit 2
     fi
   fi

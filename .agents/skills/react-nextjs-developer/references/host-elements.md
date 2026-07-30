@@ -1,7 +1,7 @@
-# DOM Elements and Refs
+# Éléments DOM et refs
 
-React components do not create an implicit host element. Return the semantic DOM
-element the component owns and forward supported DOM props deliberately.
+Les composants React ne créent pas d'élément hôte implicite. Retourner l'élément
+DOM sémantique possédé et transmettre volontairement les props DOM prises en charge.
 
 ```tsx
 import type {ComponentPropsWithoutRef} from 'react';
@@ -15,11 +15,11 @@ export function Button({tone = 'primary', className, ...props}: ButtonProps) {
 }
 ```
 
-Use refs only for imperative browser interactions such as focus, measurement, or
-integration with a non-React API. Do not use refs as a second state store.
+Utiliser les refs uniquement pour les interactions impératives : focus, mesure ou
+API non React. Ne pas les employer comme deuxième stockage d'état.
 
-Apply ARIA attributes to the actual interactive element. Preserve consumer
-handlers when composing props; do not silently overwrite them.
+Appliquer ARIA à l'élément réellement interactif. Préserver les handlers du
+consommateur lors de la composition des props, sans les écraser silencieusement.
 
-Official reference:
+Référence officielle :
 [Manipulating the DOM with refs](https://react.dev/learn/manipulating-the-dom-with-refs).

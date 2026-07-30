@@ -1,19 +1,18 @@
-# Rendering Strategies
+# Stratégies de rendu
 
-Next.js App Router routes use Server Components by default. Choose rendering and
-caching from data requirements, not from a blanket application-wide mode.
+Les routes App Router utilisent les Server Components par défaut. Choisir rendu
+et cache depuis les besoins des données, pas depuis un mode global arbitraire.
 
-- Prerender static content when all required data is build-time safe.
-- Render dynamically when the response depends on request-time data.
-- Stream uncached or slow sections behind `loading.tsx` or `<Suspense>`.
-- Add Client Components only for interactivity and browser APIs.
-- Use explicit cache directives and invalidation only when freshness
-  requirements are known.
+- Prérendre le contenu statique lorsque toutes les données sont sûres au build.
+- Rendre dynamiquement lorsque la réponse dépend de la requête.
+- Diffuser les sections lentes derrière `loading.tsx` ou `<Suspense>`.
+- Ajouter des Client Components uniquement pour interaction ou API navigateur.
+- Utiliser cache et invalidation explicites seulement lorsque la fraîcheur est définie.
 
-Do not mark an entire page `"use client"` merely because one control is
-interactive. Isolate the control and pass serializable props from the server.
+Ne pas marquer toute une page `"use client"` pour un seul contrôle interactif.
+Isoler ce contrôle et lui passer des props sérialisables depuis le serveur.
 
-Official references:
+Références officielles :
 [Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components),
 [Fetching data](https://nextjs.org/docs/app/getting-started/fetching-data), and
 [Linking and navigating](https://nextjs.org/docs/app/getting-started/linking-and-navigating).

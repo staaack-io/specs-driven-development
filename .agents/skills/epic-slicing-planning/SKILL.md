@@ -1,56 +1,48 @@
 ---
 name: epic-slicing-planning
-description: Plan large features by defining high-level Epic architecture and a vertical slice roadmap before detailed implementation tasks. Use during Phase 3 for multi-slice initiatives.
+description: Planifier les grandes fonctionnalités en définissant l’architecture globale de l’Epic et une roadmap de tranches verticales avant les tâches détaillées. Utiliser en phase 3 pour les initiatives en plusieurs tranches.
 when_to_use:
-  - Feature spans multiple milestones or vertical slices.
-  - Shared cross-cutting architecture decisions must be made before detailed tasks.
-  - Team needs dependency-aware sequencing and controlled scope.
+  - La fonctionnalité couvre plusieurs jalons ou tranches verticales.
+  - Des décisions architecturales transverses doivent précéder les tâches détaillées.
+  - L’équipe a besoin d’un ordre tenant compte des dépendances et d’un périmètre contrôlé.
 authoritative_references:
   - .codex/templates/epic-design.template.md
   - .codex/templates/epic-roadmap.template.md
   - .codex/checklists/design-review.md
 ---
 
-# Epic slicing planning
+# Planification et découpage d'un Epic
 
-## Goal
+## Objectif
 
-Reduce planning risk for large features by separating:
+Réduire le risque de planification des grandes fonctionnalités en séparant :
 
-1. Epic-level design decisions.
-2. Slice-level detailed planning and task decomposition.
+1. les décisions de conception au niveau Epic ;
+2. la planification détaillée et le découpage en tâches de chaque tranche.
 
-## Deliverables
+## Livrables
 
-1. `03-epic-design.md`:
-- boundaries
-- shared decisions
-- cross-cutting constraints
-- ADR links
-- Epic-level `Q-NNN`
+1. `03-epic-design.md` : frontières, décisions partagées, contraintes
+   transverses, liens vers les ADR et `Q-NNN` au niveau Epic.
+2. `03a-epic-roadmap.md` : backlog des tranches verticales, ordre des dépendances,
+   intention des jalons et notes de mise en production.
 
-2. `03a-epic-roadmap.md`:
-- vertical slice backlog
-- dependency order
-- milestone intent
-- rollout notes
+## Règles de découpage
 
-## Slicing rules
-
-- Prefer vertical, user-visible slices over horizontal layer slices.
-- Keep each slice independently testable and releasable.
-- Put shared infrastructure decisions in Epic design, not repeated per slice.
-- Avoid planning every implementation task for the entire Epic up front.
+- Préférer des tranches verticales visibles par l'utilisateur aux tranches horizontales par couche.
+- Garder chaque tranche testable et livrable indépendamment.
+- Placer les décisions d'infrastructure partagées dans la conception Epic, sans les répéter par tranche.
+- Éviter de planifier à l'avance toutes les tâches d'implémentation de l'Epic complet.
 
 ## Anti-patterns
 
-- A roadmap that is only backend layers then frontend layers.
-- Slices that are not user-visible and cannot be validated end-to-end.
-- Unresolved Epic decisions pushed down into many slice tasks.
-- Giant slices that require multiple teams and have undefined boundaries.
+- Une roadmap composée uniquement des couches backend puis frontend.
+- Des tranches invisibles pour l'utilisateur et impossibles à valider de bout en bout.
+- Des décisions Epic non résolues répercutées dans de nombreuses tâches.
+- Des tranches géantes impliquant plusieurs équipes sans frontières définies.
 
-## Handoff criteria
+## Critères de passage de relais
 
-- Epic artifacts are approved.
-- Epic-level `Q-NNN` are resolved or deferred with rationale.
-- At least one first slice is ready for `$plan` detailed decomposition.
+- Les artefacts Epic sont approuvés.
+- Les `Q-NNN` de l'Epic sont résolues ou différées avec justification.
+- Au moins une première tranche est prête pour la décomposition détaillée par `$plan`.

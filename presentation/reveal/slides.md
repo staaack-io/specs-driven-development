@@ -1,112 +1,118 @@
-# Spec-Driven Development in Practice
+# Le développement piloté par les spécifications en pratique
 
-From AI-assisted coding to verifiable software delivery.
+Du code assisté par IA à une livraison logicielle vérifiable.
 
 <div class="hero-meta">
-  <span class="pill">Repository: specs-driven-development</span>
-  <span class="pill">Audience: engineering teams and tech leads</span>
+  <span class="pill">Dépôt : specs-driven-development</span>
+  <span class="pill">Public : équipes d’ingénierie et responsables techniques</span>
 </div>
 
 Note:
-This talk is not about AI replacing engineering discipline. It is about using structured specs, explicit phase gates, and deterministic validation so teams can move faster without losing control.
+Cette présentation ne parle pas de remplacer la discipline d’ingénierie par
+l’IA. Elle montre comment des spécifications structurées, des portes explicites
+et une validation déterministe permettent d’avancer plus vite sans perdre le
+contrôle.
 
 ---
 
-<div class="section-label">Talk Contents</div>
+<div class="section-label">Contenu</div>
 
-## Interactive Agenda
+## Programme interactif
 
-Click-or-scan overview of the talk structure.
+Vue d’ensemble cliquable de la présentation.
 
 <div class="agenda-grid">
   <a class="agenda-card" href="#/2">
     <div class="agenda-num">01</div>
-    <h3>What Is SDD?</h3>
-    <p>The core idea and why it matters.</p>
+    <h3>Qu’est-ce que SDD ?</h3>
+    <p>L’idée centrale et son intérêt.</p>
   </a>
   <a class="agenda-card" href="#/4">
     <div class="agenda-num">02</div>
     <h3>Workflow</h3>
-    <p>The seven phases and their handoffs.</p>
+    <p>Les sept phases et leurs transmissions.</p>
   </a>
   <a class="agenda-card" href="#/6">
     <div class="agenda-num">03</div>
-    <h3>Context<br />Architecture</h3>
-    <p>How rules, skills, prompts, and artifacts work together.</p>
+    <h3>Architecture<br />du contexte</h3>
+    <p>Comment règles, skills, agents et artefacts coopèrent.</p>
   </a>
   <a class="agenda-card" href="#/8">
     <div class="agenda-num">04</div>
-    <h3>Harness<br />Engineering</h3>
-    <p>Why the harness is the real trust layer.</p>
+    <h3>Ingénierie<br />du harness</h3>
+    <p>Pourquoi le harness constitue la couche de confiance.</p>
   </a>
   <a class="agenda-card" href="#/11">
     <div class="agenda-num">05</div>
-    <h3>When To Use It</h3>
-    <p>Where this flow creates leverage.</p>
+    <h3>Quand<br />l’utiliser</h3>
+    <p>Les contextes où ce parcours apporte le plus.</p>
   </a>
   <a class="agenda-card" href="#/13">
     <div class="agenda-num">06</div>
-    <h3>When Not<br />To Use It</h3>
-    <p>Cases where lighter process is better.</p>
+    <h3>Quand ne pas<br />l’utiliser</h3>
+    <p>Les cas où un processus plus léger convient mieux.</p>
   </a>
   <a class="agenda-card" href="#/15">
     <div class="agenda-num">07</div>
-    <h3>Demo Path</h3>
-    <p>What to show in a live walkthrough.</p>
+    <h3>Démonstration</h3>
+    <p>Ce qu’il faut montrer en direct.</p>
   </a>
   <a class="agenda-card" href="#/16">
     <div class="agenda-num">08</div>
     <h3>Adoption</h3>
-    <p>How to pilot this with one feature.</p>
+    <p>Comment expérimenter sur une fonctionnalité.</p>
   </a>
 </div>
 
 ---
 
-<div class="section-label">01 / Fundamentals</div>
+<div class="section-label">01 / Fondamentaux</div>
 
-## What Is SDD?
+## Qu’est-ce que SDD ?
 
-Spec-Driven Development is a delivery model where AI-assisted work is guided by:
+Le développement piloté par les spécifications guide le travail assisté par IA
+avec :
 
-- Approved requirements before implementation
-- Explicit artifacts for every phase
-- Specialized agents with narrow responsibilities
-- Deterministic gates before code can move forward
+- des exigences approuvées avant l’implémentation ;
+- un artefact explicite pour chaque phase ;
+- des agents spécialisés aux responsabilités étroites ;
+- des portes déterministes avant toute progression du code.
 
 <div class="callout">
-  SDD is not “better prompting.” It is a lightweight operating system for shipping software with evidence.
+  SDD n’est pas une technique pour « mieux prompter ». C’est un système
+  d’exploitation léger pour livrer du logiciel avec des preuves.
 </div>
 
 Note:
-Emphasize that the repo treats specs, design, tasks, validation, and review as first-class engineering assets, not optional documents.
+Insister sur le fait que le dépôt traite les spécifications, la conception, les
+tâches, la validation et la revue comme des actifs d’ingénierie.
 
 ---
 
-## Why This Exists
+## Pourquoi ce framework existe
 
-Teams using AI tools often hit the same failure modes:
+Les équipes qui utilisent des outils d’IA rencontrent souvent les mêmes échecs :
 
-- The agent invents missing requirements
-- Chat context drifts across sessions
-- Tests and validation become uneven
-- Code review happens too late or too loosely
+- l’agent invente les exigences manquantes ;
+- le contexte dérive entre les sessions ;
+- les tests et validations deviennent inégaux ;
+- la revue arrive trop tard ou reste trop superficielle.
 
 <div class="two-col">
   <div>
-    <h3>Without SDD</h3>
+    <h3>Sans SDD</h3>
     <ul>
-      <li>Fast output</li>
-      <li>Low predictability</li>
-      <li>Weak traceability</li>
+      <li>Production rapide</li>
+      <li>Faible prévisibilité</li>
+      <li>Traçabilité limitée</li>
     </ul>
   </div>
   <div>
-    <h3>With SDD</h3>
+    <h3>Avec SDD</h3>
     <ul>
-      <li>Fast enough output</li>
-      <li>Higher confidence</li>
-      <li>Reviewable evidence trail</li>
+      <li>Production suffisamment rapide</li>
+      <li>Confiance renforcée</li>
+      <li>Preuves vérifiables</li>
     </ul>
   </div>
 </div>
@@ -115,271 +121,277 @@ Teams using AI tools often hit the same failure modes:
 
 <div class="section-label">02 / Workflow</div>
 
-## The Seven-Phase Flow
+## Le parcours en sept phases
 
-1. Specify
-2. Review specs
-3. Plan design and tasks
-4. Implement with TDD
-5. Broaden and harden tests
-6. Validate with the harness
-7. Run structured code review
+1. Spécifier
+2. Relire la spécification
+3. Planifier la conception et les tâches
+4. Implémenter en TDD
+5. Élargir et renforcer les tests
+6. Valider avec le harness
+7. Effectuer une revue structurée du code
 
 <div class="callout compact">
-  Key idea: every phase has an owner, an artifact, an entry contract, an exit contract, and a gate.
+  Idée clé : chaque phase possède un responsable, un artefact, un contrat
+  d’entrée, un contrat de sortie et une porte.
 </div>
 
-<div class="slide-ref">Reference: <code>docs/methodology.md</code></div>
+<div class="slide-ref">Référence : <code>docs/methodology.md</code></div>
 
 ---
 
-## Artifacts Are the Delivery Spine
+## Les artefacts forment la colonne vertébrale
 
-Concrete artifacts under `.specs/<feature-id>/` connect the workflow end to end.
+Les artefacts sous `.specs/<feature-id>/` relient le workflow de bout en bout.
 
 <div class="artifact-grid">
-  <div class="artifact-card"><code>01-spec.md</code><span>Intent and ACs</span></div>
-  <div class="artifact-card"><code>02-spec-review.md</code><span>Review verdict</span></div>
-  <div class="artifact-card"><code>03-design.md</code><span>Technical design</span></div>
-  <div class="artifact-card"><code>04-tasks.md</code><span>TDD-shaped tasks</span></div>
-  <div class="artifact-card"><code>07-validation-report.md</code><span>Gate results</span></div>
-  <div class="artifact-card"><code>08-code-review.md</code><span>Pre-commit verdict</span></div>
+  <div class="artifact-card"><code>01-spec.md</code><span>Intention et critères</span></div>
+  <div class="artifact-card"><code>02-spec-review.md</code><span>Verdict de revue</span></div>
+  <div class="artifact-card"><code>03-design.md</code><span>Conception technique</span></div>
+  <div class="artifact-card"><code>04-tasks.md</code><span>Tâches adaptées au TDD</span></div>
+  <div class="artifact-card"><code>07-validation-report.md</code><span>Résultats des portes</span></div>
+  <div class="artifact-card"><code>08-code-review.md</code><span>Verdict avant commit</span></div>
 </div>
 
-<div class="slide-ref">Reference: <code>docs/artifact-contract.md</code></div>
+<div class="slide-ref">Référence : <code>docs/artifact-contract.md</code></div>
 
 ---
 
-<div class="section-label">03 / Context Architecture</div>
+<div class="section-label">03 / Architecture du contexte</div>
 
-## Context Architecture
+## Architecture du contexte
 
-This repo does not treat all context as one giant prompt.
+Ce dépôt ne traite pas tout le contexte comme un prompt géant. Il le sépare :
 
-Instead, it separates context into layers:
-
-- Global rules and always-on instructions
-- File-scoped instructions
-- Specialized skills for narrow tasks
-- Phase-specific agents and prompts
-- Repo artifacts created during the workflow
+- règles globales et instructions permanentes ;
+- instructions ciblées par fichier ;
+- skills spécialisés pour des tâches étroites ;
+- agents propres à chaque phase ;
+- artefacts produits pendant le workflow.
 
 <div class="callout">
-  The design goal is context economy: load only what is needed, when it is needed.
+  Objectif : ne charger que le contexte nécessaire, au moment où il est utile.
 </div>
 
 ---
 
-## Why Context Architecture Matters
+## Pourquoi cette architecture compte
 
-A structured context architecture improves:
+Une architecture de contexte structurée améliore :
 
-- Precision: less irrelevant context, fewer invented defaults
-- Portability: same method across the Codex app, CLI, and IDE extension
-- Maintainability: behavior lives in files, not only in human memory
-- Governance: risky actions are constrained by explicit rules
+- la précision, avec moins de bruit et de valeurs inventées ;
+- la portabilité entre l’application Codex, le CLI et l’extension IDE ;
+- la maintenabilité, car le comportement vit dans des fichiers ;
+- la gouvernance, avec des actions à risque contraintes par des règles.
 
 <div class="two-col">
   <div>
-    <h3>Repo as source of truth</h3>
-    <p>Method, guardrails, and role behavior live in the repository.</p>
+    <h3>Le dépôt comme source de vérité</h3>
+    <p>Méthode, garde-fous et rôles vivent dans le dépôt.</p>
   </div>
   <div>
-    <h3>Artifacts as memory</h3>
-    <p>Specs and validation outputs preserve intent across sessions.</p>
+    <h3>Les artefacts comme mémoire</h3>
+    <p>Les specs et rapports conservent l’intention entre les sessions.</p>
   </div>
 </div>
 
 ---
 
-<div class="section-label">04 / Harness Engineering</div>
+<div class="section-label">04 / Ingénierie du harness</div>
 
-## Harness Engineering
+## Hooks et harness
 
-The harness is the difference between confident narration and actual evidence.
+Les hooks distinguent une narration confiante d’une action autorisée. Ils
+répondent immédiatement :
 
-It gives the workflow a deterministic way to answer:
+- un test rouge autorise-t-il cette édition ?
+- le fichier est-il dans le périmètre ?
+- reste-t-il une question ouverte ?
+- la commande contourne-t-elle une porte ?
 
-- Does the code build?
-- Did behavior regress?
-- Did architecture drift?
-- Is the change traceable to requirements?
+Le harness distingue ensuite une narration confiante d’une preuve globale :
+
+- le code compile-t-il ?
+- le comportement a-t-il régressé ?
+- l’architecture a-t-elle dérivé ?
+- le changement est-il relié aux exigences ?
 
 <div class="callout compact">
-  Principle: the agent validates its own work before claiming success.
+  Les hooks protègent chaque geste ; le harness valide l’état final.
 </div>
 
-<div class="slide-ref">Reference: <code>docs/harness-principles.md</code></div>
+<div class="slide-ref">Référence : <code>docs/harness-principles.md</code></div>
 
 ---
 
-## The 10 Validation Layers
+## Les dix couches de validation
 
-1. Format and lint
-2. Compile
-3. Static analysis
-4. Architecture rules
-5. Unit and slice tests
-6. Integration tests
-7. Coverage
-8. Mutation testing
-9. Contract validation
-10. Security scanning
+1. Format et lint
+2. Compilation
+3. Analyse statique
+4. Règles d’architecture
+5. Tests unitaires et de tranche
+6. Tests d’intégration
+7. Couverture
+8. Tests de mutation
+9. Validation des contrats
+10. Analyse de sécurité
 
 <div class="callout">
-  This is why the workflow is trustworthy: not because the agent sounds smart, but because the repo demands proof.
+  Le workflow est fiable non parce que l’agent paraît intelligent, mais parce
+  que le dépôt exige des preuves.
 </div>
 
 ---
 
-## Traceability Is Part of the Harness
+## La traçabilité appartient au harness
 
-The workflow links:
+Le workflow relie :
 
-- Acceptance criteria
-- Tasks
-- Tests
-- Code symbols
-- Gate outcomes
+- critères d’acceptation ;
+- tâches ;
+- tests ;
+- symboles de code ;
+- résultats des portes.
 
-That means reviewers can ask:
+Un relecteur peut donc demander :
 
-- Which requirement does this change satisfy?
-- Which tests prove it?
-- Which gate verified it?
+- à quelle exigence répond ce changement ?
+- quels tests le prouvent ?
+- quelle porte l’a vérifié ?
 
 ---
 
-<div class="section-label">05 / Fit</div>
+<div class="section-label">05 / Adéquation</div>
 
-## When To Use This Flow
+## Quand utiliser ce parcours
 
-Use this workflow when you need both speed and reliability.
+Utiliser le workflow lorsque vitesse et fiabilité sont nécessaires :
 
-Best-fit cases:
-
-- Medium to high-risk product features
-- API changes with compatibility concerns
-- Multi-step work where decisions must be reviewable
-- Teams adopting AI coding but needing stronger governance
-- Brownfield systems where regressions are expensive
+- fonctionnalités produit de risque moyen à élevé ;
+- changements d’API avec contraintes de compatibilité ;
+- travaux en plusieurs étapes dont les décisions doivent être vérifiables ;
+- équipes adoptant le code assisté par IA avec une gouvernance forte ;
+- systèmes brownfield où les régressions coûtent cher.
 
 <div class="callout compact">
-  The more ambiguity, coordination, or risk a change has, the more SDD helps.
+  Plus un changement comporte d’ambiguïté, de coordination ou de risque, plus
+  SDD est utile.
 </div>
 
 ---
 
-## Strong Use Cases
+## Cas d’usage forts
 
 <div class="two-col">
   <div>
-    <h3>Great fit</h3>
+    <h3>Très adapté</h3>
     <ul>
-      <li>Backend features with business rules</li>
-      <li>Schema or API evolution</li>
-      <li>Features needing auditability</li>
-      <li>Cross-team collaboration</li>
+      <li>Fonctionnalités backend avec règles métier</li>
+      <li>Évolution de schéma ou d’API</li>
+      <li>Fonctionnalités auditables</li>
+      <li>Collaboration entre équipes</li>
     </ul>
   </div>
   <div>
-    <h3>Why</h3>
+    <h3>Pourquoi</h3>
     <ul>
-      <li>Open questions are surfaced early</li>
-      <li>Tasks become small and testable</li>
-      <li>Validation catches drift before commit</li>
-      <li>Review is evidence-based</li>
+      <li>Les questions apparaissent tôt</li>
+      <li>Les tâches deviennent petites et testables</li>
+      <li>La validation détecte la dérive avant le commit</li>
+      <li>La revue s’appuie sur des preuves</li>
     </ul>
   </div>
 </div>
 
 ---
 
-<div class="section-label">06 / Boundaries</div>
+<div class="section-label">06 / Limites</div>
 
-## When Not To Use This Flow
+## Quand ne pas utiliser tout le parcours
 
-Do not force the full workflow on every tiny change.
+Ne pas imposer le workflow complet à chaque minuscule changement :
 
-Poor-fit cases:
-
-- One-line typo fixes
-- Small docs-only edits
-- Throwaway prototypes with no production path
-- Local exploratory spikes
-- Emergency triage where immediate containment matters first
+- correction d’une faute sur une ligne ;
+- petite modification documentaire ;
+- prototype jetable sans avenir en production ;
+- exploration locale ;
+- urgence où le confinement immédiat passe d’abord.
 
 <div class="callout warning">
-  SDD is a delivery system, not a religion. Use the amount of process the risk deserves.
+  SDD est un système de livraison, pas une religion. Adapter le processus au
+  risque.
 </div>
 
 ---
 
-## Use a Lighter Path Instead
+## Préférer un parcours plus léger
 
-If the change is tiny and low risk, prefer:
+Pour un changement minuscule et peu risqué :
 
-- Direct edit
-- Targeted test or validation
-- Short review loop
-- No heavy artifact overhead
+- édition directe ;
+- test ou validation ciblée ;
+- revue courte ;
+- aucun artefact lourd.
 
-Rule of thumb:
+Règle pratique :
 
-- Small change, low risk -> lighter path
-- Ambiguous change, durable impact, shared ownership -> SDD path
+- petit changement, faible risque → parcours léger ;
+- changement ambigu, durable et partagé → parcours SDD.
 
 ---
 
-<div class="section-label">07 / Demo</div>
+<div class="section-label">07 / Démonstration</div>
 
-## Demo Path
+## Parcours de démonstration
 
-A strong demo shows control, not speed theater.
+Une bonne démonstration montre le contrôle, pas un spectacle de vitesse.
 
-1. Start from a feature request
-2. Draft `01-spec.md` and expose open questions
-3. Show `04-tasks.md` with files in scope
-4. Walk one TDD task red to green
-5. Show validation and review artifacts
-6. Stop at the human approval boundary
+1. Partir d’une demande.
+2. Produire `01-spec.md` et exposer les questions ouvertes.
+3. Montrer `04-tasks.md` et les fichiers autorisés.
+4. Parcourir une tâche du rouge au vert.
+5. Montrer les artefacts de validation et de revue.
+6. S’arrêter à la limite d’approbation humaine.
 
 Note:
-The ending matters. Do not blur the line between agent autonomy and human approval. That boundary is part of the story.
+La fin compte. Ne pas brouiller la frontière entre autonomie de l’agent et
+approbation humaine : elle fait partie du propos.
 
 ---
 
 <div class="section-label">08 / Adoption</div>
 
-## How To Pilot It
+## Comment expérimenter
 
-Start with one real feature, not a slideware exercise.
+Commencer avec une vraie fonctionnalité, pas un exercice de présentation.
 
-1. Choose a medium-complexity ticket
-2. Run the full flow end to end
-3. Measure cycle time, review quality, and escaped issues
-4. Retrospective after the pilot
-5. Keep what improved signal, trim what added friction
+1. Choisir un ticket de complexité moyenne.
+2. Exécuter tout le parcours.
+3. Mesurer le temps de cycle, la qualité de revue et les défauts échappés.
+4. Faire une rétrospective.
+5. Garder ce qui améliore le signal et retirer les frictions inutiles.
 
 <div class="callout">
-  Goal: prove that structure increases delivery confidence without killing momentum.
+  Objectif : démontrer que la structure augmente la confiance sans tuer l’élan.
 </div>
 
 ---
 
-## Final Recommendation
+## Recommandation finale
 
-Start here:
+Commencer avec :
 
-- One feature
-- One champion
-- Full artifact chain
-- Full harness run
-- Explicit review verdict
+- une fonctionnalité ;
+- un porteur ;
+- toute la chaîne d’artefacts ;
+- une exécution complète du harness ;
+- un verdict de revue explicite.
 
-If the pilot reduces rework and increases confidence, scale the method to more feature work.
+Si l’expérimentation réduit le travail repris et augmente la confiance,
+étendre la méthode.
 
 <div class="hero-meta">
-  <span class="pill">Predictability over vibes</span>
-  <span class="pill">Evidence before commit</span>
+  <span class="pill">La prévisibilité plutôt que les impressions</span>
+  <span class="pill">Des preuves avant le commit</span>
 </div>

@@ -1,10 +1,10 @@
-# Navigation Motion
+# Mouvement de navigation
 
-Treat route motion as progressive enhancement. First provide immediate,
-accessible navigation feedback with `loading.tsx`, Suspense, or `useLinkStatus`.
+Traiter le mouvement comme amélioration progressive. Fournir d'abord un retour
+immédiat et accessible via `loading.tsx`, Suspense ou `useLinkStatus`.
 
-Use CSS transitions for stable elements in shared layouts. Do not depend on an
-undocumented router lifecycle or delay navigation to complete an animation.
+Utiliser des transitions CSS pour les éléments stables des layouts. Ne pas
+dépendre d'un cycle de route non documenté ni retarder la navigation pour une animation.
 
 ```css
 .navigation-indicator {
@@ -23,8 +23,8 @@ undocumented router lifecycle or delay navigation to complete an animation.
 }
 ```
 
-Use the browser View Transitions API only when the project's browser support and
-fallback behavior are explicitly defined. Keep the route usable without motion.
+Utiliser View Transitions uniquement si le support navigateur et le fallback sont
+définis. Garder la route utilisable sans mouvement.
 
-Official reference:
+Référence officielle :
 [Linking and navigating](https://nextjs.org/docs/app/getting-started/linking-and-navigating).

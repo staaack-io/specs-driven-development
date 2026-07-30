@@ -1,41 +1,41 @@
-# Spec Review: <FEATURE-ID>
+# Revue de spécification : <FEATURE-ID>
 
-> Owner: `spec-author` · Phase 2 · Checklist: `.codex/checklists/spec-review.md`
+> Responsable : `spec-author` · Phase 2 · Checklist : `.codex/checklists/spec-review.md`
 
 ## Inputs
 
-- `01-spec.md` revision: <git-sha or timestamp>
+- Révision de `01-spec.md` : <git-sha ou horodatage>
 
 ## Checklist
 
-- [ ] Source recorded with tracker ID + URL + snapshot date.
-- [ ] Goal is one paragraph and describes a user-visible outcome.
-- [ ] Each AC follows an EARS-lite shape.
-- [ ] Each AC is atomic (one condition, one outcome).
-- [ ] Each AC is testable (the agent can describe a Given/When/Then test for it).
-- [ ] No AC contains implementation choices (class names, libraries, columns).
-- [ ] Non-goals are present and explicit.
-- [ ] Glossary covers every domain term used in AC.
-- [ ] Assumptions list contains only user/source-stated items.
-- [ ] All `Q-NNN` items are resolved or explicitly deferred-with-rationale.
-- [ ] No new `Q-NNN` discovered during this review remain open.
+- [ ] La source indique l'identifiant du ticket, son URL et la date de capture.
+- [ ] L'objectif tient en un paragraphe et décrit un résultat visible par l'utilisateur.
+- [ ] Chaque AC suit une forme EARS-lite.
+- [ ] Chaque AC est atomique : une condition et un résultat.
+- [ ] Chaque AC est testable : l'agent peut décrire un test Étant donné/Quand/Alors.
+- [ ] Aucun AC ne contient de choix d'implémentation (noms de classes, bibliothèques, colonnes).
+- [ ] Les non-objectifs sont présents et explicites.
+- [ ] Le glossaire couvre chaque terme métier utilisé dans les AC.
+- [ ] La liste des hypothèses ne contient que des éléments fournis par l'utilisateur ou la source.
+- [ ] Toutes les `Q-NNN` sont résolues ou explicitement différées avec justification.
+- [ ] Aucune nouvelle `Q-NNN` découverte pendant la revue ne reste ouverte.
 
 ## Findings
 
-> Each finding gets an ID and a severity (`blocker | major | minor | nit`). Blockers/majors must be resolved before exit.
+> Chaque constat reçoit un identifiant et une sévérité (`blocker | major | minor | nit`). Les constats bloquants et majeurs doivent être résolus avant de continuer.
 
-- (none)
+- (aucun)
 
 ## New Questions Raised
 
-> If review surfaces a new uncertainty, log it here and bounce back to phase 1 to add it to `01-spec.md`'s `## Open Questions`.
+> Si la revue révèle une incertitude, la consigner ici, revenir à la phase 1 et l'ajouter à la section `## Open Questions` de `01-spec.md`.
 
-- (none)
+- (aucune)
 
 ## Verdict
 
-- [ ] Approved — proceed to `/design`
-- [ ] Changes requested — return to `spec-author`
+- [ ] Approved — passer à `/design`
+- [ ] Changes requested — revenir à `spec-author`
 
-Reviewer: <user>
-Date: <YYYY-MM-DD>
+Relecteur : <utilisateur>
+Date : <YYYY-MM-DD>

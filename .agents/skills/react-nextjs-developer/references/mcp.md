@@ -1,18 +1,16 @@
-# Framework Documentation Tools
+# Outils de documentation du framework
 
-Do not assume that Next.js or React provides a project-local MCP server. This
-framework has no required React/Next.js MCP integration.
+Ne pas supposer que React ou Next.js fournit un serveur MCP local au projet. Ce
+framework n'exige aucune intégration MCP React ou Next.js.
 
-For version-sensitive framework behavior:
+Pour un comportement dépendant de la version :
 
-1. Inspect `package.json` and the lockfile.
-2. Read the matching official Next.js or React documentation.
-3. Use the repository's existing Codex MCP configuration only when the project
-   explicitly supplies one.
-4. Do not create an MCP configuration or install a documentation package merely
-   to complete ordinary framework work.
+1. Inspecter `package.json` et le lockfile.
+2. Lire la documentation officielle correspondant à la version.
+3. Utiliser la configuration MCP Codex du dépôt seulement si le projet en fournit une.
+4. Ne pas créer de configuration MCP ni installer un package de documentation pour un travail ordinaire.
 
-Primary references:
+Références principales :
 
 - [Next.js documentation](https://nextjs.org/docs)
 - [React documentation](https://react.dev/reference/react)

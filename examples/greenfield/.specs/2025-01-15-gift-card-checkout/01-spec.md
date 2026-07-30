@@ -1,98 +1,90 @@
-# Spec: gift-card-checkout
+# Spécification : gift-card-checkout
 
-| Field        | Value                                                    |
-|--------------|----------------------------------------------------------|
-| Feature ID   | `2025-01-15-gift-card-checkout`                          |
-| Owner        | checkout-team                                            |
-| Status       | `PASS` (validated 2025-01-22)                            |
-| Source       | Free text from product: *"Let users redeem a gift card during checkout, applied before tax. Cards can be partially used."* |
+| Champ | Valeur |
+|---|---|
+| Identifiant | `2025-01-15-gift-card-checkout` |
+| Responsable | checkout-team |
+| Statut | `PASS`, validé le 2025-01-22 |
+| Source | Texte produit : « Permettre aux utilisateurs d'utiliser une carte cadeau au paiement, avant calcul des taxes. Une carte peut être partiellement utilisée. » |
 
-## Business goal
+## Objectif métier
 
-Lift conversion on the checkout page by accepting gift cards as a tender type.
-Gift cards must reduce the payable amount before tax is calculated and may be
-partially redeemed across multiple orders.
+Améliorer la conversion au paiement en acceptant les cartes cadeaux. Elles
+réduisent le montant payable avant calcul des taxes et peuvent être utilisées
+partiellement sur plusieurs commandes.
 
-## Primary actor
+## Acteur principal
 
-Authenticated customer at the `/checkout` page.
+Client authentifié sur la page `/checkout`.
 
-## In scope
+## Dans le périmètre
 
-- Accepting a 16-character gift card code at checkout.
-- Validating the card (exists, active, has remaining balance).
-- Applying the card balance to the order subtotal (before tax).
-- Recording a partial redemption when the order subtotal is less than the card balance.
-- Surfacing a domain error when the card is invalid, expired, or fully redeemed.
+- Accepter un code de carte cadeau de 16 caractères au paiement.
+- Valider que la carte existe, est active et possède un solde.
+- Appliquer le solde au sous-total avant les taxes.
+- Consigner une utilisation partielle lorsque le sous-total est inférieur au solde.
+- Présenter une erreur métier si la carte est invalide, expirée ou épuisée.
 
-## Explicitly out of scope
+## Hors périmètre explicite
 
-- Gift card issuance or top-up (separate feature).
-- Refunds back to a gift card (separate feature).
-- Combining multiple gift cards on a single order (deferred to v2).
+- Émission ou recharge d'une carte cadeau.
+- Remboursement vers une carte cadeau.
+- Combinaison de plusieurs cartes sur une commande, différée à la v2.
 
-## Acceptance criteria (EARS)
+## Acceptance Criteria
 
-### AC-001: Apply a valid gift card
+### AC-001 : appliquer une carte valide
 
-**While** an authenticated customer is at checkout with a non-empty cart,
-**when** they submit a valid, active gift card code with sufficient balance,
-**the system shall** reduce the order subtotal by the order subtotal amount
-(card fully covers it) or by the full card balance (card does not fully cover
-it), recompute tax on the reduced subtotal, and persist a `GiftCardRedemption`
-record linking the order id, card id, and amount applied.
+**Pendant qu'**un client authentifié paie un panier non vide, **quand** il fournit
+un code valide et actif avec un solde suffisant, **le système doit** réduire le
+sous-total du montant de la commande si la carte le couvre, ou du solde complet
+sinon, recalculer les taxes et persister un `GiftCardRedemption` reliant commande,
+carte et montant appliqué.
 
-### AC-002: Reject an unknown card code
+### AC-002 : refuser un code inconnu
 
-**When** a customer submits a code that does not match any issued gift card,
-**the system shall** reject the submission with HTTP 422 and error code
-`gift_card.unknown` and shall NOT modify the cart total.
+**Quand** un client fournit un code absent, **le système doit** refuser avec HTTP
+422 et le code `gift_card.unknown`, sans modifier le total du panier.
 
-### AC-003: Reject an expired card
+### AC-003 : refuser une carte expirée
 
-**When** a customer submits a code matching a card whose `expires_at` is in the
-past, **the system shall** reject the submission with HTTP 422 and error code
-`gift_card.expired`.
+**Quand** le code correspond à une carte dont `expires_at` est passé, **le système
+doit** refuser avec HTTP 422 et `gift_card.expired`.
 
-### AC-004: Reject a fully redeemed card
+### AC-004 : refuser une carte épuisée
 
-**When** a customer submits a code matching a card whose remaining balance is
-zero, **the system shall** reject the submission with HTTP 422 and error code
+**Quand** le solde restant est nul, **le système doit** refuser avec HTTP 422 et
 `gift_card.depleted`.
 
-### AC-005: Partial redemption
+### AC-005 : utilisation partielle
 
-**While** a card has a remaining balance smaller than the order subtotal,
-**when** the redemption succeeds, **the system shall** debit the card by exactly
-the order subtotal and leave the difference as the new remaining balance.
-*(Note: this is the inverse of AC-001's partial path, restated here so the
-remaining-balance accounting has its own dedicated test.)*
+**Pendant que** le solde d'une carte est inférieur au sous-total, **quand**
+l'utilisation réussit, **le système doit** débiter exactement le sous-total et
+laisser la différence comme nouveau solde. Cette formulation reprend le chemin
+partiel d'AC-001 afin de lui donner un test comptable dédié.
 
-### AC-006: Idempotent retry
+### AC-006 : nouvelle tentative idempotente
 
-**When** a customer submits the same gift card code twice with the same
-`Idempotency-Key` header within 24 hours, **the system shall** apply the card
-exactly once and return the same response on the second call.
+**Quand** un client fournit deux fois le même code avec le même en-tête
+`Idempotency-Key` dans les 24 heures, **le système doit** appliquer la carte une
+seule fois et renvoyer la même réponse au second appel.
 
-## Non-functional requirements
+## Exigences non fonctionnelles
 
-- **Latency**: p95 ≤ 150 ms server-side at the redemption endpoint under 50 RPS.
-- **Throughput**: ≥ 100 redemptions/sec sustained on a single 4-vCPU pod.
-- **Security**: gift card codes are PII-class secrets; never logged in plaintext;
-  hashed (SHA-256 with per-deployment salt) at rest in the lookup index.
-- **Observability**: emit `gift_card.redeem.success` and `gift_card.redeem.failure{reason}`
-  counters; one structured log line per redemption attempt at INFO with the
-  card-id (not the code) and order-id.
-- **Auditing**: every redemption row is append-only; no updates, no deletes.
+- **Latence :** p95 ≤ 150 ms côté serveur sous 50 RPS.
+- **Débit :** au moins 100 utilisations par seconde sur un pod 4 vCPU.
+- **Sécurité :** les codes sont des secrets assimilés à des données personnelles,
+  jamais journalisés en clair et hachés en SHA-256 avec sel propre au déploiement.
+- **Observabilité :** compteurs `gift_card.redeem.success` et
+  `gift_card.redeem.failure{reason}`, plus une ligne INFO structurée avec l'ID de
+  carte, jamais le code, et l'ID de commande.
+- **Audit :** chaque ligne d'utilisation est en ajout seul, sans mise à jour ni suppression.
 
 ## Open Questions
 
-*(none — all resolved before spec was marked PASS)*
+*(aucune — toutes ont été résolues avant le verdict PASS)*
 
 ## Resolved Questions
 
-- **Q-001 (resolved 2025-01-15)**: Should multi-card redemption be supported?
-  → No, deferred to v2 per product. Captured under "Explicitly out of scope".
-- **Q-002 (resolved 2025-01-15)**: What happens to tax when a card brings the
-  subtotal to zero? → Tax is computed on the reduced subtotal, so it becomes 0.
-  Captured in AC-001.
+- **Q-001, résolue le 2025-01-15 :** plusieurs cartes par commande ? Non, différé à la v2.
+- **Q-002, résolue le 2025-01-15 :** si le sous-total devient nul, les taxes sont calculées sur ce sous-total et valent donc zéro.

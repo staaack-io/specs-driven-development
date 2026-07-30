@@ -1,44 +1,44 @@
-# Validation Gates Checklist
+# Checklist des portes de validation
 
-Used by `spring-validator` to gate exit from Phase 6.
+Utilisée par `spring-validator` pour autoriser la sortie de la phase 6.
 
-## Hard gates (must be green or accepted as pre-existing baseline)
+## Portes strictes (doivent réussir ou être acceptées comme dette préexistante)
 
-- [ ] Format & lint (Spotless, Checkstyle).
-- [ ] Compile (`compile`, `test-compile`).
-- [ ] Static analysis (SpotBugs, Error Prone).
-- [ ] Architecture (ArchUnit rules: boundaries, no-cycles, internal-package isolation).
-- [ ] Unit + slice tests (Surefire).
-- [ ] Integration tests (Failsafe + Testcontainers, when present).
-- [ ] Coverage: ≥90% line+branch overall and per-package; new code ≥95%.
-- [ ] Mutation: no surviving mutants in changed packages (or ADR-justified).
-- [ ] Contract: OpenAPI diff produces no breaking changes (or ADR-justified).
-- [ ] Security: no new High/Critical CVEs (suppressions tracked in `dependency-check-suppressions.xml`).
+- [ ] Formatage et lint (Spotless, Checkstyle).
+- [ ] Compilation (`compile`, `test-compile`).
+- [ ] Analyse statique (SpotBugs, Error Prone).
+- [ ] Architecture (règles ArchUnit : frontières, absence de cycles, isolation des packages internes).
+- [ ] Tests unitaires et par tranche (Surefire).
+- [ ] Tests d'intégration (Failsafe + Testcontainers, s'ils existent).
+- [ ] Couverture : au moins 90 % lignes et branches, globalement et par package ; nouveau code au moins 95 %.
+- [ ] Mutation : aucun mutant survivant dans les packages modifiés, sauf justification par ADR.
+- [ ] Contrat : le diff OpenAPI ne contient aucun changement cassant, sauf justification par ADR.
+- [ ] Sécurité : aucune nouvelle CVE haute ou critique ; les exclusions sont suivies dans `dependency-check-suppressions.xml`.
 
-## Reports parsed
+## Rapports analysés
 
-- [ ] Surefire XML (`target/surefire-reports/`)
-- [ ] Failsafe XML (`target/failsafe-reports/`)
-- [ ] JaCoCo XML (`target/site/jacoco/jacoco.xml`)
-- [ ] PIT XML (`target/pit-reports/mutations.xml`)
-- [ ] Checkstyle XML (`target/checkstyle-result.xml`)
-- [ ] SpotBugs XML (`target/spotbugsXml.xml`)
-- [ ] OpenAPI diff JSON
-- [ ] Dependency-check report
+- [ ] XML Surefire (`target/surefire-reports/`)
+- [ ] XML Failsafe (`target/failsafe-reports/`)
+- [ ] XML JaCoCo (`target/site/jacoco/jacoco.xml`)
+- [ ] XML PIT (`target/pit-reports/mutations.xml`)
+- [ ] XML Checkstyle (`target/checkstyle-result.xml`)
+- [ ] XML SpotBugs (`target/spotbugsXml.xml`)
+- [ ] JSON du diff OpenAPI
+- [ ] Rapport Dependency-Check
 
-## Traceability
+## Traçabilité
 
-- [ ] `07a-traceability.md` produced.
-- [ ] Zero ACs without a covering test.
-- [ ] Zero orphan tests.
-- [ ] Zero orphan code symbols (touched-by-diff and not test-covered).
+- [ ] `07a-traceability.md` est produit.
+- [ ] Aucun AC sans test associé.
+- [ ] Aucun test orphelin.
+- [ ] Aucun symbole de code orphelin, c'est-à-dire modifié dans le diff mais non couvert par un test.
 
-## Baseline hygiene
+## Hygiène de la référence
 
-- [ ] `.specs/_baseline.json` consulted.
-- [ ] Any new entries flagged for code review (`major` unless ADR-justified).
+- [ ] `.specs/_baseline.json` a été consulté.
+- [ ] Toute nouvelle entrée est signalée pour la revue de code (`major`, sauf justification par ADR).
 
-## Sign-off
+## Validation
 
-- [ ] `07-validation-report.md` written and passes its own checklist.
-- [ ] Result line set to ✅ / ⚠️ / ❌ with correct rationale.
+- [ ] `07-validation-report.md` est écrit et passe sa propre checklist.
+- [ ] La ligne de résultat utilise ✅ / ⚠️ / ❌ avec la bonne justification.

@@ -1,45 +1,58 @@
 ---
 name: code-simplify
-description: "Simplify in-scope production code without changing behavior. Use when the user invokes $code-simplify or asks to make code clearer."
+description: "Simplifier le code de production dans le périmètre sans changer son comportement. Utiliser lorsque l’utilisateur invoque $code-simplify ou demande un code plus clair."
 ---
 
 # $code-simplify
 
-**Phase:** 6 (meta) — clarity sweep
-**Owning agent:** `.codex/agents/spring-code-reviewer.toml`
-**Skills used:** `clarity-over-cleverness`, `tdd-red-green-refactor`
+**Phase :** méta — passe de clarté
+**Agent responsable :** `.codex/agents/spring-code-reviewer.toml`
+**Skills utilisés :** `clarity-over-cleverness`,
+`tdd-red-green-refactor`
 
-## Purpose
-Apply the clarity-over-cleverness rules to a single file or a directory while keeping tests green. This is the same pass `$build`'s simplify phase performs, but on demand.
+## Objectif
 
-## Inputs
-- `<path>` (positional). A file under `src/main/**` or a directory.
-- Optional `--dry-run` to print proposed edits without writing.
+Appliquer les règles de clarté à un fichier ou dossier tout en gardant les tests
+verts. C’est la même passe que l’étape de simplification de `$build`, exécutée
+à la demande.
 
-## Reads
-- `<path>` (the target file/directory).
-- `.agents/skills/clarity-over-cleverness/SKILL.md` (authoritative checklist).
+## Entrées
 
-## Writes
-- The targeted files (in place).
-- A diff summary appended to `.specs/<feature-id>/05-implementation-log.md` under a `### simplify-pass` block, or to a fresh `clarity-pass-<date>.md` if no active feature.
+- `<path>`, fichier ou dossier sous `src/main/**` ;
+- `--dry-run` facultatif pour proposer sans écrire.
 
-## Process
-1. Refuse if `mvn test` is not green right now (run it first; abort on failure).
-2. For each file in scope, apply the 7 rewrite targets in order:
-   1. Untangle nested ternaries → if/else.
-   2. Streams only when clearer than a loop; otherwise loop.
-   3. Inline once-used helpers.
-   4. Kill option flags (split into two methods).
-   5. Name domain concepts (no `data`, `info`, `manager`, `helper`, `util`).
-   6. Remove premature abstraction (interface with one impl, factory with one product).
-   7. Prefer early returns over deep nesting.
-3. Re-run `mvn test` after each file. If anything goes red, revert that file's edits and record it as a Skipped item.
-4. Emit a summary: files touched, rewrites applied per category, tests run, regressions encountered.
+## Lectures
 
-## Refuse if
-- Tests are not green at start.
-- The path is under `src/test/**` (test clarity is governed by `$test`, not this command).
+- cible ;
+- `clarity-over-cleverness`, checklist de référence.
 
-## Done when
-All in-scope files are either simplified or explicitly skipped, and tests are green.
+## Écritures
+
+- fichiers ciblés ;
+- résumé dans le journal d’implémentation ou dans
+  `clarity-pass-<date>.md` sans fonctionnalité active.
+
+## Processus
+
+1. Exiger `mvn test` vert.
+2. Pour chaque fichier :
+   1. remplacer les ternaires imbriqués par des conditions ;
+   2. préférer une boucle lorsqu’elle est plus claire qu’un stream ;
+   3. intégrer les helpers utilisés une seule fois ;
+   4. remplacer les options booléennes par des méthodes distinctes ;
+   5. nommer les concepts métier précisément ;
+   6. retirer les abstractions prématurées ;
+   7. préférer les retours anticipés aux imbrications profondes.
+3. Relancer les tests après chaque fichier. En cas de régression, annuler les
+   modifications de ce fichier et le consigner comme ignoré.
+4. Résumer fichiers, catégories de réécriture, tests et régressions.
+
+## Refuser si
+
+- les tests ne sont pas verts au départ ;
+- le chemin cible `src/test/**`, dont la clarté relève de `$test`.
+
+## Terminé lorsque
+
+Chaque fichier du périmètre est simplifié ou explicitement ignoré et les tests
+sont verts.

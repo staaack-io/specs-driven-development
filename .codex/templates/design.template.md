@@ -1,57 +1,57 @@
-# Design: <FEATURE-ID>
+# Conception : <FEATURE-ID>
 
-> Owner: `spring-architect` · Phase 3 · Template: `.codex/templates/design.template.md`
+> Responsable : `spring-architect` · Phase 3 · Modèle : `.codex/templates/design.template.md`
 >
-> **No invention.** If a decision is required and not stated by the user or codebase, log a `Q-NNN` and ask. ADRs capture decisions explicitly.
+> **Aucune invention.** Si une décision est nécessaire mais absente des demandes de l'utilisateur et du code existant, consigner une `Q-NNN` et poser la question. Les ADR rendent les décisions explicites.
 
 ## Inputs
 
-- `01-spec.md` revision: <git-sha or timestamp>
-- Stack snapshot from `.github/scripts/detect-stack.sh`:
-  - Build tool: <maven | gradle>
-  - Java version: <25>
-  - Spring Boot version: <4.x>
-  - DB engine: <postgres | mysql | h2 | …>
-  - Migration tool: <flyway | liquibase | none>
-  - Testcontainers: <present | absent>
-  - MCP servers available: <jira | github | linear | …>
+- Révision de `01-spec.md` : <git-sha ou horodatage>
+- État de la stack fourni par `.github/scripts/detect-stack.sh` :
+  - Outil de build : <maven | gradle>
+  - Version de Java : <25>
+  - Version de Spring Boot : <4.x>
+  - Moteur de base de données : <postgres | mysql | h2 | …>
+  - Outil de migration : <flyway | liquibase | none>
+  - Testcontainers : <present | absent>
+  - Serveurs MCP disponibles : <jira | github | linear | …>
 
 ## Architecture Overview
 
-<3–6 sentences describing the shape of the change at a high level. Reference modules and ADRs.>
+<3 à 6 phrases décrivant la forme générale du changement, avec des références aux modules et ADR.>
 
 ## ADRs
 
-> MADR-style. Each ADR lives at `.specs/<feature-id>/adr/NNN-<slug>.md`.
+> Format MADR. Chaque ADR se trouve dans `.specs/<feature-id>/adr/NNN-<slug>.md`.
 
-- ADR-001: <title> — status: <proposed | accepted | superseded>
-- ADR-002: …
+- ADR-001 : <titre> — statut : <proposed | accepted | superseded>
+- ADR-002 : …
 
 ## Spring Component Map
 
-> Components are grouped **by feature** (top-level package). Within each feature, classes live under `api` (published) or `internal` (private). Do not introduce top-level `controller`/`service`/`repository`/`model` packages.
+> Les composants sont regroupés **par fonctionnalité** dans les packages de premier niveau. Dans chaque fonctionnalité, les classes résident sous `api` (publié) ou `internal` (privé). Ne pas introduire de packages de premier niveau `controller`/`service`/`repository`/`model`.
 
-| Feature | Visibility | Component | Responsibility |
+| Fonctionnalité | Visibilité | Composant | Responsabilité |
 |---|---|---|---|
-| `<feature>` | api        | `<feature>.api.XService` (interface) | published surface |
-| `<feature>` | api        | `<feature>.api.XEvent`               | domain event |
-| `<feature>` | internal   | `<feature>.internal.XController`     | HTTP adapter |
-| `<feature>` | internal   | `<feature>.internal.XServiceImpl`    | business logic |
-| `<feature>` | internal   | `<feature>.internal.XRepository`     | persistence |
+| `<feature>` | api | `<feature>.api.XService` (interface) | surface publiée |
+| `<feature>` | api | `<feature>.api.XEvent` | événement de domaine |
+| `<feature>` | internal | `<feature>.internal.XController` | adaptateur HTTP |
+| `<feature>` | internal | `<feature>.internal.XServiceImpl` | logique métier |
+| `<feature>` | internal | `<feature>.internal.XRepository` | persistance |
 
 ## Module Boundaries
 
-> Each top-level package is a module. List the modules this change touches and the directional dependencies between them. Boundaries are enforced by ArchUnit (see `archunit-rules` skill): `..internal..` packages are private, no cycles between top-level packages.
+> Chaque package de premier niveau est un module. Lister les modules touchés et le sens de leurs dépendances. ArchUnit impose les frontières (voir le skill `archunit-rules`) : les packages `..internal..` sont privés et les cycles entre packages de premier niveau sont interdits.
 
-- `<module>` — public API package: `<...api>`; depends on: `<other modules>`; published events: `<events>`
+- `<module>` — package d'API publique : `<...api>` ; dépend de : `<autres modules>` ; événements publiés : `<événements>`
 
 ## Entity Relationship Model
 
-> Map conceptual entities from `01-spec.md` to design-level persistence decisions.
+> Relier les entités conceptuelles de `01-spec.md` aux décisions de persistance de la conception.
 
-| Entity | Purpose | Key attributes | Relationships (cardinality) | Persistence notes |
+| Entité | Rôle | Attributs principaux | Relations (cardinalité) | Notes de persistance |
 |---|---|---|---|---|
-| `<entity>` | `<business purpose>` | `<attrs>` | `<A 1..* B, A 0..1 C>` | `<aggregate root / ownership / cascade rules>` |
+| `<entité>` | `<rôle métier>` | `<attributs>` | `<A 1..* B, A 0..1 C>` | `<racine d'agrégat / propriété / règles de cascade>` |
 
 ## OpenAPI Sketch
 
@@ -63,45 +63,45 @@ paths:
       requestBody: { ... }
       responses:
         '201': { ... }
-        '400': { description: invalid input, ... }
-        '409': { description: conflict, ... }
+        '400': { description: entrée invalide, ... }
+        '409': { description: conflit, ... }
 ```
 
 ## Data Model + Migrations
 
-- Tables/collections affected: <list>
-- Migration tool: <flyway | liquibase>
-- Migration files: `db/migration/V<N>__<slug>.sql` (Flyway) or `db/changelog/<slug>.xml` (Liquibase)
-- Reversibility: <reversible | forward-only with reason>
+- Tables ou collections touchées : <liste>
+- Outil de migration : <flyway | liquibase>
+- Fichiers de migration : `db/migration/V<N>__<slug>.sql` (Flyway) ou `db/changelog/<slug>.xml` (Liquibase)
+- Réversibilité : <reversible | forward-only avec justification>
 
 ## Security Posture
 
-- AuthN: <none | JWT | session | OAuth2 resource server>
-- AuthZ rules: <which roles/scopes>
-- PII handled: <fields>
-- Secrets: <where stored>
+- Authentification : <none | JWT | session | OAuth2 resource server>
+- Règles d'autorisation : <rôles ou scopes>
+- Données personnelles traitées : <champs>
+- Secrets : <lieu de stockage>
 
 ## Risks + Rollback
 
-| Risk | Likelihood | Impact | Mitigation | Rollback |
+| Risque | Probabilité | Impact | Réduction du risque | Retour arrière |
 |---|---|---|---|---|
 
 ## Non-Functional Requirements
 
-> Only NFRs explicitly stated by the user/source. Otherwise log `Q-NNN`.
+> Uniquement les exigences non fonctionnelles explicitement formulées par l'utilisateur ou la source. Sinon, créer une `Q-NNN`.
 
-- (none)
+- (aucune)
 
 ## Open Questions
 
-- Q-001: …
+- Q-001 : …
 
 ## Resolved Questions
 
-- (none yet)
+- (aucune pour le moment)
 
 ## Sign-off
 
-- [ ] Every AC from `01-spec.md` is addressed by at least one component or task.
-- [ ] All `Q-NNN` resolved or deferred-with-rationale.
-- [ ] Reviewed by user on <YYYY-MM-DD>.
+- [ ] Chaque AC de `01-spec.md` est couverte par au moins un composant ou une tâche.
+- [ ] Toutes les `Q-NNN` sont résolues ou différées avec justification.
+- [ ] Revue effectuée par l'utilisateur le <YYYY-MM-DD>.

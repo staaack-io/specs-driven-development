@@ -1,153 +1,134 @@
 ---
 name: shipping-and-launch
-description: Pre-deploy hygiene for a Spring Boot 4 feature — verify gates, capture rollback plan, sign off observability, generate release notes, and stage the rollout. Used by `$ship` after `$review` approves the diff. The agent never deploys; it produces the plan a human executes.
+description: Préparation pré-déploiement d’une fonctionnalité Spring Boot 4, avec portes, retour arrière, observabilité, notes et déploiement progressif. Utiliser avec `$ship` après approbation de `$review`. L’agent ne déploie jamais.
 when_to_use:
-  - Phase 8 (Ship) — `$ship` command, after `$review` verdict is approve.
-  - Pre-deploy review on a brownfield repo where the toolkit is being adopted and the team wants a structured launch plan.
+  - Phase 8, Ship — commande `$ship` après approbation de `$review`.
+  - Revue pré-déploiement brownfield nécessitant un plan de lancement structuré.
 authoritative_references:
-  - .agents/skills/ship.md
+  - .agents/skills/ship/SKILL.md
   - .codex/templates/ship-plan.template.md
   - .agents/skills/spring-security-baseline/SKILL.md
   - .agents/skills/flyway-or-liquibase-detection/SKILL.md
 ---
 
-# Shipping and launch
+# Livraison et lancement
 
-> Faster is safer. Small, reversible, observable changes ship more often and break less.
+> Plus vite peut être plus sûr : les changements petits, réversibles et observables se livrent souvent et cassent moins.
 
-## What this skill produces
+## Production du skill
 
-The artifact `.specs/<feature-id>/09-ship-plan.md`, populated from `.codex/templates/ship-plan.template.md`, with these sections filled in:
+Créer `.specs/<feature-id>/09-ship-plan.md` depuis son modèle avec :
 
-1. Pre-ship gate results (PASS/FAIL per gate; FAIL = halt).
-2. Feature-flag posture (flag name, default, kill-switch, owner).
-3. Migration safety (Flyway/Liquibase script list, expand-vs-contract classification, rollback procedure).
-4. Observability sign-off (new metrics, structured-log keys, alert rules, dashboard link).
-5. Rollback plan (revert commit; DB rollback or contract-step procedure; on-call escalation).
-6. Staged rollout plan (canary → percentage steps → 100%).
-7. Release notes (user-facing changelog excerpt + internal notes).
+1. le résultat PASS/FAIL des portes pré-livraison ;
+2. la posture de feature flag : nom, valeur par défaut, arrêt d'urgence, responsable ;
+3. la sécurité des migrations et leur procédure de retour arrière ;
+4. la validation de l'observabilité : métriques, journaux, alertes, tableau de bord ;
+5. le plan de retour arrière ;
+6. la mise en production progressive du canari jusqu'à 100 % ;
+7. les notes externes et internes de livraison.
 
-## Pre-ship gates (must all be green)
+## Portes pré-livraison
 
-| Gate | Source of truth | Halt if |
+| Porte | Source de vérité | Arrêt si |
 |---|---|---|
-| Validation | `07-validation-report.md` verdict | not `PASS` |
-| Code review | `08-code-review.md` verdict | not `Approve` (or `Approve with waivers` linking ADRs) |
-| Open questions | `01-spec.md`, `03-design.md` `## Open Questions` | any unresolved `Q-NNN` |
-| Baseline regression | `.specs/_baseline.json` vs latest harness | any new failure not in baseline |
-| Diff scope | `git diff origin/main...HEAD` | files outside any task's `files_in_scope` |
+| Validation | verdict de `07-validation-report.md` | différent de `PASS` |
+| Revue de code | verdict de `08-code-review.md` | différent de `Approve` ou dérogations sans ADR |
+| Questions ouvertes | `## Open Questions` de la spec et de la conception | au moins une `Q-NNN` non résolue |
+| Régression de référence | `_baseline.json` contre le dernier harness | nouvel échec absent de la référence |
+| Périmètre du diff | `git diff origin/main...HEAD` | fichier hors des `files_in_scope` |
 
-If any gate halts, **stop and tell the user which command to run** (`$build`, `$test`, `$validate`, or `$review`). Do not write a partial ship plan.
+À la première porte en échec, **s'arrêter**, indiquer la commande de reprise
+`$build`, `$test`, `$validate` ou `$review`, et ne pas écrire de plan partiel.
 
 ## Feature flags
 
-For any change that adds or alters a runtime path, decide:
+Pour tout nouveau chemin d'exécution :
 
-- **Flag required?** Yes if the change is risky, irreversible, or touches a hot path. No if it's a pure bug fix or strictly additive.
-- **Default?** Off in production until the canary clears. On in non-prod.
-- **Kill-switch?** A documented config knob (env var or remote config key) that disables the new path without a redeploy.
-- **Owner?** A named human (not "the team").
+- flag requis si le changement est risqué, irréversible ou sur un chemin critique ;
+- désactivé par défaut en production jusqu'au succès du canari ;
+- interrupteur documenté via variable d'environnement ou configuration distante ;
+- responsable humain nommé, jamais « l'équipe ».
 
-Record this in the ship plan even if the answer is "no flag" — with the reasoning.
+Consigner aussi l'absence de flag avec sa justification.
 
-## Migration safety
+## Sécurité des migrations
 
-Detect the migration tool with `.agents/skills/flyway-or-liquibase-detection/SKILL.md`. For each migration script in the diff:
+Détecter l'outil avec `flyway-or-liquibase-detection` et classer chaque script :
 
-| Classification | Definition | Required action |
+| Classe | Définition | Action |
 |---|---|---|
-| **Forward-only safe** | Adds nullable column, new table, new index, new view | Proceed |
-| **Expand step** | First half of an expand-then-contract: write to old + new, read old | Proceed; record contract-step ticket |
-| **Contract step** | Second half: read new, drop old | Verify expand step is in production for at least one full release cycle (or the period the team agreed to) |
-| **Breaking** | Drops/renames a column, narrows a type, removes a table | Halt unless an ADR documents the migration plan, the feature flag gating it, and the rollback |
+| **Forward-only safe** | colonne nullable, table, index ou vue ajouté | continuer |
+| **Expand step** | écrit ancien + nouveau, lit ancien | continuer et créer le ticket de contract |
+| **Contract step** | lit nouveau, supprime ancien | vérifier qu'expand a vécu la durée convenue en production |
+| **Breaking** | suppression, renommage ou rétrécissement | arrêter sans ADR, flag et retour arrière |
 
-**No edits to a previously-released migration script.** New script, always.
+Ne jamais modifier un script déjà livré. Annuler le commit ne suffit pas après
+une migration : préciser le SQL ou l'étape de contrat qui restaure le schéma.
 
-Record the rollback procedure: revert commit alone is not enough when a migration ran. Spell out the SQL or contract step that reverses the schema change.
+## Validation de l'observabilité
 
-## Observability sign-off
+Pour chaque endpoint, handler ou tâche de fond :
 
-For each new endpoint, message handler, or background task, verify:
+- métrique `MeterRegistry` stable et de faible cardinalité ;
+- journal structuré à la frontière avec feature-id et AC-NNN ;
+- alerte, ou justification explicite de son absence ;
+- lien vers le tableau de bord ;
+- histogramme des temps de réponse HTTP via Micrometer.
 
-- A `MeterRegistry` counter or timer with a stable, low-cardinality name (e.g. `gift_card.redeemed`, `gift_card.rejected`).
-- A structured log line at the boundary with the feature-id and the AC-NNN it covers.
-- An alert rule (or explicit "no alert needed" with reasoning).
-- A dashboard link or panel reference.
-- For HTTP endpoints: response-time histogram (p50/p95/p99) bucketed via Micrometer.
+S'il manque un élément, arrêter et recommander `$build` ou `$test`.
 
-If any item is missing, halt and recommend `$build` or `$test` to add it before shipping.
+## Plan de retour arrière
 
-## Rollback plan
+Répondre par écrit à trois questions :
 
-Every ship plan must answer three questions in writing:
+1. Comment détecter la panne, avec alerte et seuil ?
+2. Comment limiter les dégâts en moins de cinq minutes ?
+3. Comment restaurer l'état, y compris après migration ?
 
-1. **How do we know it's broken?** (Alert name + threshold; user-report channel; metric anomaly.)
-2. **How do we stop the bleeding in under 5 minutes?** (Flag flip; revert; scale-down; circuit breaker.)
-3. **How do we recover state?** (Revert commit; replay events from offset N; reconcile job; manual SQL.)
+« Nous verrons à ce moment-là » bloque le plan.
 
-If any answer is "we'd figure it out", halt — that's not a rollback plan.
+## Déploiement progressif
 
-## Staged rollout
+Forme par défaut, modifiable seulement par ADR :
 
-Default rollout shape (override only with an ADR):
-
+```text
+canari, ~1 % → 10 % → 50 % → 100 %
+      30 min     1 h     4 h     régime permanent
 ```
-canary (1 instance, ~1%)  →  10%  →  50%  →  100%
-   ↳ 30 min observation     ↳ 1 hr   ↳ 4 hr   ↳ steady state
-```
 
-For each step the plan records:
+Pour chaque étape, consigner les critères d'entrée, d'abandon et la personne qui
+surveille. Avec un flag sans impact de schéma, faire progresser la cohorte selon la même forme.
 
-- Entry criteria (previous step green for the observation window, no SEV-2+ alerts, error rate within budget).
-- Abort criteria (specific metric thresholds; named on-call decides).
-- Who watches what.
+## Notes de livraison
 
-For changes behind a flag with no schema impact, the rollout is "flip flag for cohort N → observe → expand cohort". Same shape, different lever.
+- **Externes** : une à trois puces en français simple, sans jargon interne.
+- **Internes** : résumé du diff, AC-NNN, ADR, classe de migration, flag et tableau de bord.
 
-## Release notes
+Les générer depuis `git log origin/main..HEAD`, `## Goal` et les titres de tâches.
+L'utilisateur relit les notes externes avant publication.
 
-Two audiences, two sections in the ship plan:
+## Signaux bloquants
 
-- **External / user-facing.** Plain English, one to three bullets. Links to docs if the API changed. No internal jargon.
-- **Internal / engineering.** Diff summary, AC-NNN list, ADR links, migration class, flag name, dashboard.
+- Migration d'une version précédente renommée ou modifiée.
+- Valeur par défaut d'un flag déjà déployé modifiée sans ADR.
+- Nouvel endpoint sans métrique ni alerte.
+- Retour arrière limité à « annuler le commit » malgré une migration.
+- Notes externes non relues par une personne.
+- `Q-NNN` encore ouverte.
 
-Both are generated from `git log origin/main..HEAD` plus `01-spec.md` `## Goal` and `04-tasks.md` task titles. The agent drafts both; the user edits the external one before publishing.
+## Processus dans `$ship`
 
-## Anti-rationalizations
+1. Vérifier les portes et s'arrêter au premier FAIL avec une commande de reprise.
+2. Inspecter le diff, classer les migrations, endpoints et métriques.
+3. Remplir chaque section du modèle ; `n/a` exige une justification d'une ligne.
+4. Demander les décisions humaines manquantes sans les inventer.
+5. Afficher la commande de déploiement proposée, sans jamais l'exécuter.
 
-| Excuse | Counter |
-|---|---|
-| "Small change, skip the flag." | Small changes still cause incidents. The flag costs minutes; an incident costs hours. Add the flag, default off, flip after the canary. |
-| "Forward-only migration, no rollback needed." | Forward-only refers to the script direction, not the feature. The feature still needs a rollback path (flag flip, contract step, or replay). Document it. |
-| "We'll add metrics if it breaks." | If it breaks without metrics you won't know. Add the counter and the alert *before* shipping, not after. |
-| "100% rollout is fine, this is a tiny endpoint." | "Tiny" endpoints fan out to dependencies you don't see. Canary first; 5 minutes of caution prevents 5 hours of recovery. |
-| "Release notes are a Product thing." | Engineering writes the technical truth; Product edits the tone. Skipping the engineering draft means the notes are wrong. |
-| "Validation is green so we're good to ship." | Green tests prove the code does what the tests say. Shipping also requires flag posture, rollback, observability, and a rollout plan. |
+## Vérification
 
-## Red flags (block the ship plan)
-
-- A migration script is renamed or edited from a previous release.
-- The diff edits a previously-deployed feature flag's default without an ADR.
-- A new endpoint has no metric and no alert.
-- The rollback "plan" is "revert the commit" with no migration recovery.
-- The release notes are auto-generated commit subjects with no human pass.
-- Any `Q-NNN` is still open in the spec or design.
-
-## Process inside `$ship`
-
-1. **Verify gates.** Walk the table above. Halt at the first FAIL with a specific recovery command.
-2. **Inspect the diff.** `git diff origin/main...HEAD` — classify migrations, identify new endpoints, locate metric registrations.
-3. **Fill the template.** Use `.codex/templates/ship-plan.template.md`. Every section must have content; "n/a" is allowed only with a one-line reason.
-4. **Surface required human inputs.** Flag owner, alert thresholds, and rollout cohorts often need a human decision; mark these `Q-NNN`-style and halt until answered. Never invent.
-5. **Emit the deploy command for the user.** Print the suggested command (e.g. `kubectl rollout ...`, `mvn deploy`, the team's release pipeline trigger). The agent never executes it.
-
-## Verification
-
-A ship plan is complete when:
-
-- All seven sections are filled (no placeholder text).
-- Every gate row in the pre-ship table is `PASS`.
-- Migration scripts are classified, with named rollback steps.
-- Each new endpoint has at least one named metric and one alert (or a documented "no alert" reason).
-- The release notes have both an external and an internal section.
-- The user has confirmed the flag owner, the alert thresholds, and the rollout cohorts.
+- [ ] Les sept sections sont remplies sans placeholder.
+- [ ] Chaque porte vaut `PASS`.
+- [ ] Chaque migration est classée avec un retour arrière nommé.
+- [ ] Chaque endpoint possède métrique et alerte, ou justification.
+- [ ] Les notes externes et internes existent.
+- [ ] L'utilisateur a confirmé responsable du flag, seuils d'alerte et cohortes.

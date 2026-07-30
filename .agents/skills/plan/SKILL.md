@@ -1,77 +1,82 @@
 ---
 name: plan
-description: "Create the detailed design and TDD task breakdown for an approved spec. Use when the user invokes $plan or asks to design and plan an SDD feature."
+description: "Créer la conception détaillée et le découpage TDD d’une spécification approuvée. Utiliser lorsque l’utilisateur invoque $plan ou demande de concevoir et planifier une fonctionnalité SDD."
 ---
 
 # $plan
 
-**Phase:** 3 — plan
-**Owning agent:** `.codex/agents/spring-architect.toml`
-**Skills used:** `epic-slicing-planning`, `spring-task-decomposition`, `spring-boot-4-conventions`, `openapi-contract-first`, `flyway-or-liquibase-detection`, `archunit-rules`, `adr-authoring`, `performance-optimization`
+**Phase :** 3 — planification
+**Agent responsable :** `.codex/agents/spring-architect.toml`
+**Skills utilisés :** `epic-slicing-planning`,
+`spring-task-decomposition`, `spring-boot-4-conventions`,
+`openapi-contract-first`, `flyway-or-liquibase-detection`,
+`archunit-rules`, `adr-authoring`, `performance-optimization`
 
-## Stack routing
+## Routage selon la stack
 
-| Feature scope | Agent |
-|---|---|
-| Backend-only or full-stack (Spring) | `spring-architect` (this agent) |
-| Frontend-only (React/Next.js) | `react-nextjs-architect` |
-| Full-stack | Run both: `spring-architect` for backend tasks, `react-nextjs-architect` for frontend tasks |
+| Périmètre | Agent |
+| --- | --- |
+| Backend ou full-stack Spring | `spring-architect` |
+| Frontend React/Next.js | `react-nextjs-architect` |
+| Full-stack | les deux, chacun pour ses tâches |
 
-If the feature's `01-spec.md` ACs reference only React/Next.js UI concerns
-(components, App Router routes, layouts, forms, or styles), delegate entirely to
-`react-nextjs-architect` and load `react-nextjs-developer` separately. If ACs
-span both stacks, produce a unified `03-design.md` but decompose `04-tasks.md`
-into backend tasks owned by `spring-architect` and frontend tasks owned by
-`react-nextjs-architect`.
+Si les critères portent uniquement sur l’interface React/Next.js, déléguer à
+`react-nextjs-architect` et charger séparément
+`react-nextjs-developer`. Pour un périmètre mixte, produire un unique
+`03-design.md`, puis séparer les tâches backend et frontend.
 
-## Purpose
-Translate a `PASS`-verdict spec into planning artifacts:
+## Objectif
 
-- Non-Epic mode: `03-design.md` + `04-tasks.md`
-- Epic mode: `03-epic-design.md` + `03a-epic-roadmap.md`, then slice-level `03-design.md` + `04-tasks.md`
+Transformer une spécification au verdict `PASS` en conception et tâches, puis
+initialiser `.tdd-state.json`. En mode Epic, partir d’abord de la conception
+globale et de la roadmap approuvées.
 
-Then initialize `.tdd-state.json`.
+## Entrées
 
-## Inputs
-- `<feature-id>`.
-- Optional `--epic` to force Epic mode.
+- `<feature-id>` ;
+- `--epic` facultatif pour forcer le mode Epic.
 
-## Reads
-- `01-spec.md`, `02-spec-review.md` (verdict must be `PASS`).
-- `.specs/_stack.json`.
-- `.codex/templates/design.template.md`, `.codex/templates/tasks.template.md`, `.codex/templates/adr.template.md`.
-- Epic mode: `.codex/templates/epic-design.template.md`, `.codex/templates/epic-roadmap.template.md`.
-- All design/architecture skills above.
+## Lectures
 
-## Writes
-- `.specs/<feature-id>/03-epic-design.md` (Epic mode)
-- `.specs/<feature-id>/03a-epic-roadmap.md` (Epic mode)
-- `.specs/<feature-id>/03-design.md`
-- `.specs/<feature-id>/04-tasks.md`
-- `.specs/<feature-id>/.tdd-state.json` (initial: no `active_task`, every task `phase: "pending"`)
-- `.specs/<feature-id>/adr/ADR-NNN-*.md` for any architecturally significant decision.
+- `01-spec.md` et `02-spec-review.md` ;
+- `.specs/_stack.json` ;
+- modèles de conception, tâches, ADR et, si nécessaire, Epic ;
+- tous les skills d’architecture listés plus haut.
 
-## Process
-1. Refuse if `02-spec-review.md` is missing or its verdict is not `PASS`.
-2. Refuse if `01-spec.md` still has any `Q-NNN`.
-3. Detect planning mode. Use Epic mode if `--epic` is present or the feature spans multiple vertical slices/shared cross-cutting decisions.
-4. In Epic mode, write `03-epic-design.md` and `03a-epic-roadmap.md` first. Refuse to continue if either Epic artifact has unresolved `Q-NNN`.
-5. Produce `03-design.md`: module map, public API, REST contract sketch (or full OpenAPI), data model, migration plan (Flyway/Liquibase per `_stack.json`), error model, observability, security touch points, ArchUnit rule additions.
-6. For each architecturally-significant choice, write an ADR.
-7. Decompose into tasks `T-001`, `T-002`, ... Each task must list:
-   - `id`, `title`, `acs_covered: [AC-NNN, ...]`, `files_in_scope: [paths]`, `depends_on`, `estimated_phases: [red, green, refactor, simplify]`.
-   - Tasks that touch `src/main/**` MUST list at least one file under `src/test/**` in `files_in_scope`.
-8. Validate AC coverage: every AC from `01-spec.md` must appear in at least one task. If not, FAIL the plan and surface the gap.
-9. Initialize `.tdd-state.json`:
-   ```json
-   { "active_task": null, "tasks": { "T-001": { "phase": "pending", "files_in_scope": [...], "acs_covered": [...] }, ... } }
-   ```
+## Écritures
 
-## Refuse if
-- Spec review verdict is not `PASS`.
-- Epic mode is active and either Epic artifact is missing.
-- Any AC has no covering task.
-- Any task touches `src/main/**` without a corresponding `src/test/**` file in scope.
+- artefacts Epic en mode Epic ;
+- `03-design.md` ;
+- `04-tasks.md` ;
+- `.tdd-state.json`, sans tâche active et avec chaque phase à `pending` ;
+- ADR pour toute décision architecturale significative.
 
-## Done when
-Design, tasks, ADRs, and `.tdd-state.json` are written. Point the user to `$build T-001`.
+## Processus
+
+1. Exiger une revue présente et `PASS`.
+2. Exiger zéro `Q-NNN` ouvert.
+3. Activer le mode Epic si demandé ou si plusieurs tranches et décisions
+   partagées sont nécessaires.
+4. En mode Epic, produire d’abord les deux artefacts et s’arrêter s’ils
+   contiennent une question ouverte.
+5. Décrire modules, API, contrat REST/OpenAPI, données, migrations, erreurs,
+   observabilité, sécurité et règles ArchUnit.
+6. Écrire un ADR pour chaque choix architectural important.
+7. Découper en tâches `T-001`, `T-002`, etc. Chaque tâche déclare `id`,
+   `title`, `acs_covered`, `files_in_scope`, `depends_on` et
+   `estimated_phases`. Une tâche touchant `src/main/**` doit inclure un
+   fichier sous `src/test/**`.
+8. Vérifier que chaque critère apparaît dans au moins une tâche.
+9. Initialiser l’état TDD avec les clés contractuelles existantes.
+
+## Refuser si
+
+- la revue n’est pas `PASS` ;
+- un artefact Epic obligatoire manque ;
+- un critère n’a aucune tâche ;
+- une tâche de production n’inclut aucun test dans son périmètre.
+
+## Terminé lorsque
+
+La conception, les tâches, les ADR et l’état TDD sont écrits. Orienter vers
+`$build T-001`.

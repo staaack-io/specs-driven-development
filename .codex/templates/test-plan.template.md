@@ -1,66 +1,66 @@
-# Test Plan: <FEATURE-ID>
+# Plan de test : <FEATURE-ID>
 
-> Owner: `spring-test-engineer` · Phase 5 · Template: `.codex/templates/test-plan.template.md`
+> Responsable : `spring-test-engineer` · Phase 5 · Modèle : `.codex/templates/test-plan.template.md`
 
 ## Inputs
 
-- `04-tasks.md` revision: <git-sha>
-- `05-implementation-log.md` revision: <git-sha>
-- Stack snapshot: Testcontainers <present|absent>; OpenAPI source <controllers|file>.
+- Révision de `04-tasks.md` : <git-sha>
+- Révision de `05-implementation-log.md` : <git-sha>
+- État de la stack : Testcontainers <present|absent> ; source OpenAPI <controllers|file>.
 
 ## Test inventory
 
-| Test-ID | Type | File | AC-IDs | Owner task | Status |
+| Test-ID | Type | Fichier | AC-IDs | Tâche responsable | Statut |
 |---|---|---|---|---|---|
-| T-001-T1 | slice (`@WebMvcTest`) | `src/test/java/.../XTest.java` | AC-001 | T-001 | green |
+| T-001-T1 | tranche (`@WebMvcTest`) | `src/test/java/.../XTest.java` | AC-001 | T-001 | green |
 | T-001-T2 | IT (Testcontainers Postgres) | `src/test/java/.../XIT.java` | AC-001 | T-001 | green |
 | ARCH-001 | ArchUnit | `src/test/java/.../ArchitectureTest.java` | — | phase 5 | green |
-| CONTRACT-001 | OpenAPI diff | `src/test/java/.../OpenApiContractTest.java` | AC-002 | phase 5 | green |
-| PROP-001 | property-based (jqwik) | `src/test/java/.../PropertyTest.java` | AC-005 | phase 5 | green |
+| CONTRACT-001 | diff OpenAPI | `src/test/java/.../OpenApiContractTest.java` | AC-002 | phase 5 | green |
+| PROP-001 | génératif (jqwik) | `src/test/java/.../PropertyTest.java` | AC-005 | phase 5 | green |
 
 ## Cross-cutting suites added in this phase
 
 ### Architecture (ArchUnit)
 
-- Layers: controller → service → repository (no skips, no inversions)
-- No field injection (`@Autowired` on fields banned)
-- Entities live in `*.domain.model.*`
-- Controllers must end in `Controller`
-- No `..internal..` access across top-level packages; no cycles between top-level packages.
+- Couches : contrôleur → service → dépôt, sans raccourci ni inversion
+- Aucune injection de champ : `@Autowired` sur un champ est interdit
+- Les entités résident dans `*.domain.model.*`
+- Le nom des contrôleurs se termine par `Controller`
+- Aucun accès à `..internal..` entre packages de premier niveau ; aucun cycle entre ces packages
 
 ### Contract (OpenAPI)
 
-- Source of truth: `<api/openapi.yaml | generated from controllers>`
-- Diff tool: <openapi-diff plugin>
-- Breaking changes are `blocker`.
+- Source de vérité : `<api/openapi.yaml | généré depuis les contrôleurs>`
+- Outil de diff : <plugin openapi-diff>
+- Les changements cassants sont `blocker`.
 
 ### Integration tests (Testcontainers)
 
-- Containers: Postgres (`@ServiceConnection`), <broker>
-- Reuse: `withReuse(true)` enabled via `~/.testcontainers.properties`
-- Fixed clock + deterministic IDs for reproducibility.
+- Conteneurs : Postgres (`@ServiceConnection`), <broker>
+- Réutilisation : `withReuse(true)` activé via `~/.testcontainers.properties`
+- Horloge fixe et identifiants déterministes pour la reproductibilité
 
 ## Coverage strategy
 
-- Per-package threshold: **90% line + branch** (hard floor); target **95–100%**.
-- New code threshold: **95%** via incremental check.
-- Excluded: generated code, configuration classes annotated `@ExcludeFromCoverage`.
+- Seuil par package : **90 % lignes et branches** au minimum ; cible **95 à 100 %**.
+- Seuil du nouveau code : **95 %** via le contrôle incrémental.
+- Exclusions : code généré et classes de configuration annotées `@ExcludeFromCoverage`.
 
 ## Mutation strategy
 
-- Tool: PIT.
-- Scope: packages touched by this feature.
-- Surviving mutants: each is reviewed; either an additional test is added or an ADR explains why it is acceptable.
+- Outil : PIT.
+- Périmètre : packages touchés par cette fonctionnalité.
+- Chaque mutant survivant est revu ; un test est ajouté ou un ADR explique pourquoi il est acceptable.
 
 ## Gaps + waivers
 
-> If a project lacks Testcontainers, OpenAPI tooling, or PIT, document the gap here and link the ADR proposing how to address it.
+> Si le projet ne possède pas Testcontainers, l'outillage OpenAPI ou PIT, documenter l'écart ici et lier l'ADR proposant sa résolution.
 
-- (none)
+- (aucun)
 
 ## Sign-off
 
-- [ ] Every AC has at least one passing test.
-- [ ] No `@Disabled` test without a `# DisabledReason: <link>` comment.
-- [ ] Cross-cutting suites all green.
-- [ ] Reviewed by user on <YYYY-MM-DD>.
+- [ ] Chaque AC possède au moins un test réussi.
+- [ ] Aucun test `@Disabled` sans commentaire `# DisabledReason: <link>`.
+- [ ] Toutes les suites transverses réussissent.
+- [ ] Revue effectuée par l'utilisateur le <YYYY-MM-DD>.

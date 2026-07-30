@@ -1,10 +1,9 @@
-# React and Next.js Testing Fundamentals
+# Fondamentaux des tests React et Next.js
 
-Inspect the configured test runner and scripts before writing tests. Use the
-existing Jest or Vitest setup and React Testing Library when present. Do not add
-a test dependency without approval.
+Inspecter le runner et les scripts avant d'écrire. Réutiliser Jest ou Vitest et
+React Testing Library lorsqu'ils existent. Ne pas ajouter de dépendance sans accord.
 
-Test behavior through accessible output:
+Tester le comportement via une sortie accessible :
 
 ```tsx
 render(<Counter />);
@@ -12,15 +11,15 @@ await user.click(screen.getByRole('button', {name: 'Add one'}));
 expect(screen.getByRole('button', {name: '1'})).toBeVisible();
 ```
 
-- Query by role, accessible name, label, or visible text before `data-testid`.
-- Use `userEvent` for user interaction when configured.
-- Await observable UI changes; do not use fixed sleeps.
-- Mock network or framework boundaries, not implementation details.
-- Keep tests deterministic and assert the acceptance criterion.
+- Rechercher par rôle, nom accessible, libellé ou texte avant `data-testid`.
+- Utiliser `userEvent` pour l'interaction lorsqu'il est configuré.
+- Attendre un changement observable, jamais un délai fixe.
+- Mocker les frontières réseau ou framework, pas les détails internes.
+- Garder les tests déterministes et vérifier le critère d'acceptation.
 
-Current Next.js guidance recommends browser-level testing for async Server
-Components when the unit test tool cannot render them accurately. Use Playwright
-for server/client integration, routing, and hydration behavior.
+La recommandation Next.js est de tester les Server Components asynchrones dans le
+navigateur si le runner unitaire ne les rend pas fidèlement. Utiliser Playwright
+pour intégration serveur/client, routage et hydratation.
 
-Official reference:
+Référence officielle :
 [Next.js testing guides](https://nextjs.org/docs/app/guides/testing).

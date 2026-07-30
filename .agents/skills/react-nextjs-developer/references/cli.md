@@ -1,14 +1,14 @@
 # Next.js CLI
 
-Use the package manager and scripts already selected by the repository.
+Utiliser le gestionnaire de paquets et les scripts déjà choisis par le dépôt.
 
-Create an application with the official CLI:
+Créer une application avec le CLI officiel :
 
 ```bash
 npx create-next-app@latest <app-name> --ts --eslint --app --turbopack --yes
 ```
 
-Common framework commands are normally exposed as package scripts:
+Les commandes courantes du framework sont généralement exposées comme scripts du package :
 
 ```json
 {
@@ -20,16 +20,14 @@ Common framework commands are normally exposed as package scripts:
 }
 ```
 
-- `next dev` starts development mode.
-- `next build` creates a production build.
-- `next start` serves a completed production build.
-- `next typegen` generates route-aware types without a full build when supported
-  by the installed Next.js version.
+- `next dev` démarre le mode développement.
+- `next build` crée un build de production.
+- `next start` sert un build de production terminé.
+- `next typegen` génère les types liés aux routes sans build complet si la version installée le prend en charge.
 
-Run lint and tests through the project's configured linter and test scripts.
-Do not assume `next lint` exists. Do not start a long-running server unless the
-task requires it.
+Exécuter le lint et les tests via les scripts configurés par le projet. Ne pas
+supposer que `next lint` existe ni démarrer de serveur persistant sauf nécessité.
 
-Official references:
+Références officielles :
 [create-next-app](https://nextjs.org/docs/app/api-reference/cli/create-next-app) and
 [Next.js CLI](https://nextjs.org/docs/app/api-reference/cli/next).

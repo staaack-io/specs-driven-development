@@ -1,53 +1,53 @@
-# Epic Roadmap: <FEATURE-ID>
+# Feuille de route Epic : <FEATURE-ID>
 
-> Owner: `spring-architect` · Phase 3a (Epic mode)
+> Responsable : `spring-architect` · Phase 3a (mode Epic)
 >
-> Define vertical slice sequencing and dependencies before detailed slice tasks.
+> Définir l'ordre et les dépendances des tranches verticales avant de détailler leurs tâches.
 
 ## Inputs
 
-- `03-epic-design.md` revision: <git-sha or timestamp>
+- Révision de `03-epic-design.md` : <git-sha ou horodatage>
 
 ## Slice Strategy
 
-- Slicing principle: vertical, user-visible outcomes
-- Max slice size: target 1-2 milestones per slice
+- Principe de découpage : résultats verticaux visibles par l'utilisateur
+- Taille maximale d'une tranche : viser 1 à 2 jalons par tranche
 
 ## Slice Backlog
 
-| Slice ID | Outcome | AC focus | Dependencies | Target milestone |
+| ID de tranche | Résultat | AC ciblés | Dépendances | Jalon cible |
 |---|---|---|---|---|
-| S-001 | ... | AC-001, AC-002 | none | M1 |
+| S-001 | … | AC-001, AC-002 | aucune | M1 |
 
 ## Dependency Graph
 
-- S-001 -> S-002
-- S-002 -> S-003
+- S-001 → S-002
+- S-002 → S-003
 
 ## Per-slice Delivery Notes
 
 ### S-001
 
-- Entry criteria
-- Exit criteria
-- Risks
+- Critères d'entrée
+- Critères de sortie
+- Risques
 
 ## Rollout and Risk Strategy
 
-- Feature flag strategy
-- Canary/staged rollout notes
-- Rollback triggers
+- Stratégie de feature flag
+- Notes pour une mise en production canari ou progressive
+- Déclencheurs du retour arrière
 
 ## Open Questions
 
-- Q-001: ...
+- Q-001 : …
 
 ## Resolved Questions
 
-- (none yet)
+- (aucune pour le moment)
 
 ## Sign-off
 
-- [ ] Slice ordering validated with user
-- [ ] Dependencies reviewed
-- [ ] Epic-level open questions resolved or deferred
+- [ ] L'ordre des tranches a été validé avec l'utilisateur.
+- [ ] Les dépendances ont été revues.
+- [ ] Les questions ouvertes au niveau Epic sont résolues ou différées.

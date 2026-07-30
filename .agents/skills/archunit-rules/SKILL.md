@@ -1,31 +1,30 @@
 ---
 name: archunit-rules
-description: Encode architecture invariants as ArchUnit rules. Use when defining or reviewing layer boundaries, package dependencies, naming conventions, or cross-module access.
+description: Encoder les invariants d’architecture sous forme de règles ArchUnit. Utiliser pour définir ou relire les frontières de couches, dépendances de paquets, conventions de nommage ou accès entre modules.
 when_to_use:
-  - Phase 5 (Test) — adding architectural cross-cutting suites.
-  - Brownfield onboarding — capturing the architecture as it currently exists, then ratcheting it.
-  - Any review where a `.internal.` import is suspect.
+  - Phase 5, Test — ajouter les suites architecturales transverses.
+  - Onboarding brownfield — capturer l’architecture existante puis appliquer un cliquet.
+  - Toute revue où un import `.internal.` paraît suspect.
 authoritative_references:
   - https://www.archunit.org/userguide/html/000_Index.html
 ---
 
-# ArchUnit rules
+# Règles ArchUnit
 
-## Default rule set (greenfield)
+## Règles par défaut en greenfield
 
-These rules assume **package-by-feature with typed sub-packages**
-(see `spring-boot-4-conventions`): each top-level package under the application
-root is a feature/domain with an `api` (published) sub-package and private
-impl sub-packages (`internal/`, `model/`, `repository/`, `service/`).
-There are **no** top-level `controller` / `service` / `repository` packages.
+Ces règles supposent un **regroupement par fonctionnalité avec sous-packages
+typés** : chaque package de premier niveau sous la racine de l'application est une
+fonctionnalité ou un domaine, avec un sous-package publié `api` et des packages
+privés `internal`, `model`, `repository` et `service`. Aucun package de premier
+niveau `controller`, `service` ou `repository`.
 
-Place these in `src/test/java/.../arch/ArchitectureTest.java`:
+Placer les règles suivantes dans `src/test/java/.../arch/ArchitectureTest.java` :
 
 ```java
 @AnalyzeClasses(packages = "com.example.shop", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
-    // Other features depend only on a feature's api package, never on its private impl packages.
     @ArchTest
     static final ArchRule internalIsPrivateToItsFeature =
         slices().matching("com.example.shop.(*)..")
@@ -34,36 +33,24 @@ class ArchitectureTest {
                     JavaClass.Predicates.resideInAPackage("..internal.."),
                     JavaClass.Predicates.resideInAPackage("..api.."));
 
-    // No class outside a feature may reach into its private sub-packages.
     @ArchTest
     static final ArchRule no_internal_access_across_features =
         noClasses().that().resideOutsideOfPackages(
-                "..(*).internal..",
-                "..(*).model..",
-                "..(*).repository..",
-                "..(*).service..")
+                "..(*).internal..", "..(*).model..", "..(*).repository..", "..(*).service..")
                .should().dependOnClassesThat().resideInAnyPackage(
-                "..internal..",
-                "..model..",
-                "..repository..",
-                "..service..");
+                "..internal..", "..model..", "..repository..", "..service..");
 
     @ArchTest
     static final ArchRule no_field_injection =
         noFields().should().beAnnotatedWith("org.springframework.beans.factory.annotation.Autowired");
 
-    // Forbid by-layer packages at the application root level only.
     @ArchTest
     static final ArchRule no_by_layer_root_packages =
         noClasses().should().resideInAnyPackage(
-            "com.example.shop.controller..",
-            "com.example.shop.service..",
-            "com.example.shop.repository..",
-            "com.example.shop.model..",
-            "com.example.shop.dto..",
-            "com.example.shop.util..");
+            "com.example.shop.controller..", "com.example.shop.service..",
+            "com.example.shop.repository..", "com.example.shop.model..",
+            "com.example.shop.dto..", "com.example.shop.util..");
 
-    // Entities must live in a feature's model or internal sub-package (never at root or in api).
     @ArchTest
     static final ArchRule entities_in_feature_private_package =
         classes().that().areAnnotatedWith("jakarta.persistence.Entity")
@@ -75,46 +62,37 @@ class ArchitectureTest {
 }
 ```
 
-The `no_internal_access_across_features` and `no_cycles_between_features`
-rules together give you "module boundaries" without any extra runtime
-dependency: each feature is a top-level package, its private sub-packages
-(`internal`, `model`, `repository`, `service`) are inaccessible from other
-features, and cycles between features are forbidden.
+Les règles d'accès interne et de cycles imposent les frontières sans dépendance
+d'exécution supplémentaire. Exécuter ces règles dans la porte d'architecture,
+couche 4 du harness.
 
-Run as part of the **architecture gate** (layer 4 of the harness).
+## Cliquet brownfield
 
-## Brownfield ratchet
+Si le projet possède des violations, ne pas affaiblir la règle :
 
-When a project has pre-existing violations, do **not** weaken the rule. Instead:
-
-1. Run the rule once and capture violators.
-2. Add `.allowEmptyShould(true)` is NOT acceptable.
-3. Use `freezing` mode:
+1. exécuter la règle et capturer les violations ;
+2. ne pas utiliser `.allowEmptyShould(true)` ;
+3. utiliser le mode de gel :
 
 ```java
-@ArchTest
-static final ArchRule no_field_injection =
-    Architectures.layeredArchitecture()...;
-
-// frozen
 @ArchTest
 static final ArchRule no_field_injection_frozen =
     FreezingArchRule.freeze(no_field_injection);
 ```
 
-This freezes existing violations into a `archunit_store/` baseline, so new code is held to the rule, but old code is not blocking. New violations fail the build.
+Le gel place l'existant dans `archunit_store/`. L'ancien code ne bloque pas, mais
+toute nouvelle violation fait échouer le build.
 
-## Custom rules to add per project
+## Règles spécifiques à ajouter selon le projet
 
-- **Naming**: services end with `Service`, repositories with `Repository`, controllers with `Controller`.
-- **No `java.util.Date` / `java.text.SimpleDateFormat`** — use `java.time`.
-- **No `System.out` / `System.err`** in production code.
-- **No `@Transactional` on controllers**.
-- **No `@Autowired` constructor (it is implicit)**.
-- **No Lombok**: `noClasses().should().dependOnClassesThat().resideInAPackage("lombok..")`. On brownfield repos with existing Lombok usage, freeze the rule with `FreezingArchRule.freeze(...)` so new code is held to the ban while legacy code stays green.
+- Nommage : suffixes `Service`, `Repository` et `Controller`.
+- Interdire `java.util.Date` et `java.text.SimpleDateFormat`, utiliser `java.time`.
+- Interdire `System.out` et `System.err` en production.
+- Interdire `@Transactional` sur les contrôleurs et `@Autowired` sur les constructeurs.
+- Interdire Lombok. En brownfield, geler la règle avec `FreezingArchRule.freeze(...)`.
 
-## Self-check
+## Auto-vérification
 
-- [ ] At least the default ArchUnit rules above are present (including the cycle and internal-access rules that enforce module boundaries).
-- [ ] Brownfield violations are frozen, not waived.
-- [ ] No `@Disabled` `ArchTest`.
+- [ ] Les règles par défaut, notamment cycles et accès internes, sont présentes.
+- [ ] Les violations brownfield sont gelées, pas ignorées.
+- [ ] Aucun `ArchTest` n'est `@Disabled`.

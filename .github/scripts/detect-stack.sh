@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # detect-stack.sh
-# Detects the project's stack and emits a JSON document describing it.
-# Used by spring-architect (planning), spring-onboarding (bootstrap), and the harness.
+# Détecte la stack du projet et produit un document JSON qui la décrit.
+# Utilisé par spring-architect, spring-onboarding et le harness.
 
 set -euo pipefail
 
 POM="${1:-pom.xml}"
 
 if [ ! -f "$POM" ]; then
-  echo '{"error":"pom.xml not found","searched":"'"$POM"'"}'
+  echo '{"error":"pom.xml introuvable","searched":"'"$POM"'"}'
   exit 1
 fi
 
@@ -19,13 +19,13 @@ java_version="$(get_prop 'java.version')"
 boot_version="$(get_prop 'spring-boot.version')"
 [ -z "$boot_version" ] && boot_version="$( { grep -A1 '<artifactId>spring-boot-starter-parent</artifactId>' "$POM" || true; } | sed -n 's|.*<version>\(.*\)</version>.*|\1|p' | head -n 1)"
 
-# DB engines
+# Moteurs de base de données.
 db_engines=()
 for d in postgresql mysql-connector-j mariadb-java-client h2 ojdbc8 ojdbc11 mssql-jdbc; do
   if has_dep "$d"; then db_engines+=("$d"); fi
 done
 
-# Migration tool
+# Outil de migration.
 flyway=$(has_dep 'flyway-core' && echo true || echo false)
 liquibase=$(has_dep 'liquibase-core' && echo true || echo false)
 flyway_dir=$([ -d src/main/resources/db/migration ] && echo true || echo false)
@@ -52,8 +52,8 @@ jacoco=$(has_dep 'jacoco-maven-plugin' && echo true || echo false)
 pit=$(has_dep 'pitest-maven' && echo true || echo false)
 depcheck=$(has_dep 'dependency-check-maven' && echo true || echo false)
 
-# Multi-project siblings: detect non-JVM apps next to the Maven module so the
-# onboarding artifact can record them as context (frontend, infra, etc.).
+# Projets voisins : détecter les applications non-JVM à côté du module Maven afin
+# que l'artefact d'onboarding les consigne comme contexte (frontend, infra, etc.).
 ROOT_DIR="$(dirname "$(cd "$(dirname "$POM")" && pwd)")"
 MODULE_DIR="$(cd "$(dirname "$POM")" && pwd)"
 siblings=()
@@ -76,7 +76,7 @@ if [ -d "$ROOT_DIR" ] && [ "$ROOT_DIR" != "$MODULE_DIR" ]; then
   done
 fi
 
-# Emit
+# Produire le JSON.
 cat <<EOF
 {
   "module_path": "${MODULE_DIR#$ROOT_DIR/}",

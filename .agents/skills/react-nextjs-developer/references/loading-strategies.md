@@ -1,19 +1,14 @@
-# Code Loading and Prefetching
+# Chargement du code et prefetch
 
-The App Router splits code by route. Use its file conventions before adding
-manual lazy loading.
+App Router découpe le code par route. Utiliser ses conventions de fichiers avant d'ajouter un chargement différé manuel.
 
-- Use `<Link>` for framework navigation and built-in prefetching.
-- Add `loading.tsx` to dynamic routes that need immediate feedback and
-  streaming.
-- Use `next/dynamic` for a large Client Component only when deferring that
-  component has a measured benefit.
-- Use `prefetch={false}` only when avoiding prefetch work is an explicit
-  requirement.
+- Utiliser `<Link>` pour la navigation et le prefetch intégré.
+- Ajouter `loading.tsx` aux routes dynamiques qui nécessitent un retour immédiat et du streaming.
+- Utiliser `next/dynamic` pour un grand Client Component seulement si le bénéfice est mesuré.
+- Utiliser `prefetch={false}` uniquement si l'absence de prefetch est une exigence explicite.
 
-Do not dynamically import Server Components to force client behavior. Keep the
-Server/Client boundary explicit and measure bundle changes before claiming an
-optimization.
+Ne pas importer dynamiquement un Server Component pour forcer un comportement
+client. Garder la frontière explicite et mesurer le bundle avant d'affirmer une optimisation.
 
-Official reference:
+Référence officielle :
 [Linking and navigating](https://nextjs.org/docs/app/getting-started/linking-and-navigating).

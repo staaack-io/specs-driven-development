@@ -1,7 +1,7 @@
-# React UI Motion
+# Mouvement dans l'interface React
 
-Prefer native CSS transitions and keyframes for enter, exit, hover, focus, and
-state changes. Toggle a class or data attribute from React state.
+Préférer transitions et keyframes CSS natives pour entrée, sortie, survol, focus
+et changement d'état. Basculer une classe ou un attribut data depuis l'état React.
 
 ```tsx
 export function Disclosure({open}: {open: boolean}) {
@@ -26,10 +26,9 @@ export function Disclosure({open}: {open: boolean}) {
 }
 ```
 
-Respect `prefers-reduced-motion`. Use the Web Animations API through a ref only
-when CSS cannot express the interaction. Do not add a motion library without
-explicit approval, and do not animate layout in a way that blocks input or
-causes avoidable layout shifts.
+Respecter `prefers-reduced-motion`. Utiliser Web Animations via une ref seulement
+si CSS ne suffit pas. Ne pas ajouter de bibliothèque sans accord ni animer le layout
+d'une manière qui bloque l'entrée ou cause des décalages évitables.
 
-Official reference:
+Référence officielle :
 [React DOM components](https://react.dev/reference/react-dom/components).

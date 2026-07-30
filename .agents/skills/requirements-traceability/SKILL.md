@@ -1,79 +1,71 @@
 ---
 name: requirements-traceability
-description: Build and verify the AC ↔ tasks ↔ tests ↔ code symbols ↔ gates traceability matrix in `07a-traceability.md`. Use when validating that no AC is uncovered and no test is orphaned.
+description: Construire et vérifier dans `07a-traceability.md` la matrice critères ↔ tâches ↔ tests ↔ symboles ↔ portes. Utiliser pour confirmer qu’aucun critère n’est découvert et qu’aucun test n’est orphelin.
 when_to_use:
-  - Phase 6 (Validate) — `$validate` produces the matrix.
-  - Code review — verify the matrix is consistent with actual files.
+  - Phase 6, Validate — `$validate` produit la matrice.
+  - Revue de code — vérifier la matrice contre les fichiers réels.
 authoritative_references:
   - .codex/templates/traceability.template.md
 ---
 
-# Requirements traceability
+# Traçabilité des exigences
 
-## What gets traced
+## Éléments tracés
 
-For each `AC-NNN` from `01-spec.md`:
+Pour chaque `AC-NNN` de `01-spec.md` :
 
-- The list of `T-NNN` tasks that implement it (`04-tasks.md`).
-- The list of test methods that assert it (`@Tag("AC-NNN")` or `@DisplayName("AC-NNN: …")`).
-- The list of production code symbols (FQ method names) touched by those tasks' diffs.
-- The list of harness gates that ran on those symbols.
+- les tâches `T-NNN` qui l'implémentent dans `04-tasks.md` ;
+- les méthodes de test qui le vérifient via `@Tag("AC-NNN")` ou `@DisplayName("AC-NNN: …")` ;
+- les symboles de production touchés par les diffs de ces tâches ;
+- les portes du harness exécutées sur ces symboles.
 
-For each test method:
+Pour chaque méthode de test : l'AC qu'elle affirme vérifier et la tâche qui l'a introduite.
 
-- The AC it claims to assert.
-- The task that introduced it.
+Pour chaque symbole de production modifié : au moins un test qui le couvre, sinon il devient du code orphelin.
 
-For each production symbol changed in the diff:
+## Construction de la matrice
 
-- At least one test that covers it (else flagged "orphan code").
+`spring-validator` exécute `.github/scripts/traceability.sh`, qui :
 
-## Building the matrix
+1. extrait les titres `**AC-NNN**` de `01-spec.md` ;
+2. extrait des tâches de `04-tasks.md` les associations `**AC-IDs:**` ;
+3. cherche dans `src/test/java/**/*.java` les annotations de traçabilité ;
+4. lit `git diff --name-only origin/main...HEAD` et croise les fichiers avec la couverture JaCoCo par méthode ;
+5. lit `harness-summary.json` pour connaître les portes exécutées ;
+6. produit `07a-traceability.md`.
 
-`spring-validator` runs `.github/scripts/traceability.sh` which:
+## Contrôles requis
 
-1. Greps `01-spec.md` for `**AC-NNN**` headers → AC list.
-2. Greps `04-tasks.md` for task entries with `**AC-IDs:**` → AC↔task mapping.
-3. Scans `src/test/java/**/*.java` for `@Tag("AC-NNN")` and `@DisplayName("AC-NNN: …")` → AC↔test mapping.
-4. Reads `git diff --name-only origin/main...HEAD` → changed files; intersects with JaCoCo's per-method coverage data → covered/uncovered symbols.
-5. Reads `harness-summary.json` → gates that ran.
-6. Emits `07a-traceability.md`.
+- **Aucun AC non couvert.** Chaque `AC-NNN` apparaît dans au moins un `@Tag` ou `@DisplayName`.
+- **Aucun test orphelin.** Chaque test marqué `AC-NNN` référence un AC réel.
+- **Aucun code orphelin.** Chaque méthode de production modifiée est couverte par au moins un test.
+- **Aucune tâche non tracée.** Chaque `T-NNN` marquée `done` possède un commit consigné.
 
-## Required checks (all must pass)
+L'échec d'un seul contrôle fait renvoyer ❌ au validateur.
 
-- **No uncovered AC.** Every `AC-NNN` appears in ≥1 test's `@Tag` or `@DisplayName`.
-- **No orphan test.** Every test method tagged `AC-NNN` references a real AC.
-- **No orphan code.** Every changed production method has ≥1 covering test.
-- **No untraced task.** Every `T-NNN` marked `done` in `04-tasks.md` has a commit recorded.
-
-Failures of any check → validator returns ❌.
-
-## Sample output (truncated)
+## Exemple de sortie abrégé
 
 ```markdown
 ## Coverage
 
 | AC-ID | Tasks | Tests | Status |
 |-------|-------|-------|--------|
-| AC-001 | T-001, T-002 | ApplyGiftCardRequestTest#rejectsBlankCode, CheckoutControllerTest#happyPath | ✅ |
-| AC-002 | T-003 | CheckoutServiceTest#redeemedCardRejected, CheckoutControllerIT#redeemed409 | ✅ |
-| AC-003 | T-002 | CheckoutControllerTest#unknownCode404 | ✅ |
-| AC-004 | T-004 | GiftCardRepositoryIT#balanceAcrossOrders | ✅ |
+| AC-001 | T-001, T-002 | ApplyGiftCardRequestTest#rejectsBlankCode | ✅ |
 
 ## Orphan tests
 
-_None._
+_Aucun._
 
 ## Orphan code
 
-_None._
+_Aucun._
 
 ## Verdict
 
-✅ All ACs covered. No orphans.
+✅ Tous les AC sont couverts. Aucun orphelin.
 ```
 
-## Tagging convention (enforced)
+## Convention de marquage imposée
 
 ```java
 @Test
@@ -82,13 +74,13 @@ _None._
 void rejectsExpired() { ... }
 ```
 
-Both `@DisplayName` and `@Tag` are written for redundancy — one is human-friendly, the other machine-friendly.
-
-A Checkstyle rule rejects test methods that have `@DisplayName` matching `^AC-\\d{3}:` without a matching `@Tag`.
+Écrire `@DisplayName` et `@Tag` pour la redondance : l'un est lisible par une
+personne, l'autre par la machine. Une règle Checkstyle refuse un `@DisplayName`
+qui correspond à `^AC-\\d{3}:` sans `@Tag` correspondant.
 
 ## Anti-patterns
 
-- One mega-test that asserts five ACs at once → split.
-- Tests that only tag the highest-numbered AC of a related group → tag every AC asserted.
-- "Tag and forget" — agent tags the test but the assertion doesn't actually exercise the AC.
-- Removing a tag to make traceability green.
+- Un test géant qui vérifie cinq AC : le scinder.
+- Marquer seulement l'AC de plus grand numéro d'un groupe : marquer chaque AC vérifié.
+- Ajouter un tag sans assertion réelle du comportement.
+- Retirer un tag pour rendre la traçabilité verte.

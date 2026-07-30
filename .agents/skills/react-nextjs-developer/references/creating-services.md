@@ -1,13 +1,12 @@
-# Reusable Application Modules
+# Modules applicatifs réutilisables
 
-React and Next.js do not require service classes. Put reusable behavior in the
-smallest module matching its runtime:
+React et Next.js n'exigent pas de classes de service. Placer le comportement
+réutilisable dans le plus petit module adapté à son environnement :
 
-- server-only data access in `lib/` modules imported by Server Components,
-  Server Actions, or Route Handlers;
-- pure domain functions in framework-independent TypeScript modules;
-- reusable client behavior in custom hooks;
-- shared subtree state behind an explicit Context provider.
+- accès aux données serveur dans `lib/`, importé par Server Components, Server Actions ou Route Handlers ;
+- fonctions métier pures dans des modules TypeScript indépendants du framework ;
+- comportement client réutilisable dans des hooks personnalisés ;
+- état partagé d'un sous-arbre derrière un provider Context explicite.
 
 ```ts
 import 'server-only';
@@ -21,9 +20,9 @@ export async function getProduct(id: string): Promise<Product> {
 }
 ```
 
-Do not put secrets in Client Components. Do not create a class or singleton
-without a lifecycle or interface that requires one. Inject external effects as
-function parameters in domain code when that improves testing.
+Ne pas placer de secrets dans les Client Components ni créer de classe ou
+singleton sans cycle de vie qui l'exige. Injecter les effets externes comme
+paramètres de fonctions métier lorsque cela améliore les tests.
 
-Official reference:
+Référence officielle :
 [Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components).

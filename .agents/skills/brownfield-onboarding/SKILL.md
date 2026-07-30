@@ -1,83 +1,66 @@
 ---
 name: brownfield-onboarding
-description: Onboard an existing Spring codebase into the spec-driven workflow without blocking day one. Establish a `_baseline.json`, ratchet rules, and produce a starter design doc that reflects what the code actually looks like.
+description: Intégrer une base Spring existante au workflow piloté par les spécifications sans bloquer le premier jour. Établir `_baseline.json`, des règles à cliquet et une conception de départ fidèle au code.
 when_to_use:
-  - User runs `$onboard` or asks "add this workflow to my existing project".
-  - First feature on a repo that has no `.specs/` folder.
+  - L’utilisateur exécute `$onboard` ou demande d’ajouter le workflow à un projet existant.
+  - Première fonctionnalité d’un dépôt sans dossier `.specs/`.
 authoritative_references:
   - docs/methodology.md
   - .agents/skills/maven-harness-pom/SKILL.md
   - .github/scripts/detect-stack.sh
 ---
 
-# Brownfield onboarding
+# Onboarding brownfield
 
-## Goal
+## Objectif
 
-Reach a state where `$spec` works on the next feature, the harness runs green (or with documented baseline drift), and the team is not blocked by years of accumulated lint/coverage debt.
+Atteindre un état où `$spec` fonctionne pour la prochaine fonctionnalité, où le
+harness est vert ou n'affiche que des écarts de référence documentés, sans bloquer
+l'équipe sur des années de dette de lint ou de couverture.
 
-## Steps
+## Étapes
 
-1. **Detect the stack.** Run `.github/scripts/detect-stack.sh > .specs/_stack.json`. Record:
-   - Java version, Spring Boot version
-   - DB engine (Postgres/MySQL/H2/…)
-   - Migration tool (Flyway/Liquibase/none/both)
-   - Test stack (JUnit 4 vs 5, Testcontainers presence)
-   - Build tool (Maven only for now)
-   - OpenAPI spec presence
+1. **Détecter la stack.** Exécuter `.github/scripts/detect-stack.sh >
+   .specs/_stack.json`. Consigner Java, Spring Boot, le moteur de base de données,
+   l'outil de migration, la stack de test, l'outil de build et la présence d'OpenAPI.
 
-2. **Run the harness once, capture baselines.**
+2. **Exécuter le harness une seule fois et capturer les références.**
 
    ```bash
    ./.githu.github/scripts/harness.sh --baseline > .specs/_baseline.json
    ```
 
-   Result is committed:
+   Le résultat commité contient l'horodatage, le SHA Git et les valeurs de
+   référence pour Checkstyle, SpotBugs, JaCoCo, PIT, ArchUnit, OpenAPI et Dependency-Check.
 
-   ```json
-   {
-     "captured_at": "2026-04-18T10:00:00Z",
-     "git_sha": "abc1234",
-     "checkstyle": { "violations": 412 },
-     "spotbugs": { "high": 3, "medium": 27, "low": 88 },
-     "jacoco": { "overall_line": 0.71, "overall_branch": 0.58 },
-     "pit": { "kill_rate": 0.46, "scope": "incremental" },
-     "archunit": { "violations": 18 },
-     "openapi": { "present": false },
-     "dependency_check": { "high": 1, "critical": 0 }
-   }
-   ```
+3. **Ajouter les couches manquantes au POM** avec `maven-harness-pom`, en les
+   calant sur les valeurs actuelles et non sur les cibles :
+   - minimum JaCoCo à la couverture actuelle moins 1 %, pour le cliquet ;
+   - PIT dans un profil `-Ppit`, limité au périmètre incrémental ;
+   - règles ArchUnit avec `FreezingArchRule.freeze(...)` ;
+   - Spotless en mode `check` limité au nouveau code avec `<ratchetFrom>origin/main</ratchetFrom>`.
 
-3. **Add missing harness layers to the POM.** Use `maven-harness-pom` skill. Pin to current values, not the targets:
+4. **Générer une conception de départ.** `spring-architect` écrit
+   `.specs/_starter-design.md` à partir du code réel : modules, patterns dominants
+   et écarts notables. Les futures conceptions suivent cette référence sauf ADR contraire.
 
-   - JaCoCo `<minimum>` set to current minus 1% (ratchet).
-   - PIT enabled in a profile (`-Ppit`), incremental scope only.
-   - ArchUnit rules added with `FreezingArchRule.freeze(...)`.
-   - Spotless added in `check` mode for new code only initially (use `<ratchetFrom>origin/main</ratchetFrom>`).
+5. **Documenter les lacunes.** Écrire `.specs/_known-debt.md` avec les contrôles en
+   échec ou proches du seuil : violations ArchUnit gelées, couverture et cible du
+   cliquet, dérogations de CVE et injection de champs à corriger progressivement.
 
-4. **Generate a starter design.** `spring-architect` reads the codebase and writes `.specs/_starter-design.md` describing modules-as-they-are, the dominant patterns, and notable deviations. This is the reference for future feature designs ("we already do X, so a new feature should follow X unless an ADR says otherwise").
+6. **Première fonctionnalité.** Exécuter `$spec` sur un petit ticket. L'agent lit
+   `_baseline.json` et `_starter-design.md` sans proposer silencieusement un travail qui les dégrade.
 
-5. **Document the gaps.** Write `.specs/_known-debt.md` listing the things that fail or barely pass:
+## Politique de cliquet
 
-   ```markdown
-   - 18 ArchUnit violations frozen.
-   - Coverage at 71% (target 90%); ratchet by +1% per feature.
-   - 1 High-severity CVE waived: CVE-2024-XXXX in com.example:legacy-lib until upgrade ticket SHOP-123.
-   - Field injection in 47 places; freeze ArchUnit rule, fix incrementally.
-   ```
-
-6. **First feature.** Run `$spec` against a small ticket. The agent reads `.specs/_baseline.json` and `.specs/_starter-design.md` and never proposes work that breaks them silently.
-
-## Ratchet policy
-
-- Coverage: per-package thresholds raised by 1% per merged PR that touches the package.
-- ArchUnit: frozen violations decrease only; never add a new violation.
-- Mutation: incremental scope from day one; full-scope nightly run is informational.
-- CVE waivers: every waiver has an expiry date and a tracker ticket.
+- Couverture : augmenter d'un point le seuil par package à chaque PR fusionnée qui le touche.
+- ArchUnit : les violations gelées ne peuvent que diminuer ; ne jamais en ajouter.
+- Mutation : périmètre incrémental dès le premier jour ; exécution complète nocturne à titre informatif.
+- Dérogations CVE : chacune possède une expiration et un ticket de suivi.
 
 ## Anti-patterns
 
-- "We'll fix coverage later" without setting a ratchet number.
-- Disabling a harness layer because it's noisy → lower the threshold instead, log the debt.
-- Editing baselines downward without an ADR.
-- Committing `_baseline.json` changes that lower a metric without explanation.
+- « Nous corrigerons la couverture plus tard » sans valeur de cliquet.
+- Désactiver une couche bruyante du harness ; ajuster le seuil et consigner la dette.
+- Dégrader les références sans ADR.
+- Commiter une baisse de métrique dans `_baseline.json` sans explication.

@@ -1,7 +1,7 @@
-# Route Authorization
+# Autorisation des routes
 
-Client-side redirects are not authorization. Enforce authentication and
-authorization at every server-side data access, Server Action, and Route Handler.
+Une redirection client n'est pas une autorisation. Imposer authentification et
+autorisation à chaque accès serveur, Server Action et Route Handler.
 
 ```tsx
 import {redirect} from 'next/navigation';
@@ -18,12 +18,11 @@ export default async function AdminPage() {
 }
 ```
 
-Centralize secure data access in server-only functions, but call the check from
-each public entry point. Treat Route Handlers like public API endpoints.
+Centraliser l'accès sécurisé dans des fonctions serveur, mais contrôler chaque
+point d'entrée public. Traiter les Route Handlers comme des API publiques.
 
-Use a request interception layer only for coarse routing or optimistic checks;
-do not rely on it as the sole authorization boundary. Never expose secrets or
-trusted permission logic to a Client Component.
+Utiliser l'interception uniquement pour un routage grossier ou contrôle optimiste,
+jamais comme seule frontière. Ne pas exposer secrets ou logique fiable au client.
 
-Official reference:
+Référence officielle :
 [Authentication](https://nextjs.org/docs/app/guides/authentication).

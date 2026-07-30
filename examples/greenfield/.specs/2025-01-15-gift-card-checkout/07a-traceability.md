@@ -1,8 +1,8 @@
-# Traceability: 2025-01-15-gift-card-checkout
+# Traçabilité : 2025-01-15-gift-card-checkout
 
-Generated: 2025-01-22T14:31:09Z
+Généré le : 2025-01-22T14:31:09Z
 
-| AC      | Title                          | Tests                                                                                                  | Production code                                                                 |
+| AC      | Titre                          | Tests                                                                                                  | Code de production                                                              |
 |---------|--------------------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
 | AC-001  | Apply a valid gift card        | `giftcard.internal.DefaultGiftCardRedemptionServiceTest`, `giftcard.internal.GiftCardRedemptionIT`, `giftcard.internal.GiftCardControllerTest`, `giftcard.internal.GiftCardContractTest` | `giftcard.internal.DefaultGiftCardRedemptionService`, `giftcard.internal.GiftCardController` |
 | AC-002  | Reject unknown card            | `giftcard.internal.DefaultGiftCardRedemptionServiceRejectionTest`, `giftcard.internal.GiftCardControllerTest`                                                                          | `giftcard.internal.DefaultGiftCardRedemptionService`                            |
@@ -13,6 +13,5 @@ Generated: 2025-01-22T14:31:09Z
 
 ## Notes
 
-- Every AC has at least one `@Tag("AC-NNN")` test.
-- Production-code column derived heuristically from test imports; verified
-  manually during `$review`.
+- Chaque AC possède au moins un test `@Tag("AC-NNN")`.
+- La colonne du code est déduite des imports des tests et vérifiée manuellement pendant `$review`.

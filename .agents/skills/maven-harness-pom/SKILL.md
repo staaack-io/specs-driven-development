@@ -1,20 +1,21 @@
 ---
 name: maven-harness-pom
-description: Reference Maven POM fragments for the full harness — Spotless, Checkstyle, SpotBugs, Error Prone, JaCoCo, PIT, OpenAPI generator + diff, OWASP dependency check, Surefire/Failsafe. Use when wiring the harness into a new project or upgrading a brownfield POM.
+description: Fragments POM Maven de référence pour le harness complet, notamment Spotless, Checkstyle, SpotBugs, Error Prone, JaCoCo, PIT, OpenAPI, OWASP et Surefire/Failsafe. Utiliser pour raccorder un nouveau projet ou moderniser un POM brownfield.
 when_to_use:
-  - Phase E setup (`$onboard`).
-  - Adding a missing harness layer to a brownfield repo.
+  - Configuration de la phase E avec `$onboard`.
+  - Ajout d’une couche manquante du harness dans un dépôt brownfield.
 authoritative_references:
   - https://maven.apache.org/plugins/
   - .agents/skills/jacoco-coverage-policy/SKILL.md
   - .agents/skills/pit-mutation-tuning/SKILL.md
 ---
 
-# Maven harness POM fragments
+# Fragments POM Maven du harness
 
-Each fragment is a drop-in `<plugin>` block. Pin versions; `harness.sh` warns if they drift out of date by more than one minor.
+Chaque fragment est un bloc `<plugin>` prêt à insérer. Figer les versions ;
+`harness.sh` avertit lorsqu'elles ont plus d'une version mineure de retard.
 
-## Properties (top of the POM)
+## Propriétés en tête du POM
 
 ```xml
 <properties>
@@ -42,7 +43,7 @@ Each fragment is a drop-in `<plugin>` block. Pin versions; `harness.sh` warns if
 </properties>
 ```
 
-## Spotless (format)
+## Spotless, formatage
 
 ```xml
 <plugin>
@@ -128,7 +129,7 @@ Each fragment is a drop-in `<plugin>` block. Pin versions; `harness.sh` warns if
 </plugin>
 ```
 
-## Error Prone (compiler arg)
+## Error Prone, argument du compilateur
 
 ```xml
 <plugin>
@@ -153,11 +154,11 @@ Each fragment is a drop-in `<plugin>` block. Pin versions; `harness.sh` warns if
 
 ## JaCoCo
 
-See `jacoco-coverage-policy` skill.
+Voir le skill `jacoco-coverage-policy`.
 
 ## PIT
 
-See `pit-mutation-tuning` skill. Wire into a `pit` profile to keep default builds fast:
+Voir le skill `pit-mutation-tuning`. Le raccorder à un profil `pit` pour garder les builds par défaut rapides :
 
 ```xml
 <profiles>
@@ -170,7 +171,7 @@ See `pit-mutation-tuning` skill. Wire into a `pit` profile to keep default build
 </profiles>
 ```
 
-## OpenAPI generator
+## Générateur OpenAPI
 
 ```xml
 <plugin>
@@ -197,7 +198,7 @@ See `pit-mutation-tuning` skill. Wire into a `pit` profile to keep default build
 </plugin>
 ```
 
-## OWASP Dependency Check
+## OWASP Dependency-Check
 
 ```xml
 <plugin>
@@ -218,13 +219,14 @@ See `pit-mutation-tuning` skill. Wire into a `pit` profile to keep default build
 </plugin>
 ```
 
-## Surefire / Failsafe split
+## Séparation Surefire / Failsafe
 
-Surefire = unit. Failsafe = integration (Testcontainers).
+Surefire exécute les tests unitaires. Failsafe exécute les tests d'intégration avec Testcontainers.
 
-Naming convention:
-- Unit tests: `*Test.java`
-- IT tests: `*IT.java`
+Convention de nommage :
+
+- tests unitaires : `*Test.java` ;
+- tests d'intégration : `*IT.java`.
 
 ```xml
 <plugin>

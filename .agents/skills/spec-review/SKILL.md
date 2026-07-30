@@ -1,39 +1,55 @@
 ---
 name: spec-review
-description: "Audit an SDD specification for ambiguity and completeness. Use when the user invokes $spec-review or asks to review a feature spec."
+description: "Auditer une spécification SDD pour détecter ambiguïtés et manques. Utiliser lorsque l’utilisateur invoque $spec-review ou demande une revue de spécification."
 ---
 
 # $spec-review
 
-**Phase:** 2 — review
-**Owning agent:** `.codex/agents/spec-author.toml` (review hat)
-**Skills used:** `ears-spec-authoring`, `requirements-traceability`
+**Phase :** 2 — revue
+**Agent responsable :** `.codex/agents/spec-author.toml`, avec le rôle de
+relecteur
+**Skills utilisés :** `ears-spec-authoring`,
+`requirements-traceability`
 
-## Purpose
-Audit `01-spec.md` against the spec checklist and produce `02-spec-review.md` with a pass/fail verdict and a numbered list of required edits.
+## Objectif
 
-## Inputs
-- `<feature-id>` (positional). If omitted, use the most recently modified `.specs/<id>/`.
+Auditer `01-spec.md` avec la checklist et produire
+`02-spec-review.md` avec un verdict et la liste numérotée des corrections.
 
-## Reads
-- `.specs/<feature-id>/01-spec.md`
-- `.codex/checklists/spec-review.md`
-- `.codex/templates/spec-review.template.md`
+## Entrées
 
-## Writes
-- `.specs/<feature-id>/02-spec-review.md`
+- `<feature-id>`. En son absence, utiliser la fonctionnalité la plus récemment
+  modifiée sous `.specs/`.
 
-## Process
-1. Walk every checklist item; for each, record `pass | fail | n/a` plus a one-line rationale.
-2. For each `fail`, write a concrete edit (line + replacement) the spec author must apply.
-3. Verify EARS form compliance for every AC.
-4. Verify each AC is independently testable (no compound criteria).
-5. Verify `## Open Questions` is empty before declaring overall verdict `PASS`.
-6. Emit summary: `verdict`, `acs_total`, `acs_failed`, `open_questions`, `next_command`.
+## Lectures
 
-## Refuse if
-- `01-spec.md` does not exist.
-- Any `Q-NNN` is unresolved — verdict must be `FAIL` with the open question list quoted verbatim.
+- `.specs/<feature-id>/01-spec.md` ;
+- `.codex/checklists/spec-review.md` ;
+- `.codex/templates/spec-review.template.md`.
 
-## Done when
-`02-spec-review.md` exists. If verdict is `PASS`, point the user to `$plan`. If `FAIL`, point them back to editing `01-spec.md`.
+## Écritures
+
+- `.specs/<feature-id>/02-spec-review.md`.
+
+## Processus
+
+1. Examiner chaque élément et consigner `pass | fail | n/a` avec une
+   justification courte.
+2. Pour chaque `fail`, indiquer la ligne et la correction concrète.
+3. Vérifier la forme EARS de chaque critère.
+4. Vérifier que chaque critère peut être testé indépendamment.
+5. Exiger une section `## Open Questions` vide avant un verdict global
+   `PASS`.
+6. Produire `verdict`, `acs_total`, `acs_failed`, `open_questions` et
+   `next_command`.
+
+## Refuser si
+
+- `01-spec.md` n’existe pas ;
+- un `Q-NNN` n’est pas résolu : le verdict doit être `FAIL` et citer les
+  questions exactement.
+
+## Terminé lorsque
+
+`02-spec-review.md` existe. Avec `PASS`, orienter vers `$plan`. Avec
+`FAIL`, demander de corriger `01-spec.md`.

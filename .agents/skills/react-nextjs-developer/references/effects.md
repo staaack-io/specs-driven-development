@@ -1,7 +1,7 @@
-# Effects
+# Effets
 
-Use `useEffect` only to synchronize a Client Component with an external system:
-browser APIs, subscriptions, timers, analytics, or non-React widgets.
+Utiliser `useEffect` uniquement pour synchroniser un Client Component avec un
+système externe : API navigateur, abonnement, timer, analytics ou widget non React.
 
 ```tsx
 'use client';
@@ -23,15 +23,15 @@ export function OnlineStatusLogger() {
 }
 ```
 
-Do not use an effect to:
+Ne pas utiliser un effet pour :
 
-- derive render data;
-- handle a user event;
-- keep two React state values synchronized;
-- fetch data that belongs in a Server Component.
+- dériver des données de rendu ;
+- traiter un événement utilisateur ;
+- synchroniser deux états React ;
+- charger des données qui appartiennent à un Server Component.
 
-Include every reactive dependency and implement cleanup that mirrors setup.
-Effects do not run in Server Components.
+Inclure chaque dépendance réactive et nettoyer symétriquement ce qui a été
+initialisé. Les effets ne s'exécutent pas dans les Server Components.
 
-Official reference:
+Référence officielle :
 [Synchronizing with effects](https://react.dev/learn/synchronizing-with-effects).

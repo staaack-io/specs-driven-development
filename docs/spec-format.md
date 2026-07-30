@@ -1,58 +1,68 @@
-# Spec Format — EARS-lite
+# Format des spécifications — EARS-lite
 
-The toolkit uses **EARS-lite** (Easy Approach to Requirements Syntax, simplified) for acceptance criteria. Specs are short, testable, and traceable.
+La boîte à outils utilise **EARS-lite**, une version simplifiée de
+« Easy Approach to Requirements Syntax », pour les critères d’acceptation. Une
+spécification doit rester courte, testable et traçable.
 
-## Why EARS-lite
+## Pourquoi EARS-lite
 
-- **Atomic.** One condition, one outcome — easy to map to one test.
-- **Testable.** The shape of each clause maps directly to a Given/When/Then test or a property-based assertion.
-- **Traceable.** Each AC has a stable ID (`AC-001`) referenced from tasks, tests, code, and the validation report.
+- **Atomique.** Une condition et un résultat, faciles à relier à un test.
+- **Testable.** La forme de chaque proposition se transforme directement en test
+  Étant donné/Quand/Alors ou en assertion par propriétés.
+- **Traçable.** Chaque critère possède un identifiant stable `AC-001`,
+  référencé depuis les tâches, tests, symboles et rapports.
 
-We use a *lite* subset of EARS — five clause shapes, no formal grammar, no tooling lock-in.
+Le sous-ensemble utilisé contient cinq formes, sans grammaire formelle ni
+dépendance à un outil.
 
-## The five shapes
+## Les cinq formes
 
+```text
+Universel :       Le système doit <action>.
+Événement :       Lorsque <déclencheur>, le système doit <action>.
+État :            Tant que <état>, le système doit <action>.
+Optionnel :        Lorsque <fonctionnalité présente>, le système doit <action>.
+Indésirable :      Si <condition indésirable>, alors le système doit <mesure>.
 ```
-Ubiquitous:     The system shall <action>.
-Event-driven:   When <trigger>, the system shall <action>.
-State-driven:   While <state>, the system shall <action>.
-Optional:       Where <feature>, the system shall <action>.
-Unwanted:       If <unwanted condition>, then the system shall <mitigation>.
-```
 
-## AC ID convention
+## Convention des identifiants AC
 
-- Format: `AC-NNN` (zero-padded 3-digit, monotonically increasing within a feature).
-- IDs are **never reused** even if the AC is removed; deletion leaves a tombstone.
-- Tests reference the AC via either `@DisplayName("AC-007: rejects expired card")` or `@Tag("AC-007")`. The traceability matrix consumes both.
+- Format : `AC-NNN`, avec trois chiffres et une progression monotone dans la
+  fonctionnalité.
+- Un identifiant n’est **jamais réutilisé**, même après suppression du critère ;
+  la suppression laisse une entrée témoin.
+- Les tests référencent le critère avec
+  `@DisplayName("AC-007: rejects expired card")` ou `@Tag("AC-007")`. La
+  matrice de traçabilité reconnaît les deux formes.
 
-## Spec template
+## Modèle de spécification
 
-See [`.codex/templates/spec.template.md`](../.codex/templates/spec.template.md).
-Skeleton:
+Voir [`.codex/templates/spec.template.md`](../.codex/templates/spec.template.md).
+Les noms de sections ci-dessous restent stables car les skills et hooks les
+consomment :
 
 ```markdown
-# Spec: <feature-id> — <short title>
+# Spec: <feature-id> — <titre court>
 
 ## Source
 - Tracker: <Jira/GitHub/Linear/Azure/ad-hoc>
 - ID: <FEATURE-123>
-- URL: <link>
+- URL: <lien>
 - Snapshot date: <YYYY-MM-DD>
 
 ## Goal
-<one paragraph>
+<un paragraphe>
 
 ## Acceptance Criteria
-- AC-001: When <trigger>, the system shall <action>.
-- AC-002: While <state>, the system shall <action>.
-- AC-003: If <unwanted condition>, then the system shall <mitigation>.
+- AC-001: Lorsque <déclencheur>, le système doit <action>.
+- AC-002: Tant que <état>, le système doit <action>.
+- AC-003: Si <condition indésirable>, alors le système doit <mesure>.
 
 ## Non-Goals
 - ...
 
 ## Glossary
-- **Term** — definition.
+- **Terme** — définition.
 
 ## Open Questions
 - Q-001: <question>
@@ -61,13 +71,13 @@ Skeleton:
   - Status: open
 
 ## Resolved Questions
-<empty>
+<vide>
 ```
 
-## Worked example
+## Exemple complet
 
 ```markdown
-# Spec: GIFT-CARD-001 — Apply gift card at checkout
+# Spec: GIFT-CARD-001 — Appliquer une carte cadeau au paiement
 
 ## Source
 - Tracker: Jira
@@ -76,44 +86,51 @@ Skeleton:
 - Snapshot date: 2026-04-18
 
 ## Goal
-Allow a customer to redeem a gift card during checkout, reducing the order total by the redeemed amount, never below zero, and exposing the redemption in the order receipt.
+Permettre à un client d’utiliser une carte cadeau pendant le paiement, sans
+jamais rendre le total négatif, et afficher l’utilisation sur le reçu.
 
 ## Acceptance Criteria
-- AC-001: When the customer applies a valid, non-expired gift card with positive balance, the system shall reduce the order total by min(card balance, order total).
-- AC-002: When the redemption succeeds, the system shall record the redeemed amount and remaining balance in the order receipt.
-- AC-003: If the gift card code is unknown, expired, or has zero balance, then the system shall reject the redemption with error code GC_INVALID and leave the order total unchanged.
-- AC-004: While the order is in PAID state, the system shall reject any further gift-card redemption with error code GC_ORDER_LOCKED.
-- AC-005: When two gift cards are applied to the same order, the system shall apply them in the order received and stop redeeming once the order total reaches zero.
+- AC-001: Lorsque le client applique une carte valide, non expirée et créditée, le système doit réduire le total du minimum entre le solde et le total.
+- AC-002: Lorsque l’utilisation réussit, le système doit enregistrer le montant utilisé et le solde restant sur le reçu.
+- AC-003: Si le code est inconnu, expiré ou sans solde, le système doit refuser avec GC_INVALID et conserver le total.
+- AC-004: Tant que la commande est dans l’état PAID, le système doit refuser toute nouvelle utilisation avec GC_ORDER_LOCKED.
+- AC-005: Lorsque deux cartes sont appliquées, le système doit respecter l’ordre reçu et s’arrêter lorsque le total atteint zéro.
 
 ## Non-Goals
-- Issuing new gift cards.
-- Refunding to gift cards.
-- Multi-currency conversion.
+- Émettre de nouvelles cartes cadeaux.
+- Rembourser vers une carte cadeau.
+- Convertir plusieurs devises.
 
 ## Glossary
-- **Gift card** — a prepaid voucher identified by a 16-character code with a non-negative balance and an expiry date.
-- **Redemption** — the act of subtracting from the gift card balance and reducing the order total.
+- **Carte cadeau** — bon prépayé identifié par un code de 16 caractères, avec un solde non négatif et une date d’expiration.
+- **Utilisation** — action de débiter la carte et de réduire le total de la commande.
 
 ## Open Questions
-- Q-001: Should redemptions on a cancelled order be reversed automatically, or require a separate refund flow?
-  - Why it matters: determines whether the redemption service needs to subscribe to order-cancelled events.
-  - Candidate options: (a) auto-reverse on cancel, (b) manual refund flow, (c) reject cancel while gift card applied.
+- Q-001: Les utilisations d’une commande annulée doivent-elles être inversées automatiquement ou passer par un remboursement séparé ?
+  - Why it matters: détermine si le service doit écouter les événements d’annulation.
+  - Candidate options: inversion automatique, remboursement manuel, refus d’annuler.
   - Status: open
 
 ## Resolved Questions
-<empty>
+<vide>
 ```
 
-## What does **not** belong in a spec
+## Ce qui n’appartient pas à une spécification
 
-- Implementation choices (which class, which library, which DB column). Those go in `03-design.md`.
-- Coverage thresholds, gate definitions. Those live in the harness.
-- Time estimates. Tasks in `04-tasks.md` carry rough sizing only.
-- Marketing copy or rationale beyond the `## Goal` paragraph.
+- Les choix d’implémentation, comme une classe, une bibliothèque ou une colonne
+  de base de données, appartiennent à `03-design.md`.
+- Les seuils de couverture et les portes appartiennent au harness.
+- Les estimations de temps appartiennent éventuellement aux tâches.
+- Le texte marketing ou une longue justification n’appartient pas à
+  `## Goal`.
 
-## Anti-patterns the spec author refuses
+## Antipatterns refusés par l’auteur de spec
 
-- "The system shall be fast." → not testable. Either define a measurable NFR (`p95 latency ≤ 200 ms under N RPS`) or it is not an AC.
-- "Probably we want…" → the agent never invents. Becomes a `Q-NNN`.
-- A single AC that bundles multiple conditions → split into atomic ACs.
-- Implementation leakage ("the system shall call PaymentService.charge()") → restate as observable behavior.
+- « Le système doit être rapide. » n’est pas testable. Définir une mesure, par
+  exemple une latence p95 inférieure à 200 ms sous N requêtes par seconde, ou ne
+  pas en faire un critère.
+- « Nous voulons probablement… » devient un `Q-NNN` ; l’agent ne choisit pas.
+- Un critère qui regroupe plusieurs conditions doit être découpé.
+- Une fuite d’implémentation comme
+  « appeler `PaymentService.charge()` » doit être reformulée en comportement
+  observable.

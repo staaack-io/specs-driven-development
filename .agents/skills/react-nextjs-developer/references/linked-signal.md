@@ -1,23 +1,22 @@
-# Derived and Resettable State
+# État dérivé et réinitialisable
 
-Do not mirror props or server data in local state by default. Compute pure
-derived values during render.
+Ne pas recopier par défaut les props ou données serveur dans l'état local.
+Calculer les valeurs dérivées pures pendant le rendu.
 
 ```tsx
 const selected = options.find((option) => option.id === selectedId) ?? options[0];
 ```
 
-When state must reset because an entity changes, model identity explicitly. A
-`key` can reset a subtree:
+Lorsque l'état doit être réinitialisé parce que l'entité change, représenter
+explicitement son identité. Une `key` peut réinitialiser un sous-arbre :
 
 ```tsx
 <Editor key={documentId} documentId={documentId} />
 ```
 
-When a user's selection may survive new options, store only the stable selected
-ID and derive the selected object. Validate the ID during the event or data
-transition that changes the options; do not use an effect merely to synchronize
-two state variables.
+Si une sélection peut survivre à de nouvelles options, stocker seulement son ID
+stable et dériver l'objet. Valider l'ID pendant la transition qui change les
+options, sans effet destiné uniquement à synchroniser deux états.
 
-Official reference:
+Référence officielle :
 [Choosing the state structure](https://react.dev/learn/choosing-the-state-structure).

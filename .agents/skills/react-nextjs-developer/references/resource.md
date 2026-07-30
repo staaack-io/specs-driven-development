@@ -1,6 +1,6 @@
-# Data Fetching and Streaming
+# Chargement et diffusion des données
 
-Fetch server-owned data in an async Server Component by default:
+Charger par défaut les données serveur dans un Server Component asynchrone :
 
 ```tsx
 export default async function Page() {
@@ -13,15 +13,14 @@ export default async function Page() {
 }
 ```
 
-Current Next.js behavior must be read from the installed version and official
-docs. Do not assume a request is cached. Add `"use cache"`, cache lifetime, or
-invalidation only when the product requirement defines the freshness behavior.
+Lire le comportement actuel dans la version installée et sa documentation. Ne pas
+supposer qu'une requête est cachée. Ajouter `"use cache"`, durée et invalidation
+uniquement si l'exigence produit définit la fraîcheur.
 
-Use `loading.tsx` or `<Suspense>` to stream meaningful fallback UI. Fetch in a
-Client Component only when the interaction truly requires client ownership; use
-the project's existing client data library if one is already configured.
+Utiliser `loading.tsx` ou `<Suspense>` avec un fallback utile. Charger côté client
+seulement si l'interaction l'exige et réutiliser la bibliothèque déjà configurée.
 
-Handle non-success responses explicitly and keep credentials on the server.
+Traiter explicitement les réponses en échec et garder les identifiants côté serveur.
 
-Official reference:
+Référence officielle :
 [Fetching data](https://nextjs.org/docs/app/getting-started/fetching-data).

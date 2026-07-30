@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # forbid-skip-flags.sh
-# Codex PreToolUse Bash hook.
-# Blocks any shell command that uses build-skipping or verification-bypass flags.
+# Hook Codex PreToolUse pour Bash.
+# Bloque toute commande qui désactive le build ou contourne les vérifications.
 
 set -euo pipefail
 
@@ -9,18 +9,18 @@ input="$(cat)"
 cmd="$(echo "$input" | jq -r '.tool_input.command // empty')"
 [ -z "$cmd" ] && exit 0
 
-# Pattern -> reason
+# Motif → raison
 declare -a patterns=(
-  '-DskipTests'           'Refusing to run with -DskipTests; tests are mandatory.'
-  '-DskipITs'             'Refusing to run with -DskipITs; integration tests are mandatory when present.'
-  '-Dpit\.skip'           'Refusing to skip mutation testing.'
-  '-Dcheckstyle\.skip'    'Refusing to skip Checkstyle.'
-  '-Dspotbugs\.skip'      'Refusing to skip SpotBugs.'
-  '-Dspotless\.check\.skip' 'Refusing to skip Spotless.'
-  '-Djacoco\.skip'        'Refusing to skip JaCoCo.'
-  '--no-verify'           'Refusing to bypass git/maven verification hooks.'
-  '-Dmaven\.test\.skip'   'Refusing to skip the test phase entirely.'
-  'maven\.test\.failure\.ignore=true' 'Refusing to ignore test failures.'
+  '-DskipTests'           'Exécution refusée avec -DskipTests : les tests sont obligatoires.'
+  '-DskipITs'             "Exécution refusée avec -DskipITs : les tests d'intégration sont obligatoires lorsqu'ils existent."
+  '-Dpit\.skip'           'Impossible de désactiver les tests de mutation.'
+  '-Dcheckstyle\.skip'    'Impossible de désactiver Checkstyle.'
+  '-Dspotbugs\.skip'      'Impossible de désactiver SpotBugs.'
+  '-Dspotless\.check\.skip' 'Impossible de désactiver Spotless.'
+  '-Djacoco\.skip'        'Impossible de désactiver JaCoCo.'
+  '--no-verify'           'Impossible de contourner les vérifications Git ou Maven.'
+  '-Dmaven\.test\.skip'   'Impossible de sauter entièrement la phase de test.'
+  'maven\.test\.failure\.ignore=true' "Impossible d'ignorer les échecs de tests."
 )
 
 i=0
@@ -28,17 +28,17 @@ while [ $i -lt ${#patterns[@]} ]; do
   pat="${patterns[$i]}"
   reason="${patterns[$((i+1))]}"
   if printf '%s\n' "$cmd" | grep -Eq -- "$pat"; then
-    echo "BLOCKED: $reason  (matched pattern: $pat)" >&2
-    echo "Command: $cmd" >&2
+    echo "BLOQUÉ : $reason (motif détecté : $pat)" >&2
+    echo "Commande : $cmd" >&2
     exit 2
   fi
   i=$((i+2))
 done
 
-# Also block destructive git ops without explicit user instruction.
+# Bloquer aussi les opérations Git destructrices sans demande explicite de l'utilisateur.
 if printf '%s\n' "$cmd" | grep -Eq -- \
   '(^|[[:space:]])git[[:space:]]+(commit|push|reset[[:space:]]+--hard|clean[[:space:]]+-fd)([[:space:]]|$)'; then
-  echo "BLOCKED: This toolkit never auto-commits, pushes, or destructively cleans. Ask the user to run this themselves." >&2
+  echo "BLOQUÉ : cet outil ne commit, ne pousse et ne nettoie jamais automatiquement de façon destructive. Demandez à l'utilisateur d'exécuter lui-même la commande." >&2
   exit 2
 fi
 

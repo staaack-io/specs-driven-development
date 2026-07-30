@@ -1,71 +1,74 @@
 ---
 name: wire-harness
-description: "Wire the Maven quality harness after onboarding. Use when the user invokes $wire-harness or asks to add the framework quality gates."
+description: "Raccorder le harness qualité Maven après l’intégration. Utiliser lorsque l’utilisateur invoque $wire-harness ou demande d’ajouter les portes de qualité du framework."
 ---
 
 # $wire-harness
 
-**Phase:** 0 (meta) — onboarding extension
-**Owning agent:** `.codex/agents/spring-onboarding.toml`
-**Skills used:** `maven-harness-pom`, `jacoco-coverage-policy`, `pit-mutation-tuning`, `flyway-or-liquibase-detection`, `harness-report-parsing`
+**Phase :** 0 — prolongement de l’intégration
+**Agent responsable :** `.codex/agents/spring-onboarding.toml`
+**Skills utilisés :** `maven-harness-pom`, `jacoco-coverage-policy`,
+`pit-mutation-tuning`, `flyway-or-liquibase-detection`,
+`harness-report-parsing`
 
-## Purpose
-Wire the Maven harness layers (Spotless, Checkstyle, SpotBugs, Surefire/Failsafe split, JaCoCo, PIT, OWASP Dependency-Check) plus the chosen migration tool dependency into a Maven module's `pom.xml`. Runs against a module that has already been classified by `$onboard` so that subsequent `$spec` → `$plan` → `$build` cycles execute against fully gated quality bars from day one.
+## Objectif
 
-This command exists because `$onboard` Process step 4 says "add missing harness layers" but only on the POM-and-config surface, while `$build` is strictly TDD and refuses to edit the POM without a `<task-id>` in flight. `$wire-harness` fills that gap.
+Raccorder dans un module Maven déjà analysé les couches Spotless, Checkstyle,
+SpotBugs, Surefire/Failsafe, JaCoCo, PIT, OWASP Dependency Check et l’outil de
+migration choisi. Ce skill comble l’espace entre `$onboard`, qui diagnostique,
+et `$build`, réservé aux tâches TDD.
 
-## Inputs
-None required. Optional argument: a path to a Maven module (default `.`). For polyglot monorepos pass the module directory (e.g. `shoply-api`).
+## Entrées
 
-## Reads
-- The target module's `pom.xml`.
-- `.specs/_stack.json` (must exist — produced by `$onboard`).
-- `.specs/_onboarding.md` and `.specs/_known-debt.md` (to know what's already accepted as deferred).
-- `.specs/adr/` (must already contain the migration-tool decision if the module uses a database).
-- `.codex/maven/parent-pom-fragment.xml` and `.agents/skills/maven-harness-pom/SKILL.md` (authoritative reference).
-- `.agents/skills/jacoco-coverage-policy/SKILL.md`, `.agents/skills/pit-mutation-tuning/SKILL.md`, `.agents/skills/flyway-or-liquibase-detection/SKILL.md`.
+Chemin facultatif d’un module Maven, par défaut `.`. Dans un monorepo, fournir
+le module backend.
 
-## Writes
-- `<module>/pom.xml` (plugin and dependency wiring; properties block; profile blocks).
-- `<module>/checkstyle.xml` (starter Google-style config if missing).
-- `<module>/dependency-check-suppressions.xml` (empty suppression file if missing).
-- `.specs/_baseline.json` (refreshed via `.github/scripts/harness.sh --baseline` after the wiring run).
-- `.specs/_stack.json` (refreshed via `.github/scripts/detect-stack.sh`).
-- `.specs/_known-debt.md` (close the harness debt entry; add new entries for any layer **deferred** during this pass with rationale and trigger).
-- `.specs/_starter-design.md` (record chosen profiles, code style, naming conventions for unit/IT tests).
-- `.specs/adr/ADR-NNN-*.md` (one ADR per deferred layer that overrides a default in `maven-harness-pom`).
+## Lectures
 
-## Process
-1. **Pre-flight.** Refuse if `.specs/_stack.json` is missing (run `$onboard` first). Refuse if `migration == "both"`. If `migration == "none"` and the module has any DB engine, refuse and instruct the user to author the migration-tool ADR first (`$spec` → ADR via `$plan`, or a direct ADR under `spring-architect`).
-2. **Compatibility check.** For each layer, verify the pinned plugin version in `.agents/skills/maven-harness-pom/SKILL.md` is compatible with the detected `java_version` and `spring_boot_version`. If a layer is incompatible (e.g. Error Prone on a too-new JDK), **defer it** — do not invent a workaround. Each deferral becomes an ADR in step 6.
-3. **Wire layers.** Edit `<module>/pom.xml` per `.agents/skills/maven-harness-pom/SKILL.md`:
-   - Properties block with pinned versions.
-   - Spotless (Google Java Format), Checkstyle, SpotBugs (+ FindSecBugs).
-   - Surefire (excludes `**/*IT.java`) + Failsafe (`**/*IT.java`, group `integration`).
-   - JaCoCo with the thresholds from `jacoco-coverage-policy` (full thresholds for greenfield; ratchet for brownfield using `_baseline.json`). Exclude the Spring Boot `@SpringBootApplication` class from coverage rules.
-   - PIT inside a `pit` profile (off the default `mvn verify` path).
-   - OWASP Dependency-Check inside a `security` profile (off the default `mvn verify` path so the NVD download doesn't gate every local build).
-   - Migration tool runtime dependency (e.g. `flyway-core` + `flyway-mysql`) per `flyway-or-liquibase-detection`.
-4. **Config files.**
-   - Create `<module>/checkstyle.xml` (Google-style starter) if absent.
-   - Create `<module>/dependency-check-suppressions.xml` (empty `<suppressions>`) if absent.
-   - Fix obvious POM hygiene that Spotless/Checkstyle will flag (e.g. populate or remove empty Initializr-generated `<name/>`, `<description/>`, `<url/>`, `<scm/>` elements).
-5. **Apply formatting.** Run `mvn -pl <module> spotless:apply` once to bring existing source files (Initializr scaffolding) into compliance. This is the **only** edit to `src/**` allowed in this command, and it is mechanical.
-6. **Document deferrals.** For each layer deferred in step 2, write `.specs/adr/ADR-NNN-<slug>.md` per `.agents/skills/adr-authoring/SKILL.md` (Context, Decision drivers, Considered options, Decision outcome with rationale, Consequences, Trigger to revisit). Add a corresponding `DEBT-NNN` entry to `.specs/_known-debt.md`.
-7. **Verify.** Run `mvn -pl <module> -am verify`. The build must be **green**. Then run `.github/scripts/harness.sh --module <module> --baseline` and capture the result into `.specs/_baseline.json`.
-8. **Refresh artifacts.** Re-run `.github/scripts/detect-stack.sh <module>/pom.xml > .specs/_stack.json`. Update `.specs/_known-debt.md` to mark the harness-layers debt resolved (preserve the entry, prepend the resolution note). Update `.specs/_starter-design.md` with the chosen profiles, code style, and test-naming conventions.
+- `pom.xml` du module ;
+- `.specs/_stack.json`, obligatoire ;
+- artefacts d’intégration, dette connue et ADR ;
+- fragment Maven et skills de harness, couverture, mutation et migration.
 
-## Refuse if
-- `.specs/_stack.json` does not exist (precondition: run `$onboard` first).
-- `migration == "both"` in the stack JSON (fatal; same rule as `$onboard`).
-- `migration == "none"` and the module has a DB engine and no ADR has decided the migration tool.
-- The agent would need to edit any file under `<module>/src/main/**` or `<module>/src/test/**` other than via `mvn spotless:apply` (test code and architecture-rule code belong to a future `$build` task).
-- Any harness layer's compatibility cannot be established and the user has not chosen between deferring it or pinning an explicit override version.
-- A coverage or mutation threshold would need to be lowered without a `_baseline.json` baseline + an ADR justifying the ratchet.
+## Écritures
 
-## Done when
-- `mvn -pl <module> -am verify` is green from a clean checkout (after the one-shot `spotless:apply`).
-- `.github/scripts/harness.sh --module <module> --report` shows every wired layer as `pass` (or `skipped` if it lives in an opt-in profile).
-- `.specs/_baseline.json` exists and reflects the post-wiring run.
-- `.specs/_known-debt.md` no longer lists the harness-layers debt as open; any deferred layer has its own `DEBT-NNN` + ADR.
-- The user has been told the next recommended command is `$spec` (greenfield) or `$build <task-id>` (if a task is already pending).
+- `<module>/pom.xml` ;
+- `checkstyle.xml` et `dependency-check-suppressions.xml` s’ils manquent ;
+- références et détection de stack actualisées ;
+- dette connue et conception de départ ;
+- un ADR par couche explicitement différée.
+
+## Processus
+
+1. Exiger `_stack.json`. Refuser les deux outils de migration. Si une base est
+   détectée sans outil choisi, exiger d’abord un ADR.
+2. Vérifier la compatibilité de chaque version de plugin avec Java et Spring
+   Boot. Différer sans inventer de contournement, avec ADR.
+3. Raccorder les versions et plugins selon `maven-harness-pom` :
+   - Spotless, Checkstyle, SpotBugs et FindSecBugs ;
+   - Surefire hors `*IT.java` et Failsafe pour `*IT.java` ;
+   - JaCoCo avec seuils complets en greenfield ou cliquet brownfield ;
+   - PIT dans le profil `pit` ;
+   - OWASP dans le profil `security` ;
+   - dépendance Flyway ou Liquibase décidée.
+4. Créer les fichiers de configuration manquants et corriger l’hygiène évidente
+   du POM.
+5. Exécuter une fois `spotless:apply`. C’est la seule modification mécanique
+   de `src/**` autorisée.
+6. Documenter chaque report avec ADR et `DEBT-NNN`.
+7. Exécuter `mvn -pl <module> -am verify`, puis le harness en mode référence.
+8. Actualiser la stack, la dette et les conventions de départ.
+
+## Refuser si
+
+- l’intégration préalable manque ;
+- la migration est ambiguë ou indécise ;
+- une édition manuelle de production ou de test serait nécessaire ;
+- une compatibilité est inconnue sans décision de report ou version explicite ;
+- un seuil devrait baisser sans référence et ADR.
+
+## Terminé lorsque
+
+La vérification Maven est verte, chaque couche raccordée passe ou est
+explicitement optionnelle, la référence est actualisée, chaque report possède
+sa dette et son ADR, et l’utilisateur connaît l’étape suivante.

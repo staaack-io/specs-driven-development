@@ -1,64 +1,64 @@
 ---
 marp: true
-title: Spec-Driven Development in Practice
+title: Le développement piloté par les spécifications en pratique
 paginate: true
 size: 16:9
 ---
 
-# Spec-Driven Development in Practice
+# Le développement piloté par les spécifications en pratique
 
-From AI-assisted coding to verifiable software delivery.
+Du code assisté par IA à une livraison logicielle vérifiable.
 
-- Repository: specs-driven-development
-- Audience: Engineering teams and tech leads
-
----
-
-# Why This Exists
-
-AI can generate code quickly, but teams still struggle with:
-
-- Inconsistent outputs
-- Assumption drift
-- Weak traceability
-- Uneven quality gates
-
-This repo addresses those gaps with a structured, phase-based workflow.
+- Dépôt : specs-driven-development
+- Public : équipes d’ingénierie et responsables techniques
 
 ---
 
-# Core Idea
+# Pourquoi ce framework existe
 
-A deterministic delivery model:
+L’IA produit rapidement du code, mais les équipes rencontrent encore :
 
-- Explicit phase ownership
-- Stable artifacts per phase
-- TDD enforcement during build
-- Validation and review gates before commit
+- des résultats incohérents ;
+- des suppositions qui dérivent ;
+- une traçabilité faible ;
+- des contrôles de qualité inégaux.
 
-Outcome: faster iteration with stronger reliability.
-
----
-
-# Workflow Overview
-
-1. Specify
-2. Review specs
-3. Plan (design and tasks)
-4. Implement (TDD)
-5. Test
-6. Validate
-7. Code review
-
-Reference: docs/methodology.md
+Ce dépôt répond à ces écarts avec un workflow structuré en phases.
 
 ---
 
-# Artifact Contract
+# Idée centrale
 
-Every phase produces a concrete artifact under `.specs/<feature-id>/`.
+Un modèle de livraison déterministe :
 
-Examples:
+- responsabilité explicite par phase ;
+- artefacts stables à chaque étape ;
+- TDD imposé pendant l’implémentation ;
+- validation et revue avant le commit.
+
+Résultat : itérer plus vite sans sacrifier la fiabilité.
+
+---
+
+# Vue d’ensemble du workflow
+
+1. Spécifier
+2. Relire la spécification
+3. Planifier la conception et les tâches
+4. Implémenter en TDD
+5. Élargir les tests
+6. Valider
+7. Relire le code
+
+Référence : `docs/methodology.md`
+
+---
+
+# Contrat des artefacts
+
+Chaque phase produit un artefact concret sous `.specs/<feature-id>/`.
+
+Exemples :
 
 - `01-spec.md`
 - `03-design.md`
@@ -66,112 +66,117 @@ Examples:
 - `07-validation-report.md`
 - `08-code-review.md`
 
-Reference: docs/artifact-contract.md
+Référence : `docs/artifact-contract.md`
 
 ---
 
-# Agent Roles
+# Rôles des agents
 
-Specialized roles improve focus and accountability:
+Des rôles spécialisés améliorent la concentration et la responsabilité :
 
-- Spec author
-- Architect
-- Test engineer
-- Implementer
-- Validator
-- Code reviewer
+- auteur de spécification ;
+- architecte ;
+- ingénieur de test ;
+- agent d’implémentation ;
+- agent de validation ;
+- agent de revue.
 
-Each role has constraints and handoff rules.
-
----
-
-# Guardrails That Matter
-
-Non-negotiable rules include:
-
-- No silent defaults in specs and design
-- Red -> green -> refactor discipline
-- No skip flags for quality gates
-- No code changes in validate/review phases
-- Human decision checkpoints for high-risk actions
+Chaque rôle possède ses contraintes et règles de transmission.
 
 ---
 
-# Harness and Quality Gates
+# Garde-fous importants
 
-The harness validates multiple layers, including:
+Règles non négociables :
 
-- Formatting and linting
-- Compile and static analysis
-- Architecture checks
-- Unit and integration tests
-- Coverage and mutation
-- API contract checks
-- Security checks
-
-Reference: docs/harness-principles.md
+- aucune valeur par défaut silencieuse ;
+- discipline rouge → vert → refactorisation ;
+- aucune option contournant les contrôles ;
+- aucune modification du code pendant validation ou revue ;
+- décision humaine pour les actions à risque.
 
 ---
 
-# Traceability
+# Hooks et harness
 
-This repository enforces traceability across:
+Les hooks protègent chaque action : état TDD, périmètre, questions ouvertes et
+commandes interdites.
 
-- Acceptance criteria
-- Tasks
-- Tests
-- Code changes
-- Validation outcomes
+Le harness valide ensuite l’ensemble :
 
-Result: less ambiguity, easier audits, and safer releases.
+- format et lint ;
+- compilation et analyse statique ;
+- architecture ;
+- tests unitaires et d’intégration ;
+- couverture et mutations ;
+- contrats d’API ;
+- sécurité.
 
----
-
-# Demo Plan (8-10 min)
-
-1. Start with a feature request
-2. Draft `01-spec.md` with open questions
-3. Show task decomposition in `04-tasks.md`
-4. Show TDD red to green on one task
-5. Show validation and review artifacts
-6. End at explicit human approval point
+Référence : `docs/harness-principles.md`
 
 ---
 
-# Adoption Plan
+# Traçabilité
 
-Start small:
+Le dépôt relie :
 
-1. Pick one medium feature
-2. Run the full workflow end-to-end
-3. Measure cycle time and defect rate
-4. Retrospective and adjust team conventions
+- critères d’acceptation ;
+- tâches ;
+- tests ;
+- modifications du code ;
+- résultats de validation.
 
----
-
-# Risks and Mitigations
-
-Common concerns:
-
-- "This feels slower"
-- "Too much process"
-- "Hard for brownfield"
-
-Mitigations:
-
-- Pilot with one feature
-- Baseline and ratchet quality incrementally
-- Keep artifacts concise and practical
+Résultat : moins d’ambiguïté, des audits plus faciles et des livraisons plus
+sûres.
 
 ---
 
-# Call to Action
+# Démonstration en 8 à 10 minutes
 
-Run a one-sprint pilot:
+1. Partir d’une demande de fonctionnalité.
+2. Produire `01-spec.md` avec ses questions ouvertes.
+3. Montrer le découpage dans `04-tasks.md`.
+4. Parcourir rouge puis vert sur une tâche.
+5. Montrer les artefacts de validation et de revue.
+6. Terminer sur la décision humaine explicite.
 
-- One feature
-- One owner
-- Full phase coverage
-- Evidence-driven review
+---
 
-If the pilot reduces rework and improves confidence, scale it.
+# Plan d’adoption
+
+Commencer petit :
+
+1. Choisir une fonctionnalité moyenne.
+2. Exécuter tout le workflow.
+3. Mesurer le temps de cycle et les défauts.
+4. Faire une rétrospective et ajuster les conventions.
+
+---
+
+# Risques et réponses
+
+Préoccupations fréquentes :
+
+- « Cela semble plus lent. »
+- « Il y a trop de processus. »
+- « C’est difficile en brownfield. »
+
+Réponses :
+
+- expérimenter sur une fonctionnalité ;
+- établir une référence puis relever progressivement les seuils ;
+- garder les artefacts concis et utiles.
+
+---
+
+# Appel à l’action
+
+Mener une expérimentation sur un sprint :
+
+- une fonctionnalité ;
+- un responsable ;
+- toutes les phases ;
+- une revue fondée sur des preuves.
+
+Si l’expérimentation réduit le travail repris et renforce la confiance,
+généraliser l’approche.

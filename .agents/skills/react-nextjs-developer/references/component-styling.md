@@ -1,7 +1,7 @@
-# Styling Components
+# Styles des composants
 
-Preserve the project's existing styling system. Next.js supports global CSS and
-locally scoped CSS Modules without an additional runtime dependency.
+Conserver le système de styles existant. Next.js prend en charge le CSS global et
+les CSS Modules locaux sans dépendance d'exécution supplémentaire.
 
 ```tsx
 import styles from './product-card.module.css';
@@ -18,12 +18,11 @@ export function ProductCard({name}: {name: string}) {
 }
 ```
 
-- Import global CSS only from the location supported by the current project.
-- Use CSS Modules for component-local rules.
-- Use `className` and `style` with React's DOM property conventions.
-- Keep focus indicators visible and encode state with data or ARIA attributes.
-- Do not add Tailwind, CSS-in-JS, Sass, or another styling dependency unless it
-  is already selected or the user approves it.
+- Importer le CSS global uniquement depuis l'emplacement prévu par le projet.
+- Utiliser les CSS Modules pour les règles locales au composant.
+- Utiliser `className` et `style` selon les conventions DOM de React.
+- Garder les indicateurs de focus visibles et encoder l'état via data ou ARIA.
+- Ne pas ajouter Tailwind, CSS-in-JS, Sass ou autre dépendance sans choix existant ou accord utilisateur.
 
-Official reference:
+Référence officielle :
 [CSS](https://nextjs.org/docs/app/getting-started/css).

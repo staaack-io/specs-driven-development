@@ -1,14 +1,14 @@
-# Implementation log: gift-card-checkout
+# Journal d'implémentation : gift-card-checkout
 
-Each task contributes four blocks (red, green, refactor, simplify). Failing-test
-output is quoted verbatim; the exact JSON state at the end of each phase is
-mirrored in `.tdd-state.json`.
+Chaque tâche contribue quatre blocs : red, green, refactor et simplify. La sortie
+du test en échec est citée telle quelle et l'état JSON de chaque phase est reflété
+dans `.tdd-state.json`.
 
 ---
 
 ### T-001 — red
 
-**Test added:** `GiftCardCodeHasherTest#hashesAreDeterministicAndDifferFromInput`
+**Test ajouté :** `GiftCardCodeHasherTest#hashesAreDeterministicAndDifferFromInput`
 
 ```java
 @Test
@@ -23,13 +23,13 @@ void hashesAreDeterministicAndDifferFromInput() {
 }
 ```
 
-**Failure (mvn test -Dtest=GiftCardCodeHasherTest):**
+**Échec (`mvn test -Dtest=GiftCardCodeHasherTest`) :**
 ```
 [ERROR] GiftCardCodeHasherTest.hashesAreDeterministicAndDifferFromInput  Time elapsed: 0.013 s  <<< ERROR!
 java.lang.NoClassDefFoundError: com/example/checkout/giftcard/internal/GiftCardCodeHasher
 ```
 
-`.tdd-state.json` after this phase:
+`.tdd-state.json` après cette phase :
 ```json
 { "active_task": "T-001", "tasks": { "T-001": { "phase": "red",
     "red_failure_excerpt": "NoClassDefFoundError: GiftCardCodeHasher",
@@ -38,35 +38,31 @@ java.lang.NoClassDefFoundError: com/example/checkout/giftcard/internal/GiftCardC
 
 ### T-001 — green
 
-Implemented `GiftCardCodeHasher` with `MessageDigest.getInstance("SHA-256")`,
-salt prefix, returns 32-byte array. Added `GiftCardEntity`, `GiftCardRepository`,
-`GiftCardRedemptionEntity`, `GiftCardRedemptionRepository`, and Flyway script
-`V1__gift_cards.sql` (verbatim from `03-design.md`).
+Implémentation de `GiftCardCodeHasher` avec SHA-256, préfixe de sel et tableau de
+32 octets. Ajout des entités, dépôts et du script Flyway `V1__gift_cards.sql` issu de `03-design.md`.
 
-**`mvn test`**: 1 unit test passes.
-**`mvn -Dtest=GiftCardRepositoryIT verify`**: passes against Testcontainers
-`postgres:16-alpine`. Container start ~2.4s, query ~12ms.
+**`mvn test`** : 1 test unitaire réussit.
+**`mvn -Dtest=GiftCardRepositoryIT verify`** : réussit sur Testcontainers
+`postgres:16-alpine`, démarrage en environ 2,4 s et requête en 12 ms.
 
 ### T-001 — refactor
 
-Extracted the salt source into a `@ConfigurationProperties("checkout.giftcard")`
-record so production injects `${CHECKOUT_GIFTCARD_SALT}` from the environment;
-test uses the literal `"salt"`. No behavior change. All tests still green.
+Extraction du sel dans un record `@ConfigurationProperties("checkout.giftcard")`.
+La production injecte `${CHECKOUT_GIFTCARD_SALT}` et le test utilise `"salt"`.
+Aucun changement de comportement ; tous les tests restent verts.
 
 ### T-001 — simplify
 
-Applied clarity-over-cleverness. Two changes:
-- Inlined a private one-line `concatBytes()` helper used once.
-- Renamed `GiftCardEntity.bal` → `remainingBalance` (no abbreviations).
-Tests still green; no production behavior change.
+Application de la clarté : intégration du helper `concatBytes()` à usage unique et
+renommage de `GiftCardEntity.bal` en `remainingBalance`. Tests verts, comportement inchangé.
 
-`.tdd-state.json` after this phase: `T-001.phase = "done"`, `active_task = null`.
+Après cette phase : `T-001.phase = "done"`, `active_task = null`.
 
 ---
 
 ### T-002 — red
 
-**Test added:** `DefaultGiftCardRedemptionServiceTest#appliesFullBalanceWhenCardCoversSubtotal`
+**Test ajouté :** `DefaultGiftCardRedemptionServiceTest#appliesFullBalanceWhenCardCoversSubtotal`
 
 ```java
 @Test
@@ -75,7 +71,7 @@ Tests still green; no production behavior change.
 void appliesFullBalanceWhenCardCoversSubtotal() { ... }
 ```
 
-**Failure:**
+**Échec :**
 ```
 [ERROR] DefaultGiftCardRedemptionServiceTest.appliesFullBalanceWhenCardCoversSubtotal
 expected: Applied[amountApplied=Money[2500 USD], remainingBalance=Money[7500 USD]]
@@ -84,82 +80,68 @@ expected: Applied[amountApplied=Money[2500 USD], remainingBalance=Money[7500 USD
 
 ### T-002 — green
 
-Implemented `DefaultGiftCardRedemptionService.redeem()` with a single happy
-path: load by hash, check active+not expired+balance>=requested, debit, persist
-`GiftCardRedemption`, return `Applied`. Added a partial-coverage test (AC-005)
-which also passed without further code (the implementation already takes
-`min(remainingBalance, subtotal)`).
+Implémentation du parcours nominal de `redeem()` : chargement par hash, contrôles,
+débit, persistance et résultat `Applied`. Le test d'utilisation partielle AC-005
+réussit sans code supplémentaire grâce à `min(remainingBalance, subtotal)`.
 
-`mvn verify`: 4 passed (2 new unit + 2 new IT).
+`mvn verify` : 4 réussites, 2 unitaires et 2 d'intégration.
 
 ### T-002 — refactor
 
-Pulled the `min(remainingBalance, subtotal)` calculation into a named method
-`amountToDebit(Money subtotal, Money balance)` on the entity — improves
-readability, no behavior change. Tests still green.
+Extraction du calcul dans `amountToDebit(Money subtotal, Money balance)` sur
+l'entité, pour la lisibilité. Comportement inchangé et tests verts.
 
 ### T-002 — simplify
 
-Replaced an overly clever `Stream.of(card).filter(...).findFirst().map(...).orElseThrow(...)`
-with an early `if (!card.isActiveAt(now)) throw ...` followed by straight-line
-code. Removed an unused `Optional<Money>` return on a private helper.
+Remplacement d'un stream trop astucieux par une clause de garde et du code
+linéaire. Suppression d'un retour `Optional<Money>` inutile.
 
 ---
 
 ### T-003 — red
 
-Three rejection tests added (`AC-002`, `AC-003`, `AC-004`) plus an idempotency
-integration test (`AC-006`). All four fail because the service currently throws
-`NoSuchElementException` instead of returning `Rejected(code)`, and there is no
-`IdempotencyStore`.
+Ajout de trois tests de refus et d'un test d'intégration d'idempotence. Tous
+échouent car le service lève `NoSuchElementException` au lieu de retourner
+`Rejected(code)` et `IdempotencyStore` n'existe pas.
 
 ### T-003 — green
 
-Switched all rejection paths to `return new Rejected(code)`. Added an
-`IdempotencyStore` backed by the unique constraint on
-`gift_card_redemption(gift_card_id, idempotency_key)`: on insert conflict the
-existing row is loaded and the same `Applied` result is returned.
+Les refus retournent maintenant `new Rejected(code)`. Ajout d'un
+`IdempotencyStore` appuyé par la contrainte unique ; en cas de conflit, la ligne
+existante est chargée et le même résultat `Applied` est renvoyé.
 
 ### T-003 — refactor
 
-Extracted three guard clauses (unknown / expired / depleted) into a single
-`Optional<String> reasonToReject(GiftCardEntity card, Instant now)` helper that
-returns the error code or empty. Service body shrinks from 30 to 18 lines.
+Regroupement des trois gardes dans `reasonToReject(...)`, qui renvoie le code ou
+vide. Le service passe de 30 à 18 lignes.
 
 ### T-003 — simplify
 
-Removed an experimental `RejectionReason` enum that wrapped the strings — the
-strings are the contract; an enum is premature abstraction with one impl.
-All rejection codes now live as constants on `GiftCardRedemptionResult`.
+Suppression de l'enum expérimental `RejectionReason` : les chaînes sont le
+contrat. Les codes vivent désormais comme constantes de `GiftCardRedemptionResult`.
 
 ---
 
 ### T-004 — red
 
-`GiftCardControllerTest` (WebMvc slice) asserts 200 + JSON body for happy
-path; 422 + ProblemDetail for each rejection. `GiftCardContractTest` runs
-swagger-request-validator against `openapi.yaml`. All fail because the
-controller class does not exist.
+Le test WebMvc vérifie 200 avec JSON et 422 avec ProblemDetail. Le test de contrat
+compare à `openapi.yaml`. Tous échouent car le contrôleur n'existe pas.
 
 ### T-004 — green
 
-Added `GiftCardController.redeem(...)` mapping the JSON DTO to `RedeemCommand`,
-delegating to `GiftCardRedemptionService`, mapping `Applied` → 200 and
-`Rejected` → 422 with the existing ProblemDetail mapper. Updated `openapi.yaml`
-with the new path. All slice + contract tests pass.
+Ajout de `GiftCardController.redeem(...)`, du mapping DTO vers commande, de la
+délégation au service et des statuts 200 ou 422. Mise à jour d'OpenAPI ; tous les tests réussissent.
 
 ### T-004 — refactor
 
-Moved DTO mapping into `GiftCardRedeemRequest.toCommand(orderId, idempotencyKey)`
-so the controller stays thin. No behavior change.
+Déplacement du mapping dans `GiftCardRedeemRequest.toCommand(...)` pour garder un contrôleur fin, sans changement de comportement.
 
 ### T-004 — simplify
 
-Removed an `Optional<String>` parameter on the controller's response builder
-that was always supplied — turned into a required parameter. Eliminated a
-stale `// TODO: pagination` comment.
+Remplacement d'un paramètre `Optional<String>` toujours fourni par un paramètre
+obligatoire et suppression d'un commentaire `TODO` obsolète.
 
-`.tdd-state.json` after T-004 simplify:
+`.tdd-state.json` après simplify de T-004 :
 ```json
 { "active_task": null,
   "tasks": {
@@ -169,4 +151,4 @@ stale `// TODO: pagination` comment.
     "T-004": { "phase": "done" } } }
 ```
 
-All four tasks complete. Proceed to `$test --gap` (none expected) then `$validate`.
+Les quatre tâches sont terminées. Passer à `$test --gap`, sans écart attendu, puis `$validate`.

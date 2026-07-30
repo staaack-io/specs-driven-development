@@ -1,32 +1,34 @@
 ---
 name: nextjs-new-app
-description: Create a new React application with the official Next.js create-next-app CLI. Use when the user asks to scaffold a new Next.js App Router project.
+description: Créer une application React avec le CLI officiel create-next-app de Next.js. Utiliser lorsque l’utilisateur demande de générer un nouveau projet App Router.
 ---
 
-# Create a Next.js App
+# Créer une application Next.js
 
-1. Confirm Node.js is available and identify the requested package manager,
-   application name, Next.js version, linter, styling choice, `src/` layout, and
-   import alias. Ask instead of silently choosing a material option.
-2. Use the official `create-next-app` package. If the user requested a version,
-   invoke that exact package version; otherwise use the installed or latest
-   stable CLI without pinning a framework version in generated code.
-3. Pass non-interactive flags matching the resolved choices. For example:
+1. Confirmer que Node.js est disponible et identifier le gestionnaire de paquets,
+   le nom de l'application, la version de Next.js, le linter, le choix de styles,
+   l'utilisation de `src/` et l'alias d'import demandés. Interroger l'utilisateur
+   au lieu de choisir silencieusement une option importante.
+2. Utiliser le package officiel `create-next-app`. Si l'utilisateur demande une
+   version, invoquer exactement cette version ; sinon, utiliser le CLI stable
+   installé ou le plus récent, sans figer une version du framework dans le code généré.
+3. Passer les options non interactives correspondant aux choix résolus. Par exemple :
 
-   `bash
+   ```bash
    npx create-next-app@latest <app-name> --ts --eslint --app --turbopack --yes
-   `
+   ```
 
-   Add `--src-dir`, `--tailwind`, `--no-tailwind`, or a package-manager flag only
-   when it matches the user's decision or established workspace convention.
-4. Inspect the generated `package.json`, `app/` or `src/app/`, `next.config.*`,
-   `tsconfig.json`, and linter configuration. Do not add libraries or replace the
-   generated tooling without approval.
-5. Use App Router file conventions to add pages, layouts, route handlers, and
-   components. Next.js has no general component generator; create only the files
-   required by the requested feature.
-6. Run the generated lint and build scripts. Do not start a long-running
-   development server unless the user asks.
+   Ajouter `--src-dir`, `--tailwind`, `--no-tailwind` ou une option de gestionnaire
+   de paquets uniquement si cela correspond à la décision de l'utilisateur ou à
+   une convention établie dans le workspace.
+4. Inspecter le `package.json`, le dossier `app/` ou `src/app/`, `next.config.*`,
+   `tsconfig.json` et la configuration du linter générés. Ne pas ajouter de
+   bibliothèque ni remplacer l'outillage sans approbation.
+5. Suivre les conventions de fichiers App Router pour les pages, layouts, Route
+   Handlers et composants. Next.js n'a pas de générateur général de composants ;
+   créer uniquement les fichiers requis par la fonctionnalité demandée.
+6. Exécuter les scripts de lint et de build générés. Ne pas démarrer de serveur de
+   développement persistant sauf demande de l'utilisateur.
 
-Official reference:
+Référence officielle :
 [create-next-app](https://nextjs.org/docs/app/api-reference/cli/create-next-app).

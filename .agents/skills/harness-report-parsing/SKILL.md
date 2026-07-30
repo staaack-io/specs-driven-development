@@ -1,95 +1,74 @@
 ---
 name: harness-report-parsing
-description: Parse harness output (Surefire/Failsafe XML, JaCoCo XML, PIT XML, Checkstyle/SpotBugs XML, OpenAPI diff JSON, dependency-check JSON) into a single structured summary. Use when writing `07-validation-report.md` or when a CI run failed and the agent must explain why.
+description: Lire les rapports du harness Surefire, Failsafe, JaCoCo, PIT, Checkstyle, SpotBugs, OpenAPI et Dependency Check dans un résumé structuré. Utiliser pour `07-validation-report.md` ou pour expliquer un échec de CI.
 when_to_use:
-  - Phase 6 (Validate) — `$validate` command runs the harness and parses every report.
-  - Diagnosing a CI failure from log output.
+  - Phase 6, Validate — `$validate` exécute le harness et analyse chaque rapport.
+  - Diagnostiquer un échec de CI depuis les journaux.
 authoritative_references:
   - https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd
   - https://www.jacoco.org/jacoco/trunk/coverage/report.dtd
 ---
 
-# Harness report parsing
+# Analyse des rapports du harness
 
-## Input file map
+## Fichiers d'entrée
 
-| Layer | Path | Format |
+| Couche | Chemin | Format |
 |---|---|---|
-| Spotless | `target/spotless/` (markers) | exit code |
+| Spotless | `target/spotless/` | code de sortie |
 | Checkstyle | `target/checkstyle-result.xml` | XML |
 | SpotBugs | `target/spotbugsXml.xml` | XML |
-| Error Prone | compiler stderr | text |
-| ArchUnit | `target/surefire-reports/.../ArchitectureTest.xml` | Surefire XML |
-| ArchUnit | `target/surefire-reports/.../ArchitectureTest.xml` | Surefire XML |
-| Surefire (unit) | `target/surefire-reports/TEST-*.xml` | Surefire XML |
-| Failsafe (IT) | `target/failsafe-reports/TEST-*.xml` | Surefire XML |
-| JaCoCo | `target/site/jacoco/jacoco.xml` | JaCoCo XML |
-| PIT | `target/pit-reports/mutations.xml` | PIT XML |
-| OpenAPI diff | `target/openapi-diff.json` | JSON |
-| Dependency-check | `target/dependency-check-report.json` | JSON |
+| Error Prone | stderr du compilateur | texte |
+| ArchUnit | `target/surefire-reports/.../ArchitectureTest.xml` | XML Surefire |
+| Surefire, unitaire | `target/surefire-reports/TEST-*.xml` | XML Surefire |
+| Failsafe, intégration | `target/failsafe-reports/TEST-*.xml` | XML Surefire |
+| JaCoCo | `target/site/jacoco/jacoco.xml` | XML JaCoCo |
+| PIT | `target/pit-reports/mutations.xml` | XML PIT |
+| Diff OpenAPI | `target/openapi-diff.json` | JSON |
+| Dependency-Check | `target/dependency-check-report.json` | JSON |
 
-## Output shape (`harness-summary.json`)
+## Forme de sortie de `harness-summary.json`
 
-`.github/scripts/harness.sh --report` emits a single JSON document consumed by `spring-validator`:
+`.github/scripts/harness.sh --report` produit un document JSON unique consommé
+par `spring-validator`. Les clés et valeurs techniques, comme `pass`, `error` et
+`skipped`, restent en anglais car elles font partie du contrat machine.
 
-```json
-{
-  "git_sha": "abc1234",
-  "started_at": "2026-04-18T10:30:00Z",
-  "finished_at": "2026-04-18T10:38:42Z",
-  "gates": {
-    "format":   { "status": "pass" },
-    "compile":  { "status": "pass" },
-    "static":   { "status": "pass", "spotbugs": { "high": 0, "medium": 0 }, "checkstyle": { "violations": 0 } },
-    "arch":     { "status": "pass" },
-    "unit":     { "status": "pass", "tests": 412, "failures": 0, "errors": 0, "skipped": 2, "skipped_reasons": ["DisabledReason: SHOP-9 flaky"] },
-    "it":       { "status": "pass", "tests": 47, "failures": 0 },
-    "coverage": { "status": "pass", "line": 0.93, "branch": 0.91, "new_code_line": 0.97 },
-    "mutation": { "status": "pass", "kill_rate": 0.84, "survived_in_changed": 0 },
-    "contract": { "status": "pass", "breaking": 0, "non_breaking": 3 },
-    "security": { "status": "pass", "high": 0, "critical": 0, "waivers": 1 }
-  },
-  "overall": "pass"
-}
-```
+## Règles d'analyse
 
-## Parsing rules
+- Un rapport **manquant** pour une couche configurée vaut `error`, pas `pass`.
+- Une erreur d'analyse du rapport vaut `error`.
+- Un test `skipped` sans commentaire source `# DisabledReason:` vaut `error`.
 
-- A **missing report** for a layer the project has configured = `error`, not `pass`.
-- A **report with parse errors** = `error`.
-- A test marked `skipped` with no `# DisabledReason:` comment in source = `error` (enforced by Checkstyle rule `RegexpSinglelineJava` looking for `@Disabled` without preceding comment).
-
-## Surefire/Failsafe XML quick recipe
+## Recette XML Surefire/Failsafe
 
 ```xpath
 /testsuite/@tests        -> total
-/testsuite/@failures     -> assertion failures
+/testsuite/@failures     -> échecs d'assertion
 /testsuite/@errors       -> exceptions
-/testsuite/@skipped      -> skipped
-/testsuite/testcase[skipped]/@name  -> list skipped tests
+/testsuite/@skipped      -> tests ignorés
+/testsuite/testcase[skipped]/@name  -> liste des tests ignorés
 ```
 
-## JaCoCo new-code calculation
+## Calcul JaCoCo du nouveau code
 
-1. `git diff --unified=0 origin/main...HEAD -- '*.java'` → list of `(file, line-range)`.
-2. For each file, read `jacoco.xml` `<class name="...">/<sourcefilename>` matching.
-3. Inside `<line nr="N" mi="X" ci="Y" mb="A" cb="B"/>`:
-   - `mi` = missed instructions
-   - `ci` = covered instructions
-   - A line counts as "covered" if `ci > 0`. "Missed" if `mi > 0` and `ci == 0`.
-4. New-code coverage = covered ÷ (covered + missed) over diff lines only.
+1. Exécuter `git diff --unified=0 origin/main...HEAD -- '*.java'` pour obtenir les fichiers et plages.
+2. Pour chaque fichier, trouver dans `jacoco.xml` la classe et son `sourcefilename`.
+3. Dans `<line nr="N" mi="X" ci="Y" mb="A" cb="B"/>`, `mi` représente les
+   instructions manquées et `ci` les instructions couvertes. La ligne est couverte
+   si `ci > 0`, manquée si `mi > 0` et `ci == 0`.
+4. Calculer couvert ÷ (couvert + manqué) uniquement sur les lignes du diff.
 
-## PIT mutants in changed packages
+## Mutants PIT dans les packages modifiés
 
 ```xpath
 /mutations/mutation[@status='SURVIVED' and contains(mutatedClass, 'changed.package')]
 ```
 
-`changed.package` is derived by mapping diff file paths → fully qualified class names.
+Déduire `changed.package` en reliant les chemins du diff aux noms pleinement qualifiés.
 
 ## Anti-patterns
 
-- Emitting `pass` because the report file is empty (it's not — failures with 0 tests is a misconfiguration).
-- Counting `skipped` as `pass`.
-- Aggregating across modules without per-module breakdown.
-- Hiding errors as warnings.
+- Produire `pass` pour un rapport vide ; zéro test peut signaler une mauvaise configuration.
+- Compter `skipped` comme `pass`.
+- Agréger plusieurs modules sans détail par module.
+- Masquer des erreurs en avertissements.

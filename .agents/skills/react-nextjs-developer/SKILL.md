@@ -1,64 +1,63 @@
 ---
 name: react-nextjs-developer
-description: Generate and review React and Next.js App Router code. Use for React components, Server and Client Components, routing, data fetching, Server Actions, forms, accessibility, styling, testing, performance, or Next.js CLI work.
+description: Générer et relire du code React et Next.js App Router. Utiliser pour les composants Server et Client, le routage, les données, Server Actions, formulaires, accessibilité, styles, tests, performance ou le CLI Next.js.
 ---
 
-# React and Next.js Developer
+# Développement React et Next.js
 
-Inspect `package.json`, the lockfile, `next.config.*`, `tsconfig.json`, the app
-directory, and existing scripts before proposing code. Preserve the installed
-React and Next.js versions, package manager, directory layout, linter, styling
-strategy, and test tools. Do not add a dependency without explicit approval.
+Inspecter `package.json`, le lockfile, `next.config.*`, `tsconfig.json`, le dossier
+de l'application et les scripts existants avant de proposer du code. Conserver les
+versions installées de React et Next.js, le gestionnaire de paquets, la structure
+des dossiers, le linter, la stratégie de styles et l'outillage de test. Ne pas
+ajouter de dépendance sans accord explicite.
 
-Use the App Router when the project already uses it or for a new application.
-Keep pages and layouts as Server Components by default. Add `"use client"` only
-at the smallest boundary that needs state, effects, event handlers, custom hooks,
-or browser APIs. Keep secrets, authorization, and trusted data access on the
-server.
+Utiliser App Router si le projet l'utilise déjà ou pour une nouvelle application.
+Garder les pages et layouts comme Server Components par défaut. Ajouter
+`"use client"` uniquement à la plus petite frontière qui nécessite état, effets,
+gestionnaires d'événements, hooks personnalisés ou API du navigateur. Garder les
+secrets, l'autorisation et l'accès de confiance aux données côté serveur.
 
-Run the repository's own lint, typecheck, test, build, and e2e scripts after
-changes. Inspect scripts rather than inventing command names. A production build
-must pass before declaring framework code complete.
+Après les modifications, exécuter les scripts propres au dépôt pour le lint, le
+typage, les tests, le build et l'e2e. Inspecter les scripts au lieu d'inventer
+leurs noms. Un build de production doit réussir avant de déclarer le code terminé.
 
-## References
+## Références
 
-Read only the references relevant to the task:
+Lire uniquement les références utiles à la tâche :
 
-- Components and composition: [components.md](references/components.md),
-  [inputs.md](references/inputs.md), [outputs.md](references/outputs.md), and
+- Composants et composition : [components.md](references/components.md),
+  [inputs.md](references/inputs.md), [outputs.md](references/outputs.md) et
   [host-elements.md](references/host-elements.md).
-- State and effects: [signals-overview.md](references/signals-overview.md),
-  [linked-signal.md](references/linked-signal.md), and
-  [effects.md](references/effects.md).
-- Forms: [signal-forms.md](references/signal-forms.md),
-  [reactive-forms.md](references/reactive-forms.md), and
+- État et effets : [signals-overview.md](references/signals-overview.md),
+  [linked-signal.md](references/linked-signal.md) et [effects.md](references/effects.md).
+- Formulaires : [signal-forms.md](references/signal-forms.md),
+  [reactive-forms.md](references/reactive-forms.md) et
   [template-driven-forms.md](references/template-driven-forms.md).
-- Context and reusable modules:
-  [di-fundamentals.md](references/di-fundamentals.md),
+- Contexte et modules réutilisables : [di-fundamentals.md](references/di-fundamentals.md),
   [creating-services.md](references/creating-services.md),
   [defining-providers.md](references/defining-providers.md),
-  [injection-context.md](references/injection-context.md), and
+  [injection-context.md](references/injection-context.md) et
   [hierarchical-injectors.md](references/hierarchical-injectors.md).
-- Routing and rendering: [define-routes.md](references/define-routes.md),
+- Routage et rendu : [define-routes.md](references/define-routes.md),
   [loading-strategies.md](references/loading-strategies.md),
   [show-routes-with-outlets.md](references/show-routes-with-outlets.md),
   [navigate-to-routes.md](references/navigate-to-routes.md),
   [route-guards.md](references/route-guards.md),
   [data-resolvers.md](references/data-resolvers.md),
   [router-lifecycle.md](references/router-lifecycle.md),
-  [rendering-strategies.md](references/rendering-strategies.md), and
+  [rendering-strategies.md](references/rendering-strategies.md) et
   [route-animations.md](references/route-animations.md).
-- Data fetching: [resource.md](references/resource.md).
-- Styling, motion, and accessibility:
+- Chargement des données : [resource.md](references/resource.md).
+- Styles, mouvement et accessibilité :
   [component-styling.md](references/component-styling.md),
-  [react-ui-motion.md](references/react-ui-motion.md), and
+  [react-ui-motion.md](references/react-ui-motion.md) et
   [react-accessibility.md](references/react-accessibility.md).
-- Testing: [testing-fundamentals.md](references/testing-fundamentals.md),
+- Tests : [testing-fundamentals.md](references/testing-fundamentals.md),
   [component-harnesses.md](references/component-harnesses.md),
-  [router-testing.md](references/router-testing.md), and
-  [e2e-testing.md](references/e2e-testing.md).
-- Tooling: [cli.md](references/cli.md) and [mcp.md](references/mcp.md).
+  [router-testing.md](references/router-testing.md) et [e2e-testing.md](references/e2e-testing.md).
+- Outillage : [cli.md](references/cli.md) et [mcp.md](references/mcp.md).
 
-Use official [React](https://react.dev/reference/react) and
-[Next.js App Router](https://nextjs.org/docs/app) documentation when a
-version-sensitive detail is not covered locally.
+Utiliser la documentation officielle de
+[React](https://react.dev/reference/react) et de
+[Next.js App Router](https://nextjs.org/docs/app) lorsqu'un détail dépendant de la
+version n'est pas couvert localement.

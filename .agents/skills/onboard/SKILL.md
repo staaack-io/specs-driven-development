@@ -1,52 +1,61 @@
 ---
 name: onboard
-description: "Inspect and classify a Spring repository before its first SDD feature. Use when the user invokes $onboard or asks to onboard an existing project."
+description: "Inspecter et classer un dépôt Spring avant sa première fonctionnalité SDD. Utiliser lorsque l’utilisateur invoque $onboard ou demande d’intégrer un projet existant."
 ---
 
 # $onboard
 
-**Phase:** 0 — bootstrap
-**Owning agent:** `.codex/agents/spring-onboarding.toml`
-**Skills used:** `brownfield-onboarding`, `maven-harness-pom`, `flyway-or-liquibase-detection`, `harness-report-parsing`, `archunit-rules`
+**Phase :** 0 — préparation
+**Agent responsable :** `.codex/agents/spring-onboarding.toml`
+**Skills utilisés :** `brownfield-onboarding`, `maven-harness-pom`,
+`flyway-or-liquibase-detection`, `harness-report-parsing`,
+`archunit-rules`
 
-## Purpose
-Inspect the repository, classify it as greenfield or brownfield, capture a baseline harness run, and produce `.specs/_onboarding.md` so future commands know the stack.
+## Objectif
 
-## Inputs
-None required. Optional argument: a path to constrain the scan.
+Inspecter le dépôt, le classer comme greenfield ou brownfield, capturer une
+référence du harness et produire `.specs/_onboarding.md`.
 
-- For a **single-project** repo: omit the argument; the script reads `./pom.xml`.
-- For a **multi-module Maven** build: pass the submodule directory.
-- For a **polyglot monorepo** (for example, a Spring Boot backend and a Next.js
-  frontend in sibling top-level directories), pass the Maven module directory
-  (for example, `shoply-api`). Sibling non-JVM apps are auto-detected and
-  recorded under `siblings` in `_stack.json` and as context-only notes in
-  `_onboarding.md`. The Maven harness validates only the backend module; the
-  frontend keeps its own pipeline.
+## Entrées
 
-## Reads
-- `pom.xml` (root and any submodules)
-- `src/main/**`, `src/test/**` (counts only)
-- `db/migration/**`, `db/changelog/**`
-- Existing `.specs/` if any
+Aucune obligation. Un chemin facultatif limite l’analyse :
 
-## Writes
-- `.specs/_onboarding.md`
-- `.specs/_stack.json` (output of `.github/scripts/detect-stack.sh`)
-- `.specs/_baseline.json` (only if any test exists; output of `.github/scripts/harness.sh --baseline`)
+- dépôt simple : aucun argument, lecture de `./pom.xml` ;
+- Maven multi-module : chemin du sous-module ;
+- monorepo polyglotte : chemin du module Maven. Les applications voisines sont
+  enregistrées sous `siblings` comme contexte ; elles gardent leur pipeline.
 
-## Process
-1. Resolve the Maven module path (`MODULE` = optional arg, else `.`). Run `.github/scripts/detect-stack.sh "$MODULE/pom.xml" > .specs/_stack.json`. Refuse to proceed if `migration == "both"`.
-2. Count source/test files under `$MODULE/src/`; classify:
-   - **Greenfield** if no `src/main/java/**` or only the Spring Boot `Application.java` (auto-generated `*ApplicationTests.java` and `Testcontainers*.java` scaffolding do not change the classification).
-   - **Brownfield** otherwise.
-3. If brownfield, run `.github/scripts/harness.sh --module "$MODULE" --baseline` and capture results. Do NOT attempt to fix failures.
-4. Diff `$MODULE/pom.xml` against `.codex/maven/parent-pom-fragment.xml`; list missing harness layers as Findings.
-5. Write `.specs/_onboarding.md` covering: classification, module path, sibling apps (if any), stack JSON, baseline gate results (or “N/A — greenfield”), missing layers, recommended `$spec` starting point.
+## Lectures
 
-## Refuse if
-- `migration == "both"` — fatal; ask the user to pick one.
-- No `pom.xml` is found at the resolved module path. (In a polyglot monorepo the user must pass the Maven module directory.)
+- `pom.xml` et sous-modules ;
+- comptage de `src/main/**` et `src/test/**` ;
+- migrations ou changelogs ;
+- artefacts `.specs/` existants.
 
-## Done when
-`.specs/_onboarding.md` exists and the user has been shown a one-paragraph summary plus the next recommended command.
+## Écritures
+
+- `.specs/_onboarding.md` ;
+- `.specs/_stack.json` produit par `detect-stack.sh` ;
+- `.specs/_baseline.json` si des tests existent.
+
+## Processus
+
+1. Résoudre le module et exécuter la détection. Refuser
+   `migration == "both"`.
+2. Classer greenfield si aucun vrai code de production n’existe en dehors du
+   squelette Initializr ; brownfield sinon.
+3. Pour un brownfield, exécuter le harness en mode `--baseline` sans corriger
+   ses échecs.
+4. Comparer le POM au fragment du harness et lister les couches absentes.
+5. Écrire classification, module, applications voisines, stack, portes de
+   référence, couches manquantes et point de départ `$spec`.
+
+## Refuser si
+
+- Flyway et Liquibase sont tous deux détectés ;
+- aucun `pom.xml` n’existe au chemin résolu.
+
+## Terminé lorsque
+
+`.specs/_onboarding.md` existe et que l’utilisateur reçoit un résumé court
+avec la prochaine commande.

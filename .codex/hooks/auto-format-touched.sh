@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # auto-format-touched.sh
-# Codex PostToolUse hook for apply_patch (also matched by Edit|Write aliases).
-# Runs Spotless against the touched file (if it's Java) so the harness format gate passes.
-# Best effort — don't fail the agent's edit on a formatting error; surface it instead.
+# Hook Codex PostToolUse pour apply_patch, également associé aux alias Edit|Write.
+# Exécute Spotless sur le fichier modifié s'il est en Java afin que la porte de
+# formatage du harness réussisse. Au mieux : une erreur de formatage est signalée
+# sans faire échouer la modification de l'agent.
 
 set -euo pipefail
 
@@ -21,10 +22,10 @@ while IFS= read -r file_path; do
     *) continue ;;
   esac
 
-  # Only run if Maven and Spotless are configured.
+  # Exécuter uniquement si Maven et Spotless sont configurés.
   if [ -f pom.xml ] && grep -q 'spotless-maven-plugin' pom.xml; then
     mvn -q spotless:apply -DspotlessFiles="$file_path" >/dev/null 2>&1 || \
-      echo "WARN: Spotless apply failed on $file_path (continuing)" >&2
+      echo "AVERTISSEMENT : Spotless a échoué sur $file_path ; poursuite en cours" >&2
   fi
 done <<< "$paths"
 

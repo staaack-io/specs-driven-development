@@ -1,8 +1,7 @@
-# Controlled Client Forms
+# Formulaires client contrôlés
 
-Use a controlled Client Component when the UI needs immediate cross-field
-behavior before submission. Keep the form model explicit and validate again on
-the server.
+Utiliser un Client Component contrôlé si l'interface nécessite un comportement
+immédiat entre champs avant soumission. Garder le modèle explicite et revalider côté serveur.
 
 ```tsx
 'use client';
@@ -26,16 +25,13 @@ export function ProfileForm() {
 }
 ```
 
-- Use `useState` for a few independent fields.
-- Use `useReducer` when transitions across many related fields must be explicit.
-- Do not mix controlled and uncontrolled ownership for the same input.
-- Keep values as strings while the browser edits them; parse domain numbers and
-  dates at a validation boundary.
-- Associate errors with controls using `aria-describedby` and announce
-  submission status appropriately.
+- Utiliser `useState` pour quelques champs indépendants.
+- Utiliser `useReducer` pour rendre explicites les transitions de nombreux champs liés.
+- Ne pas mélanger contrôle et non-contrôle pour la même entrée.
+- Garder les valeurs comme chaînes pendant l'édition et parser nombres et dates à une frontière de validation.
+- Relier les erreurs avec `aria-describedby` et annoncer correctement l'état de soumission.
 
-Prefer the native form + Server Action pattern when client ownership adds no
-observable value.
+Préférer un formulaire natif avec Server Action lorsque le contrôle client n'ajoute aucune valeur observable.
 
-Official reference:
+Référence officielle :
 [React input](https://react.dev/reference/react-dom/components/input).

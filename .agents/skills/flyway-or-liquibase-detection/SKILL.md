@@ -1,35 +1,35 @@
 ---
 name: flyway-or-liquibase-detection
-description: Auto-detect the project's DB migration tool and follow its conventions. Never use both. Use when designing or writing a schema change.
+description: Détecter automatiquement l’outil de migration de base de données et suivre ses conventions. Ne jamais utiliser Flyway et Liquibase ensemble. Utiliser pour concevoir ou écrire un changement de schéma.
 when_to_use:
-  - Phase 3 (Plan) — designing a migration as part of a feature.
-  - Phase 4 (Build) — adding the migration script.
-  - "$onboard — recording the detected tool in the design baseline."
+  - Phase 3, Plan — concevoir une migration liée à une fonctionnalité.
+  - Phase 4, Build — ajouter le script de migration.
+  - $onboard — consigner l’outil détecté dans la référence de conception.
 authoritative_references:
   - https://documentation.red-gate.com/flyway/flyway-cli-and-api
   - https://docs.liquibase.com/concepts/changelogs/home.html
 ---
 
-# Flyway or Liquibase detection
+# Détection de Flyway ou Liquibase
 
-## Detection
+## Détection
 
-`.github/scripts/detect-stack.sh` reports one of:
+`.github/scripts/detect-stack.sh` renvoie :
 
-- `flyway` — `flyway-core` in `pom.xml` AND `src/main/resources/db/migration/` exists.
-- `liquibase` — `liquibase-core` in `pom.xml` AND `src/main/resources/db/changelog/` exists.
-- `none` — neither.
-- `both` — **fatal**. Refuse to proceed; ask the user to remove one.
+- `flyway` — `flyway-core` dans `pom.xml` ET dossier `src/main/resources/db/migration/` ;
+- `liquibase` — `liquibase-core` dans `pom.xml` ET dossier `src/main/resources/db/changelog/` ;
+- `none` — aucun des deux ;
+- `both` — **fatal** : refuser de continuer et demander à l'utilisateur d'en retirer un.
 
-Record the result in `03-design.md` under `### Inputs from detect-stack.sh`.
+Consigner le résultat dans `03-design.md` sous `### Inputs from detect-stack.sh`.
 
-## Flyway conventions
+## Conventions Flyway
 
-- File path: `src/main/resources/db/migration/V{version}__{description}.sql`
-- Versioning: `V1__init.sql`, `V2__add_gift_card_table.sql`, `V3__add_index_gift_card_code.sql`
-- One migration per logical change. Never edit a checked-in migration; add a new one.
-- Repeatable migrations (views, functions): `R__view_active_orders.sql`.
-- Forward-only by default. If a migration is destructive, the design must include a `## Rollback` section in `03-design.md`.
+- Chemin : `src/main/resources/db/migration/V{version}__{description}.sql`
+- Versions : `V1__init.sql`, `V2__add_gift_card_table.sql`, `V3__add_index_gift_card_code.sql`
+- Une migration par changement logique. Ne jamais modifier une migration suivie par Git ; en ajouter une.
+- Migrations répétables pour vues et fonctions : `R__view_active_orders.sql`.
+- Progressives par défaut. Toute migration destructive exige une section `## Rollback` dans `03-design.md`.
 
 ```sql
 -- V12__add_gift_card_table.sql
@@ -42,12 +42,12 @@ CREATE TABLE gift_card (
 CREATE INDEX ix_gift_card_code ON gift_card(code);
 ```
 
-## Liquibase conventions
+## Conventions Liquibase
 
-- Master changelog: `src/main/resources/db/changelog/db.changelog-master.yaml`
-- Per-feature changeset file: `db/changelog/changes/2026-04-18-gift-card.yaml`
-- Include via `<include file="changes/2026-04-18-gift-card.yaml"/>`.
-- Each changeset has `id`, `author`, and is **immutable** once merged.
+- Changelog principal : `src/main/resources/db/changelog/db.changelog-master.yaml`
+- Fichier par fonctionnalité : `db/changelog/changes/2026-04-18-gift-card.yaml`
+- Inclusion via `<include file="changes/2026-04-18-gift-card.yaml"/>`.
+- Chaque changeset possède `id` et `author`, puis devient **immuable** après fusion.
 
 ```yaml
 databaseChangeLog:
@@ -66,13 +66,13 @@ databaseChangeLog:
 
 ## Tests
 
-- Migrations run automatically inside the Testcontainers Postgres container at test boot.
-- A dedicated `MigrationsIT` runs `flyway:info` (or `liquibase status`) at the latest version and asserts no pending migrations.
+- Les migrations s'exécutent automatiquement dans le conteneur Postgres Testcontainers au démarrage des tests.
+- Un `MigrationsIT` dédié exécute `flyway:info` ou `liquibase status` à la dernière version et vérifie qu'aucune migration n'est en attente.
 
 ## Anti-patterns
 
-- Editing a previously released migration → checksum mismatch → production breaks.
-- Using `Flyway.repair()` in code paths.
-- `DROP TABLE` without an ADR.
-- Renaming a column with no two-step migration (add new → backfill → switch reads → switch writes → drop old).
-- Two migration tools coexisting (`both` is fatal).
+- Modifier une migration déjà livrée : incohérence de checksum et rupture en production.
+- Utiliser `Flyway.repair()` dans le code de l'application.
+- Exécuter `DROP TABLE` sans ADR.
+- Renommer une colonne sans migration en deux temps : ajout, remplissage, bascule des lectures, bascule des écritures, suppression.
+- Faire coexister les deux outils ; `both` est fatal.

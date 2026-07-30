@@ -1,52 +1,66 @@
 ---
 name: review
-description: "Perform the pre-commit SDD code review against the approved artifacts. Use when the user invokes $review or asks for the framework code review."
+description: "Effectuer la revue SDD avant commit au regard des artefacts approuvés. Utiliser lorsque l’utilisateur invoque $review ou demande la revue de code du framework."
 ---
 
 # $review
 
-**Phase:** 6 — pre-commit code review
-**Owning agent:** `.codex/agents/spring-code-reviewer.toml`
-**Skills used:** `spring-code-review-rubric`, `clarity-over-cleverness`, `spring-boot-4-conventions`, `spring-security-baseline`, `performance-optimization`
+**Phase :** 7 — revue du code avant commit
+**Agent responsable :** `.codex/agents/spring-code-reviewer.toml`
+**Skills utilisés :** `spring-code-review-rubric`,
+`clarity-over-cleverness`, `spring-boot-4-conventions`,
+`spring-security-baseline`, `performance-optimization`
 
-## Stack routing
+## Routage selon la stack
 
-| Changed files in diff | Agent |
-|---|---|
-| Java/Kotlin/POM/SQL only | `spring-code-reviewer` (this agent) |
-| React/Next.js (`.ts`, `.tsx`, `.js`, `.jsx`, `.css`) only | `react-nextjs-code-reviewer` |
-| Both | Run both reviewers; merge findings into a single `08-code-review.md` |
+| Fichiers du diff | Agent |
+| --- | --- |
+| Java/Kotlin/POM/SQL | `spring-code-reviewer` |
+| React/Next.js | `react-nextjs-code-reviewer` |
+| Les deux | les deux relecteurs, avec un rapport commun |
 
-Inspect the diff file list (`git diff --name-only <base>...HEAD`). If it contains
-only frontend files, delegate entirely to `react-nextjs-code-reviewer` and load
-`react-nextjs-developer` separately.
+Inspecter la liste des fichiers. Pour un diff frontend, déléguer entièrement à
+`react-nextjs-code-reviewer` et charger `react-nextjs-developer`
+séparément.
 
-## Purpose
-Run a structured self-review of the diff before the user commits. Produces `08-code-review.md` with categorized findings.
+## Objectif
 
-## Inputs
-- `<feature-id>` (optional). Defaults to the most recent feature.
-- Optional `--base <ref>` (defaults to `origin/main`).
+Relire le diff avant le commit et produire `08-code-review.md` avec des
+constats classés.
 
-## Reads
-- `git diff <base>...HEAD` for changed Java/test/POM/SQL files.
-- `01-spec.md`, `03-design.md`, `07-validation-report.md`.
-- `.agents/skills/spring-code-review-rubric/SKILL.md` (the rubric is authoritative).
+## Entrées
 
-## Writes
-- `.specs/<feature-id>/08-code-review.md`.
+- `<feature-id>` facultatif, par défaut la plus récente ;
+- `--base <ref>` facultatif, par défaut `origin/main`.
 
-## Process
-1. Refuse if `07-validation-report.md` verdict is not `PASS`.
-2. Walk every changed file. For each, evaluate against the rubric categories: correctness, security, design, testing, observability, performance, clarity, conventions.
-3. Classify findings as `must-fix`, `should-fix`, `nit`, or `praise`. Include file + line range + suggested change for `must-fix` and `should-fix`.
-4. Cross-check: every AC mentioned in `01-spec.md` is exercised by at least one test in the diff (or already merged).
-5. If any `must-fix` exists, recommend `$build` or `$code-simplify`. Do NOT auto-apply fixes.
-6. Emit summary line: counts by severity + recommended next action.
+## Lectures
 
-## Refuse if
-- Validation report is missing or `FAIL`.
-- The diff is empty.
+- diff depuis la base ;
+- spécification, conception et rapport de validation ;
+- `spring-code-review-rubric`, source de vérité.
 
-## Done when
-`08-code-review.md` exists. If zero `must-fix`, the agent prints the suggested commit message and tells the user to run `git commit` themselves (the agent never commits).
+## Écritures
+
+- `08-code-review.md`.
+
+## Processus
+
+1. Exiger un verdict de validation `PASS`.
+2. Examiner chaque fichier selon : correction, sécurité, conception, tests,
+   observabilité, performance, clarté et conventions.
+3. Classer chaque constat en `must-fix`, `should-fix`, `nit` ou
+   `praise`. Donner fichier, lignes et correction pour les deux premiers.
+4. Vérifier que chaque critère possède un test dans le diff ou déjà fusionné.
+5. En présence d’un `must-fix`, recommander `$build` ou
+   `$code-simplify`, sans appliquer automatiquement de correction.
+6. Résumer les nombres par sévérité et l’action suivante.
+
+## Refuser si
+
+- le rapport de validation manque ou vaut `FAIL` ;
+- le diff est vide.
+
+## Terminé lorsque
+
+`08-code-review.md` existe. Sans `must-fix`, proposer un message de commit et
+demander à l’utilisateur d’exécuter `git commit` lui-même.

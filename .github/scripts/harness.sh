@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
 # harness.sh
-# The agent's self-validation harness. Runs the 10 layers and emits a single
-# JSON summary consumed by spring-validator.
+# Harness d'auto-validation de l'agent. Exécute les 10 couches et produit un
+# résumé JSON unique consommé par spring-validator.
 #
-# Usage:
-#   ./scripts/harness.sh                  # run; print human summary; exit non-zero on failure
-#   ./scripts/harness.sh --report         # run; emit harness-summary.json to stdout
-#   ./scripts/harness.sh --baseline       # run in capture mode for brownfield onboarding
+# Utilisation :
+#   ./scripts/harness.sh                  # exécute, affiche le résumé et échoue si une porte échoue
+#   ./scripts/harness.sh --report         # exécute et écrit harness-summary.json sur stdout
+#   ./scripts/harness.sh --baseline       # capture la référence lors d'un onboarding brownfield
 
 set -euo pipefail
 
-# Resolve the script's own directory BEFORE any cd, so --module works regardless
-# of relative invocation path.
+# Résoudre le dossier du script AVANT tout cd, afin que --module fonctionne quel
+# que soit le chemin relatif utilisé.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Optional first arg: --module <path> to cd into a Maven module (multi-project repos).
+# Premier argument facultatif : --module <path> pour entrer dans un module Maven.
 if [ "${1:-}" = "--module" ]; then
   shift
   MODULE_DIR="${1:-}"
   shift || true
-  [ -d "$MODULE_DIR" ] || { echo "harness: module dir not found: $MODULE_DIR" >&2; exit 2; }
+  [ -d "$MODULE_DIR" ] || { echo "harness : dossier de module introuvable : $MODULE_DIR" >&2; exit 2; }
   cd "$MODULE_DIR"
 fi
 
@@ -27,40 +27,41 @@ MODE="${1:-run}"
 SUMMARY="target/harness-summary.json"
 mkdir -p target
 
-# Helper: timestamped section
+# Helper : section horodatée.
 section() { echo "=== $* ==="; }
 
-# Detect stack so we know which layers to enforce.
+# Détecter la stack afin de savoir quelles couches imposer.
 STACK_JSON="$("$SCRIPT_DIR/detect-stack.sh" pom.xml 2>/dev/null || echo '{}')"
 
 has_layer() {
   echo "$STACK_JSON" | jq -r ".harness_layers.$1 // false"
 }
 
-# 1-9 sequential layers via Maven verify; PIT separately under -Ppit.
-section "format + compile + static + arch + unit + it + coverage + security"
+# Couches 1 à 9 séquentielles via Maven verify ; PIT séparément avec -Ppit.
+section "formatage + compilation + analyse statique + architecture + tests unitaires + intégration + couverture + sécurité"
 mvn -B -ntp verify
 
 if [ "$(has_layer pit)" = "true" ]; then
-  section "mutation (incremental)"
+  section "mutation (incrémentale)"
   mvn -B -ntp -Ppit org.pitest:pitest-maven:mutationCoverage || PIT_RC=$?
 fi
 
-# Contract diff if openapi spec is present.
+# Diff du contrat si une spécification OpenAPI est présente.
 if [ -f src/main/resources/openapi/openapi.yaml ]; then
-  section "openapi contract diff"
+  section "diff du contrat OpenAPI"
   prev="$(git show "origin/main:src/main/resources/openapi/openapi.yaml" 2>/dev/null || true)"
   if [ -n "$prev" ]; then
     echo "$prev" > target/openapi-base.yaml
     if command -v openapi-diff >/dev/null 2>&1; then
       openapi-diff target/openapi-base.yaml src/main/resources/openapi/openapi.yaml --json > target/openapi-diff.json || true
     else
-      echo "WARN: openapi-diff CLI not installed; skipping (run: npm i -g @apidevtools/swagger-cli or use openapitools/openapi-diff docker image)" >&2
+      echo "AVERTISSEMENT : la CLI openapi-diff n'est pas installée ; étape ignorée (exécuter npm i -g @apidevtools/swagger-cli ou utiliser l'image Docker openapitools/openapi-diff)" >&2
     fi
   fi
 fi
 
-# Build the summary JSON. Best-effort parse — layers without reports just emit "skipped".
+# Construire le résumé JSON. L'analyse est au mieux : une couche sans rapport
+# produit simplement la valeur technique "skipped".
 parse_surefire() {
   local dir="$1"
   [ -d "$dir" ] || { echo '{"status":"skipped"}'; return; }
@@ -80,14 +81,14 @@ parse_surefire() {
 parse_jacoco() {
   local f="target/site/jacoco/jacoco.xml"
   [ -f "$f" ] || { echo '{"status":"skipped"}'; return; }
-  # Use python3 to parse XML properly — JaCoCo 0.8.x can write the entire
-  # report on a single line, which breaks chained grep pipelines.
+  # Utiliser python3 pour analyser correctement le XML : JaCoCo 0.8.x peut écrire
+  # tout le rapport sur une ligne, ce qui casse les chaînes de grep.
   local result
   result=$(python3 - "$f" <<'PYEOF'
 import sys, xml.etree.ElementTree as ET
 tree = ET.parse(sys.argv[1])
 root = tree.getroot()
-# The last <counter type="LINE|BRANCH"> in document order is the report total.
+# Le dernier <counter type="LINE|BRANCH"> du document représente le total.
 line_c = [(int(c.get('missed','0')), int(c.get('covered','0')))
           for c in root.iter('counter') if c.get('type')=='LINE']
 branch_c = [(int(c.get('missed','0')), int(c.get('covered','0')))
@@ -153,7 +154,7 @@ if [ "$MODE" = "--report" ]; then
   cat "$SUMMARY"
 elif [ "$MODE" = "--baseline" ]; then
   jq '{captured_at: .started_at, git_sha, stack, gates}' "$SUMMARY" > .specs/_baseline.json
-  echo "Wrote .specs/_baseline.json"
+  echo "Fichier .specs/_baseline.json écrit"
 else
   echo
   jq '.gates' "$SUMMARY"

@@ -1,51 +1,51 @@
-# Epic Design: <FEATURE-ID>
+# Conception Epic : <FEATURE-ID>
 
-> Owner: `spring-architect` · Phase 3a (Epic mode)
+> Responsable : `spring-architect` · Phase 3a (mode Epic)
 >
-> Capture high-level architecture and shared decisions before slice-level detailed planning.
+> Consigner l'architecture générale et les décisions partagées avant la planification détaillée de chaque tranche.
 
 ## Inputs
 
-- `01-spec.md` revision: <git-sha or timestamp>
-- `02-spec-review.md` verdict: PASS
-- Stack snapshot from `.github/scripts/detect-stack.sh`
+- Révision de `01-spec.md` : <git-sha ou horodatage>
+- Verdict de `02-spec-review.md` : PASS
+- État de la stack fourni par `.github/scripts/detect-stack.sh`
 
 ## Epic Scope
 
-- In scope: <capabilities included in this Epic>
-- Out of scope: <capabilities explicitly excluded>
+- Dans le périmètre : <capacités incluses dans cet Epic>
+- Hors périmètre : <capacités explicitement exclues>
 
 ## Architecture Boundaries
 
-- Domain boundaries and published interfaces
-- Cross-module interaction model
-- External dependencies and contracts
+- Frontières de domaine et interfaces publiées
+- Modèle d'interaction entre modules
+- Dépendances et contrats externes
 
 ## Shared Decisions
 
-| Decision | Alternatives | Selected option | Rationale | ADR |
+| Décision | Solutions envisagées | Option retenue | Justification | ADR |
 |---|---|---|---|---|
 
 ## Cross-cutting Constraints
 
-- Security and privacy constraints
-- Performance/SLO constraints
-- Observability and rollout constraints
+- Contraintes de sécurité et de confidentialité
+- Contraintes de performance et SLO
+- Contraintes d'observabilité et de mise en production
 
 ## Risks and Mitigations
 
-| Risk | Likelihood | Impact | Mitigation | Owner |
+| Risque | Probabilité | Impact | Réduction du risque | Responsable |
 |---|---|---|---|---|
 
 ## Open Questions
 
-- Q-001: ...
+- Q-001 : …
 
 ## Resolved Questions
 
-- (none yet)
+- (aucune pour le moment)
 
 ## Sign-off
 
-- [ ] Epic architecture reviewed with user
-- [ ] All Epic-level Q-NNN resolved or deferred with rationale
+- [ ] L'architecture Epic a été revue avec l'utilisateur.
+- [ ] Toutes les Q-NNN au niveau Epic sont résolues ou différées avec justification.

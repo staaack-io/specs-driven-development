@@ -1,14 +1,11 @@
-# App Router Testing
+# Tests App Router
 
-Test observable navigation behavior, not Next.js internals.
+Tester le comportement observable de navigation, pas l'intérieur de Next.js.
 
-- Use a component test for a Client Component that calls `useRouter` only when
-  the repository already has a stable navigation mock.
-- Render links and assert their accessible name and destination.
-- Use Playwright for redirects, dynamic routes, loading states, not-found
-  behavior, and interactions across Server and Client Component boundaries.
-- Test authorization again at the server entry point; a redirect-only browser
-  test is not sufficient proof.
+- Tester un Client Component utilisant `useRouter` seulement si le dépôt possède déjà un mock stable.
+- Rendre les liens et vérifier leur nom accessible et leur destination.
+- Utiliser Playwright pour redirections, routes dynamiques, chargement, not-found et frontières serveur/client.
+- Retester l'autorisation au point d'entrée serveur ; une redirection navigateur ne suffit pas.
 
 ```ts
 await page.goto('/products/42');
@@ -17,8 +14,7 @@ await page.getByRole('link', {name: 'Edit'}).click();
 await expect(page).toHaveURL('/products/42/edit');
 ```
 
-Avoid mocking the whole router when a browser-level test is cheaper and more
-representative.
+Éviter de mocker tout le router lorsqu'un test navigateur est plus simple et représentatif.
 
-Official reference:
+Référence officielle :
 [Next.js testing guides](https://nextjs.org/docs/app/guides/testing).

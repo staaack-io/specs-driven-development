@@ -1,11 +1,11 @@
 <!--
-  Maven parent POM fragment for the Spec-Driven Spring 4 / Boot 4 harness.
-  Copy this into the project's pom.xml under <build><pluginManagement><plugins>
-  and <build><plugins> as appropriate. Versions are pinned for reproducibility;
-  bump them deliberately, never silently.
+  Fragment de POM parent Maven pour le harness Spring 4 / Boot 4 piloté par les spécifications.
+  Copier ce contenu dans le pom.xml du projet, sous <build><pluginManagement><plugins>
+  et <build><plugins> selon le besoin. Les versions sont figées pour garantir la
+  reproductibilité ; les mettre à jour explicitement, jamais silencieusement.
 
-  This is a TEMPLATE. The skill 'maven-harness-pom' is the authoritative reference;
-  this fragment is a working starting point.
+  Ceci est un MODÈLE. La skill 'maven-harness-pom' constitue la référence faisant
+  autorité ; ce fragment est un point de départ fonctionnel.
 -->
 <project>
   <properties>
@@ -13,7 +13,7 @@
     <maven.compiler.release>${java.version}</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- Pinned harness versions -->
+    <!-- Versions figées du harness -->
     <spotless.version>2.43.0</spotless.version>
     <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
     <checkstyle.version>10.18.0</checkstyle.version>
@@ -31,7 +31,7 @@
 
   <build>
     <plugins>
-      <!-- 1. Format -->
+      <!-- 1. Formatage -->
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
@@ -82,7 +82,7 @@
         </executions>
       </plugin>
 
-      <!-- 3. Compile + Error Prone -->
+      <!-- 3. Compilation + Error Prone -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -121,7 +121,7 @@
         </executions>
       </plugin>
 
-      <!-- 5. Surefire (unit tests) -->
+      <!-- 5. Surefire (tests unitaires) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -131,7 +131,7 @@
         </configuration>
       </plugin>
 
-      <!-- 6. Failsafe (integration tests / Testcontainers) -->
+      <!-- 6. Failsafe (tests d'intégration / Testcontainers) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -150,7 +150,7 @@
         </executions>
       </plugin>
 
-      <!-- 7. JaCoCo coverage -->
+      <!-- 7. Couverture JaCoCo -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -192,7 +192,7 @@
         </executions>
       </plugin>
 
-      <!-- 9. OWASP Dependency Check -->
+      <!-- 9. Contrôle des dépendances OWASP -->
       <plugin>
         <groupId>org.owasp</groupId>
         <artifactId>dependency-check-maven</artifactId>
@@ -212,7 +212,7 @@
   </build>
 
   <profiles>
-    <!-- 8. PIT mutation (run with -Ppit; keep off the default verify path for speed) -->
+    <!-- 8. Mutation PIT (exécuter avec -Ppit ; hors du parcours verify par défaut pour préserver sa rapidité) -->
     <profile>
       <id>pit</id>
       <build>
@@ -247,14 +247,14 @@
   </profiles>
 
   <dependencies>
-    <!-- ArchUnit (rule layer) -->
+    <!-- ArchUnit (couche de règles) -->
     <dependency>
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5</artifactId>
       <version>${archunit.version}</version>
       <scope>test</scope>
     </dependency>
-    <!-- Testcontainers BOM consumers -->
+    <!-- Consommateurs du BOM Testcontainers -->
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>

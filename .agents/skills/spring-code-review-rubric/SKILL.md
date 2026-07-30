@@ -1,9 +1,9 @@
 ---
 name: spring-code-review-rubric
-description: Pre-commit code review rubric for Spring Boot 4 changes. Used by `spring-code-reviewer` to produce `08-code-review.md` before any commit. Covers traceability, architecture, Spring idioms, error handling, data access, security, test quality, clarity, and migration.
+description: Grille de revue avant commit pour les changements Spring Boot 4. Utilisée par `spring-code-reviewer` pour produire `08-code-review.md`. Couvre traçabilité, architecture, idiomes Spring, erreurs, données, sécurité, tests, clarté et migrations.
 when_to_use:
-  - Phase 7 (Code review) — `$review` command.
-  - Pre-PR review on a brownfield repo where this toolkit is being adopted.
+  - Phase 7, revue de code — commande `$review`.
+  - Revue avant PR dans un dépôt brownfield qui adopte ce framework.
 authoritative_references:
   - .codex/templates/code-review.template.md
   - .agents/skills/spring-boot-4-conventions/SKILL.md
@@ -11,116 +11,96 @@ authoritative_references:
   - .agents/skills/clarity-over-cleverness/SKILL.md
 ---
 
-# Spring code review rubric
+# Grille de revue du code Spring
 
-## Severity ladder
+## Sévérités
 
-- **blocker** — must fix before commit. (Security hole, broken behavior, gate-bypass.)
-- **major** — must fix before commit OR document as ADR + waiver.
-- **minor** — should fix; leave a note if not.
-- **nit** — taste; mention once, don't insist.
+- **blocker** — correction obligatoire avant commit : faille, comportement cassé ou contournement d'une porte.
+- **major** — correction avant commit OU ADR et dérogation.
+- **minor** — correction recommandée ; laisser une note sinon.
+- **nit** — préférence ; la mentionner une fois sans insister.
 
-## Ten sections
+## Dix sections
 
-### 1. Traceability
+### 1. Traçabilité
 
-- Every diff hunk maps to an `AC-NNN` and a `T-NNN`.
-- Files-in-scope honored (no edits outside the task's declared paths).
-- Any new public API has a test referencing the AC.
+- Chaque fragment du diff correspond à un `AC-NNN` et un `T-NNN`.
+- Le périmètre de fichiers est respecté.
+- Toute nouvelle API publique possède un test qui référence l'AC.
 
 ### 2. Architecture
 
-- Module boundaries respected (no `internal` cross-imports).
-- ArchUnit rules pass (see `archunit-rules`).
-- Layering correct (no controller→repository skip).
-- No new circular dependency.
+- Frontières de modules respectées, sans import croisé de `internal`.
+- Règles ArchUnit vertes, couches correctes et aucun nouveau cycle.
 
-### 3. Spring idioms
+### 3. Conventions Spring
 
-- Constructor injection only (`spring-boot-4-conventions`).
-- Package layout is by feature/domain, not by layer (no top-level `controller`/`service`/`repository`/`model` packages).
-- `@HttpExchange` / `RestClient` (no new `RestTemplate`).
-- `@MockitoBean`, not `@MockBean`.
-- No `@Autowired` on fields or constructors.
-- No `@SpringBootTest` where a slice would do.
-- **No Lombok** anywhere in the diff (any `lombok.*` import is a must-fix).
-- **No fully-qualified type names (FQNs) inline in code** — method parameters, return types, `throws` clauses, and bodies must use simple names backed by proper `import` statements at the top of the file. E.g. `jakarta.servlet.http.HttpServletResponse response` as a parameter is a must-fix; it must be `HttpServletResponse response` with `import jakarta.servlet.http.HttpServletResponse;`.
+- Injection par constructeur uniquement.
+- Regroupement par fonctionnalité ou domaine, sans packages de premier niveau par couche.
+- `@HttpExchange` ou `RestClient`, sans nouveau `RestTemplate`.
+- `@MockitoBean`, pas `@MockBean`.
+- Aucun `@Autowired` sur champs ou constructeurs.
+- Aucun `@SpringBootTest` lorsqu'une tranche suffit.
+- Aucun Lombok dans le diff.
+- Aucun nom pleinement qualifié dans le code ; utiliser un import et le nom simple.
 
-### 4. Error handling
+### 4. Gestion des erreurs
 
-- Exceptions translated at the controller boundary, not in the service.
-- Single error envelope shape, documented in OpenAPI.
-- No `catch (Exception e) { throw new RuntimeException(e); }`.
-- Domain exceptions are checked or sealed, not raw `RuntimeException`.
+- Traduire les exceptions à la frontière du contrôleur, pas dans le service.
+- Une seule enveloppe d'erreur, documentée dans OpenAPI.
+- Aucun `catch (Exception e) { throw new RuntimeException(e); }`.
+- Exceptions métier contrôlées ou scellées, pas de `RuntimeException` brute.
 
-### 5. Data access
+### 5. Accès aux données
 
-- No N+1 queries (look for entity navigation in a loop).
-- All list endpoints paginated.
-- Migration script forward-only OR rollback documented.
-- No raw SQL with string concatenation.
-- Transactions on services, not controllers.
+- Aucune requête N+1, listes paginées, migration progressive ou retour arrière documenté.
+- Aucun SQL brut concaténé et transactions sur les services, pas les contrôleurs.
 
-### 6. Security
+### 6. Sécurité
 
-- Apply `spring-security-baseline` rubric.
-- No secrets in source.
-- Input validation at boundary AND service.
-- Sensitive logs masked.
-- No new High/Critical CVE.
+- Appliquer `spring-security-baseline`.
+- Aucun secret, validation à la frontière ET dans le service, journaux sensibles masqués et aucune nouvelle CVE haute ou critique.
 
-### 7. Test quality
+### 7. Qualité des tests
 
-- Tests fail for the right reason (re-read the red excerpt in `05-implementation-log.md`).
-- One AC per test where possible.
-- No `@Disabled` without `# DisabledReason`.
-- No removed assertions.
-- Coverage holds; new code ≥95%.
-- Mutants in changed packages all killed (or ADR-justified).
-- Testcontainers used where required by stack detection.
+- Les tests ont échoué pour la bonne raison pendant red.
+- Un AC par test si possible, aucun `@Disabled` sans raison et aucune assertion supprimée.
+- Couverture maintenue, nouveau code à 95 %, mutants tués ou justifiés et Testcontainers utilisé lorsque requis.
 
-### 8. Clarity over cleverness
+### 8. Clarté plutôt qu'astuce
 
-- Apply `clarity-over-cleverness` skill.
-- Names match domain language from `01-spec.md` glossary.
-- No dead code, no commented-out blocks.
-- Public methods have a single responsibility.
-- Method length ≤ 30 lines (guideline, not hard rule).
+- Appliquer `clarity-over-cleverness`, utiliser le glossaire du domaine, supprimer le code mort et les blocs commentés.
+- Une responsabilité par méthode publique ; 30 lignes maximum comme recommandation, pas comme règle stricte.
 
-### 9. Migration / contract
+### 9. Migration et contrat
 
-- OpenAPI diff matches actual code (springdoc check).
-- Breaking changes have an ADR.
-- DB migration follows `flyway-or-liquibase-detection`.
-- No edits to a previously-released migration script.
+- Le diff OpenAPI correspond au code ; tout changement cassant possède un ADR.
+- La migration suit `flyway-or-liquibase-detection` et ne modifie aucun script déjà livré.
 
 ### 10. Performance
 
-Apply `.agents/skills/performance-optimization/SKILL.md`. Block on:
+Appliquer `performance-optimization`. Bloquer notamment :
 
-- Any controller method returning `List<T>` without pagination (`Pageable`).
-- N+1 queries (entity navigation in a loop or stream).
-- New external HTTP call without explicit connect/read/write timeouts.
-- `@Cacheable` added without a TTL or a size cap.
-- `@Transactional` wrapping an outbound HTTP call.
-- `synchronized` block around an I/O call (pins virtual-thread carriers).
-- Hikari `maximumPoolSize` change without a measurement artifact.
-- A `Counter` used to record a duration (use `Timer` with histogram).
-- A perf-labeled change without a profile, JMH result, or before/after metric in `05-implementation-log.md`.
+- une liste non paginée ;
+- une requête N+1 ;
+- un appel HTTP externe sans timeouts explicites ;
+- `@Cacheable` sans TTL ni limite de taille ;
+- `@Transactional` autour d'un appel HTTP ;
+- `synchronized` autour d'une E/S ;
+- un changement de pool Hikari sans mesure ;
+- un `Counter` utilisé pour une durée au lieu d'un `Timer` ;
+- un changement de performance sans profil ni mesure avant/après.
 
-## Findings table format
+## Format des constats
 
 ```markdown
 | ID | Severity | Section | File | Line | Finding | Suggested fix |
 |----|---------|---------|------|------|---------|---------------|
-| F-001 | blocker | security | CheckoutController.java | 47 | `@CrossOrigin("*")` on a state-changing endpoint | restrict to allowed origins or remove |
-| F-002 | minor | clarity | PriceCalculator.java | 23 | nested ternary `a ? b ? c : d : e` | extract two helper methods |
+| F-001 | blocker | security | CheckoutController.java | 47 | `@CrossOrigin("*")` | restreindre les origines |
 ```
 
 ## Verdict
 
-End with one of:
-
-- ✅ **Approve** — no blockers; minors noted; safe to commit.
-- ⚠️ **Approve with waivers** — blockers/majors waived via the listed ADRs; commit OK.
-- ❌ **Request changes** — blockers exist, no waivers; commit blocked.
+- ✅ **Approve** — aucun blocker ; commit sûr.
+- ⚠️ **Approve with waivers** — constats dérogés via les ADR listés.
+- ❌ **Request changes** — blocker sans dérogation ; commit bloqué.

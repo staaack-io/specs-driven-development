@@ -1,7 +1,6 @@
-# React and Next.js Components
+# Composants React et Next.js
 
-Use function components. In the Next.js App Router, pages and layouts are Server
-Components by default.
+Utiliser des composants fonctions. Avec App Router, les pages et layouts sont des Server Components par défaut.
 
 ```tsx
 type ProfileProps = {
@@ -13,8 +12,7 @@ export function Profile({name}: ProfileProps) {
 }
 ```
 
-Use a Client Component only when it needs state, effects, event handlers, custom
-hooks, or browser APIs:
+Utiliser un Client Component uniquement s'il requiert état, effets, gestionnaires d'événements, hooks personnalisés ou API navigateur :
 
 ```tsx
 'use client';
@@ -27,11 +25,10 @@ export function Counter() {
 }
 ```
 
-Keep `"use client"` boundaries small. Props passed from Server Components to
-Client Components must be serializable. Render lists with stable domain keys,
-not array indexes when item identity can change. Prefer explicit conditional JSX
-and extract complex branches into named components.
+Garder les frontières `"use client"` petites. Les props transmises du serveur au
+client doivent être sérialisables. Utiliser des clés métier stables plutôt que
+les index et extraire les branches JSX complexes dans des composants nommés.
 
-Official references:
+Références officielles :
 [React components](https://react.dev/reference/react/components) and
 [Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components).

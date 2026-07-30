@@ -1,8 +1,8 @@
-# Forms with Server Actions
+# Formulaires avec Server Actions
 
-Use native forms and Server Actions when submission belongs on the server. A
-Server Action receives `FormData` and must authenticate, authorize, validate,
-and return expected errors as data.
+Utiliser les formulaires natifs et Server Actions lorsque la soumission appartient
+au serveur. Une Server Action reçoit `FormData`, authentifie, autorise, valide et
+renvoie les erreurs attendues comme données.
 
 ```ts
 'use server';
@@ -28,8 +28,7 @@ export async function createAccount(
 }
 ```
 
-Use `useActionState` in the smallest Client Component that needs pending and
-returned state:
+Utiliser `useActionState` dans le plus petit Client Component qui a besoin de l'attente et de l'état retourné :
 
 ```tsx
 'use client';
@@ -69,13 +68,12 @@ export function AccountForm() {
 }
 ```
 
-Use `useFormStatus` only inside a component rendered within the form whose
-submission it observes. Use `useOptimistic` only when rollback and error
-behavior are defined.
+Utiliser `useFormStatus` uniquement dans un composant rendu à l'intérieur du
+formulaire observé. Utiliser `useOptimistic` seulement si erreur et retour arrière sont définis.
 
-Never trust native client validation as the server boundary. Revalidate data,
-permissions, and mutation preconditions in the action. Do not add a form library
-unless the project already uses it or the user approves it.
+Ne jamais considérer la validation native client comme frontière serveur.
+Revalider données, permissions et préconditions dans l'action. Ne pas ajouter de
+bibliothèque de formulaires sans usage existant ou accord utilisateur.
 
-Official reference:
+Référence officielle :
 [Forms with Server Actions](https://nextjs.org/docs/app/guides/forms).

@@ -1,53 +1,71 @@
 ---
 name: ship
-description: "Prepare the optional post-commit ship plan without deploying. Use when the user invokes $ship or asks to prepare an approved feature for release."
+description: "Préparer le plan facultatif de livraison après commit sans déployer. Utiliser lorsque l’utilisateur invoque $ship ou demande de préparer une fonctionnalité approuvée pour sa livraison."
 ---
 
 # $ship
 
-**Phase:** 8 — ship (post-commit, pre-deploy hygiene)
-**Owning agent:** `.codex/agents/spring-code-reviewer.toml` (reused; no new persona)
-**Skills used:** `shipping-and-launch`, `spring-security-baseline`, `flyway-or-liquibase-detection`
+**Phase :** 8 — préparation post-commit et pré-déploiement
+**Agent responsable :** `.codex/agents/spring-code-reviewer.toml`, réutilisé
+sans nouveau rôle
+**Skills utilisés :** `shipping-and-launch`,
+`spring-security-baseline`, `flyway-or-liquibase-detection`
 
-## Purpose
-After `$review` approves the diff and the user commits, produce a structured ship plan that verifies pre-deploy gates, captures rollback + observability + flag posture, plans the staged rollout, and drafts release notes. The agent **never deploys** — it prints the deploy command for the user to run.
+## Objectif
 
-## Inputs
-- `<feature-id>` (optional). Defaults to the most recent feature with an `08-code-review.md` verdict of `Approve` or `Approve with waivers`.
-- Optional `--base <ref>` (defaults to `origin/main`) for diff and release-note generation.
+Après une revue approuvée et le commit humain, produire un plan structuré :
+portes pré-déploiement, retour arrière, observabilité, feature flags, déploiement
+progressif et notes de version. **Ne jamais déployer** ; afficher seulement la
+commande destinée à l’utilisateur.
 
-## Reads
-- `.specs/<feature-id>/01-spec.md` — `## Goal`, AC list, any open `Q-NNN`.
-- `.specs/<feature-id>/03-design.md` — migration plan, security posture, any open `Q-NNN`.
-- `.specs/<feature-id>/04-tasks.md` — `files_in_scope` for diff-scope check.
-- `.specs/<feature-id>/07-validation-report.md` — verdict must be `PASS`.
-- `.specs/<feature-id>/08-code-review.md` — verdict must be `Approve` or `Approve with waivers`.
-- `.specs/_baseline.json` — for regression check.
-- `git diff <base>...HEAD` and `git log <base>..HEAD` — for migration classification, new-endpoint detection, release-note drafting.
-- `.agents/skills/shipping-and-launch/SKILL.md` (authoritative behavior).
-- `.codex/templates/ship-plan.template.md`.
+## Entrées
 
-## Writes
-- `.specs/<feature-id>/09-ship-plan.md`.
+- `<feature-id>` facultatif, par défaut la fonctionnalité la plus récente dont
+  la revue vaut `Approve` ou `Approve with waivers` ;
+- `--base <ref>`, par défaut `origin/main`.
 
-## Process
-1. **Resolve feature.** If no `<feature-id>`, pick the most recent feature with `08-code-review.md` verdict `Approve*`. Refuse if none.
-2. **Verify pre-ship gates** (per `shipping-and-launch` skill): validation `PASS`, review `Approve*`, zero unresolved `Q-NNN`, no baseline regression, every changed file is in some task's `files_in_scope`. Halt at the first FAIL with the specific recovery command.
-3. **Classify migrations.** Walk `src/main/resources/db/migration/**` (Flyway) or the changelog (Liquibase) hunks in the diff. Tag each script: forward-only safe / expand / contract / breaking. Halt on `breaking` without an ADR.
-4. **Inventory new surface.** New REST endpoints, message handlers, scheduled tasks, external HTTP clients. For each, verify a `MeterRegistry` registration exists in the diff. Halt on missing metric.
-5. **Render the ship plan.** Fill `.codex/templates/ship-plan.template.md` — every section non-empty (`n/a` allowed only with a one-line reason).
-6. **Surface human-required inputs as `Q-NNN`.** Flag owner, alert thresholds, rollout cohorts. Halt until the user answers; do not invent.
-7. **Draft release notes.** Two sections: external (plain English, ≤ 3 bullets, edited by the user before publishing) and internal (diff summary, AC list, ADR links, migration class, flag name, dashboard).
-8. **Print deploy command.** Suggest the team's release-pipeline trigger or `kubectl rollout` / `mvn deploy` line. The agent never executes it.
+## Lectures
 
-## Refuse if
-- `07-validation-report.md` verdict is not `PASS`.
-- `08-code-review.md` verdict is not `Approve` or `Approve with waivers`.
-- Any `Q-NNN` is unresolved in the spec or design.
-- A migration script in the diff is `breaking` and there is no covering ADR.
-- A new endpoint, handler, or scheduled task has no `MeterRegistry` registration in the diff.
-- The diff edits a previously-released migration script (Flyway: file rename or hash change for an applied script).
-- The diff is empty (nothing to ship).
+- spécification, conception, tâches, validation et revue ;
+- `.specs/_baseline.json` ;
+- diff et journal Git depuis la base ;
+- `shipping-and-launch`, source de vérité ;
+- modèle `ship-plan.template.md`.
 
-## Done when
-`09-ship-plan.md` exists with all seven sections filled, every gate in the pre-ship table is `PASS`, migrations are classified with named rollback steps, every new endpoint has at least one named metric and one alert (or a documented "no alert" reason), and release notes have both external and internal sections. The agent then prints the suggested deploy command for the user to execute manually.
+## Écritures
+
+- `09-ship-plan.md`.
+
+## Processus
+
+1. Résoudre la fonctionnalité ou refuser si aucune revue approuvée n’existe.
+2. Vérifier `PASS`, `Approve*`, zéro question ouverte, aucune régression et
+   tous les fichiers dans `files_in_scope`. S’arrêter au premier échec avec la
+   commande de reprise.
+3. Classer chaque migration Flyway ou Liquibase : `forward-only safe`,
+   `expand`, `contract` ou `breaking`. Exiger un ADR pour `breaking`.
+4. Inventorier endpoints, handlers, tâches planifiées et clients HTTP. Exiger
+   une métrique `MeterRegistry` pour chaque nouvelle surface.
+5. Remplir toutes les sections du modèle ; `n/a` exige une justification.
+6. Présenter comme `Q-NNN` les informations humaines manquantes : responsable
+   du flag, seuils et cohortes. Ne rien inventer.
+7. Préparer des notes externes en trois puces maximum et des notes internes avec
+   diff, critères, ADR, migrations, flag et tableau de bord.
+8. Suggérer la commande du pipeline, `kubectl rollout` ou `mvn deploy`, sans
+   l’exécuter.
+
+## Refuser si
+
+- validation ou revue non approuvée ;
+- question ouverte ;
+- migration cassante sans ADR ;
+- nouvelle surface sans métrique ;
+- modification d’une migration déjà publiée ;
+- diff vide.
+
+## Terminé lorsque
+
+Les sept sections sont remplies, toutes les portes valent `PASS`, chaque
+migration possède un retour arrière, chaque surface une métrique et une alerte
+ou une justification, et les deux catégories de notes existent. Afficher alors
+la commande de déploiement à exécuter manuellement.

@@ -1,19 +1,19 @@
-# User-Centric Component Interaction
+# Interaction avec les composants centrée utilisateur
 
-Use the repository's React Testing Library helpers as the component interaction
-surface. Queries should resemble how a user or assistive technology finds the
-control.
+Utiliser les helpers React Testing Library du dépôt comme surface d'interaction.
+Les requêtes doivent refléter la manière dont une personne ou une technologie
+d'assistance trouve le contrôle.
 
-Preferred order:
+Ordre préféré :
 
-1. `getByRole` with an accessible name.
-2. `getByLabelText` for form controls.
-3. `getByText` for visible content.
-4. `getByTestId` only when no semantic selector exists.
+1. `getByRole` avec un nom accessible.
+2. `getByLabelText` pour les contrôles de formulaire.
+3. `getByText` pour le contenu visible.
+4. `getByTestId` seulement sans sélecteur sémantique.
 
-Create a small reusable test helper only when multiple tests repeat a meaningful
-user workflow. Do not wrap every component in a custom harness or expose private
-component state.
+Créer un petit helper réutilisable uniquement lorsque plusieurs tests répètent un
+parcours utilisateur significatif. Ne pas envelopper chaque composant dans un
+harness personnalisé ni exposer son état privé.
 
 ```ts
 const saveButton = screen.getByRole('button', {name: 'Save'});
@@ -21,8 +21,8 @@ await user.click(saveButton);
 expect(await screen.findByText('Saved')).toBeVisible();
 ```
 
-If the project uses a component library, prefer its supported testing approach
-without coupling assertions to generated CSS classes or DOM depth.
+Si le projet utilise une bibliothèque de composants, suivre son approche de test
+sans coupler les assertions aux classes CSS générées ni à la profondeur du DOM.
 
-Official reference:
+Référence officielle :
 [Next.js testing guides](https://nextjs.org/docs/app/guides/testing).

@@ -1,21 +1,21 @@
-# ADR-NNN: [short title]
+# ADR-NNN : [titre court]
 
-> MADR-style. One file per decision. Stored under `.specs/<feature-id>/adr/`.
+> Format MADR. Un fichier par décision, stocké sous `.specs/<feature-id>/adr/`.
 
-- **Status:** proposed | accepted | superseded by ADR-NNN
-- **Date:** YYYY-MM-DD
-- **Deciders:** [user], `spring-architect`
-- **Consulted:** —
-- **Informed:** —
+- **Statut :** proposed | accepted | superseded by ADR-NNN
+- **Date :** YYYY-MM-DD
+- **Décideurs :** [utilisateur], `spring-architect`
+- **Consultés :** —
+- **Informés :** —
 
 ## Context and problem statement
 
-[2-4 sentences describing the situation that forced a decision.]
+[2 à 4 phrases décrivant la situation qui impose une décision.]
 
 ## Decision drivers
 
-- [driver 1]
-- [driver 2]
+- [facteur 1]
+- [facteur 2]
 
 ## Considered options
 
@@ -25,27 +25,27 @@
 
 ## Decision outcome
 
-Chosen option: **Option X**, because [one-line justification].
+Option retenue : **Option X**, car [justification en une ligne].
 
 ### Consequences
 
-- Positive: [...]
-- Negative / trade-offs: [...]
+- Positives : [...]
+- Négatives / compromis : [...]
 
 ## Pros and cons of the options
 
 ### Option A
 
-- Pro: [...]
-- Con: [...]
+- Avantage : [...]
+- Inconvénient : [...]
 
 ### Option B
 
-- Pro: [...]
-- Con: [...]
+- Avantage : [...]
+- Inconvénient : [...]
 
 ## Links
 
-- Related ADRs: ADR-NNN
-- Source: [ticket or spec section]
-- Supersedes: —
+- ADR liés : ADR-NNN
+- Source : [ticket ou section de la spécification]
+- Remplace : —

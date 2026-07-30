@@ -1,29 +1,29 @@
 ---
 name: spring-security-baseline
-description: Minimum Spring Security 7 configuration patterns and review baseline. Use when designing or reviewing authentication, authorization, CSRF, CORS, secrets handling, or input validation.
+description: Configuration minimale et référence de revue Spring Security 7. Utiliser pour concevoir ou relire authentification, autorisation, CSRF, CORS, secrets et validation des entrées.
 when_to_use:
-  - Phase 3 (Plan) — designing auth/authz for an endpoint.
-  - Phase 7 (Code review) — security rubric of `08-code-review.md`.
+  - Phase 3, Plan — concevoir l’authentification et l’autorisation d’un endpoint.
+  - Phase 7, revue de code — grille de sécurité de `08-code-review.md`.
 authoritative_references:
   - https://docs.spring.io/spring-security/reference/index.html
   - https://owasp.org/Top10/
 ---
 
-# Spring Security baseline
+# Référence Spring Security
 
-## What every endpoint must declare
+## Déclarations requises pour chaque endpoint
 
-In `03-design.md`, for each new/changed endpoint:
+Dans `03-design.md`, préciser pour chaque endpoint nouveau ou modifié :
 
-- **AuthN**: Anonymous? Bearer (JWT)? Session? mTLS?
-- **AuthZ**: What role/scope/claim is required?
-- **Input validation**: Bean Validation on the DTO (`@NotNull`, `@Size`, `@Pattern`, …) PLUS service-layer invariants.
-- **Output**: Does the response include any field the caller is not allowed to see?
-- **Audit**: Should this action be logged with structured fields (`actor`, `subject`, `outcome`)?
+- **AuthN** : anonyme, Bearer JWT, session ou mTLS ;
+- **AuthZ** : rôle, scope ou claim requis ;
+- **validation des entrées** : Bean Validation sur le DTO ET invariants dans le service ;
+- **sortie** : aucun champ que l'appelant n'est pas autorisé à voir ;
+- **audit** : besoin éventuel d'un journal structuré avec `actor`, `subject` et `outcome`.
 
-If any of these is unclear, write a `Q-NNN` — do not pick a default.
+Si un point est ambigu, écrire une `Q-NNN` au lieu de choisir une valeur par défaut.
 
-## Default `SecurityFilterChain` (resource server, JWT)
+## `SecurityFilterChain` de base pour un resource server JWT
 
 ```java
 @Configuration
@@ -39,7 +39,7 @@ class SecurityConfig {
                 .requestMatchers("/api/public/**").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()))
-            .csrf(csrf -> csrf.disable())                // stateless API
+            .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(STATELESS))
             .headers(h -> h
                 .contentSecurityPolicy(c -> c.policyDirectives("default-src 'none'"))
@@ -49,11 +49,11 @@ class SecurityConfig {
 }
 ```
 
-CSRF is **disabled only for stateless APIs**. If sessions are used, CSRF is on.
+Désactiver CSRF **uniquement pour une API sans état**. Avec des sessions, CSRF reste actif.
 
-## Method-level authorization
+## Autorisation au niveau méthode
 
-Prefer `@PreAuthorize` with SpEL using JWT claims:
+Préférer `@PreAuthorize` avec des claims JWT :
 
 ```java
 @PreAuthorize("hasAuthority('SCOPE_orders:write') and #orderId == authentication.token.claims['order_id']")
@@ -62,33 +62,34 @@ public Order apply(@PathVariable UUID orderId, @Valid @RequestBody ApplyGiftCard
 
 ## Secrets
 
-- **Never** commit secrets. Use environment variables or a secrets manager.
-- `application.yml` references `${VAR}`; absence fails fast at startup.
-- Tests use Testcontainers; secrets there are throwaway.
+- **Ne jamais** commiter de secret. Utiliser des variables d'environnement ou un gestionnaire de secrets.
+- `application.yml` référence `${VAR}` et échoue rapidement au démarrage si elle manque.
+- Les secrets des conteneurs de test sont jetables.
 
-## Input validation
+## Validation des entrées
 
-Two layers:
+Deux couches :
 
-1. **Boundary** — Bean Validation on DTO + `@Valid` on controller method.
-2. **Service** — re-check invariants that depend on the entity state (e.g. "card not yet redeemed" is a service-layer check, not a DTO check).
+1. **Frontière** — Bean Validation sur le DTO et `@Valid` sur la méthode du contrôleur.
+2. **Service** — nouvelle vérification des invariants qui dépendent de l'état d'une entité.
 
-Never trust client-supplied IDs. Always re-resolve to a domain object scoped by the caller.
+Ne jamais faire confiance aux identifiants fournis par le client. Toujours les
+résoudre vers un objet métier limité au périmètre de l'appelant.
 
-## Logging & observability
+## Journalisation et observabilité
 
-- Log security events at `INFO` with structured key/values: `actor=<sub>`, `action=apply_gift_card`, `outcome=denied`, `reason=card_redeemed`.
-- Never log PII, secrets, full JWT, full card number. Mask: `code=ABC***`.
+- Journaliser les événements de sécurité en `INFO` avec des clés structurées.
+- Ne jamais journaliser données personnelles, secrets, JWT complet ou numéro de carte complet. Masquer les valeurs sensibles.
 
-## Review rubric (used by code-reviewer)
+## Grille de revue
 
-- [ ] No endpoint without an explicit `requestMatchers` decision (default-deny).
-- [ ] No `permitAll()` on a state-changing endpoint.
-- [ ] No `@PreAuthorize` SpEL referencing user-supplied data unchecked.
-- [ ] No `@CrossOrigin("*")` in production code.
-- [ ] No raw SQL with string concatenation.
-- [ ] No reflective bean access on user input.
-- [ ] No `@JsonProperty` exposing internal entity fields.
-- [ ] CSRF state matches whether the API is stateful.
-- [ ] Sensitive data is masked in logs.
-- [ ] OWASP Dependency Check has no new High/Critical CVEs (or one waiver per CVE in `dependency-check-suppressions.xml`).
+- [ ] Aucun endpoint sans décision explicite dans `requestMatchers` ; refus par défaut.
+- [ ] Aucun `permitAll()` sur un endpoint qui modifie l'état.
+- [ ] Aucun SpEL `@PreAuthorize` utilisant sans contrôle une donnée fournie par l'utilisateur.
+- [ ] Aucun `@CrossOrigin("*")` dans le code de production.
+- [ ] Aucun SQL brut construit par concaténation.
+- [ ] Aucun accès réflexif à un bean depuis une entrée utilisateur.
+- [ ] Aucun `@JsonProperty` exposant un champ interne d'entité.
+- [ ] L'état CSRF correspond au caractère avec ou sans état de l'API.
+- [ ] Les données sensibles sont masquées dans les journaux.
+- [ ] Aucune nouvelle CVE haute ou critique, ou une dérogation par CVE dans `dependency-check-suppressions.xml`.

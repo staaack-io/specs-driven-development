@@ -1,74 +1,75 @@
 ---
 name: spring-task-decomposition
-description: Decompose a Spring Boot 4 design into 1–4 hour TDD-shaped tasks with stable IDs, AC traceability, files-in-scope, and per-task gates. Use when authoring `04-tasks.md`.
+description: Découper une conception Spring Boot 4 en tâches TDD de une à quatre heures avec identifiants stables, traçabilité, fichiers autorisés et portes. Utiliser pour rédiger `04-tasks.md`.
 when_to_use:
-  - Phase 3 (Plan) — turning `03-design.md` + `01-spec.md` into an ordered task list.
-  - Re-planning after a spec change.
+  - Phase 3, Plan — transformer `03-design.md` et `01-spec.md` en liste ordonnée de tâches.
+  - Replanifier après une modification de la spécification.
 authoritative_references:
   - .codex/templates/tasks.template.md
   - .codex/checklists/implementation-dod.md
 ---
 
-# Spring task decomposition
+# Découpage des tâches Spring
 
-## Sizing rule
+## Règle de taille
 
-Each task is **1–4 hours** for a competent engineer. If larger, split. If smaller than 30 minutes, fold into the previous task.
+Chaque tâche représente **1 à 4 heures** pour un ingénieur compétent. Scinder une
+tâche plus grande et fusionner une tâche de moins de 30 minutes avec la précédente.
 
-## Shape
+## Forme
 
-A good task has all of:
+Une bonne tâche possède :
 
-1. **Stable ID** `T-NNN`. Never renumber.
-2. **Linked AC-IDs** — what user-visible criteria this task moves forward.
-3. **Test-IDs** — at least one (`T-NNN-T1`, `T-NNN-T2`).
-4. **Files in scope** — every path the task is allowed to edit (production + tests). The hook enforces this.
-5. **Dependencies** — `T-NNN` IDs that must be `done` first.
-6. **Gates** — which harness layers run for this task (default: all that touch the changed packages).
-7. **Rollback** — one sentence on how to revert if validation fails.
+1. un identifiant stable `T-NNN`, jamais renuméroté ;
+2. les `AC-IDs` dont elle fait progresser le résultat visible ;
+3. au moins un `Test-ID`, comme `T-NNN-T1` ;
+4. des `Files in scope` listant chaque chemin autorisé ; le hook les impose ;
+5. les dépendances `T-NNN` qui doivent être `done` avant ;
+6. les couches du harness à exécuter, par défaut toutes celles touchant les packages modifiés ;
+7. une phrase expliquant le retour arrière en cas d'échec.
 
-## Layering convention
+## Convention d'ordre
 
-Order tasks so that dependencies flow inward:
+Ordonner les tâches pour que les dépendances progressent vers l'intérieur :
 
-1. **Domain & contracts** — DTOs, value objects, OpenAPI snippet, migration script.
-2. **Unit / slice tests + minimum impl** — one task per controller / service / repository concern.
-3. **Integration tests** — Testcontainers, end-to-end through the controller.
-4. **Cross-cutting** — ArchUnit rules, error envelope, observability.
+1. **Domaine et contrats** — DTO, value objects, extrait OpenAPI, migration.
+2. **Tests unitaires ou par tranche et implémentation minimale** — une tâche par préoccupation de contrôleur, service ou dépôt.
+3. **Tests d'intégration** — Testcontainers et parcours de bout en bout via le contrôleur.
+4. **Transverse** — règles ArchUnit, enveloppe d'erreur, observabilité.
 
-## Worked example (excerpt from `04-tasks.md`)
+## Exemple extrait de `04-tasks.md`
 
 ```markdown
-### T-001 — Add `apply-gift-card` request DTO and validation
+### T-001 — Ajouter le DTO de requête `apply-gift-card` et sa validation
 - **AC-IDs:** AC-001, AC-003
-- **Test-IDs:** T-001-T1 (rejects blank code), T-001-T2 (rejects negative total)
+- **Test-IDs:** T-001-T1 (refuse un code vide), T-001-T2 (refuse un total négatif)
 - **Files in scope:**
   - `src/main/java/com/example/shop/checkout/ApplyGiftCardRequest.java`
   - `src/test/java/com/example/shop/checkout/ApplyGiftCardRequestTest.java`
 - **Dependencies:** none
 - **Gates:** format, compile, unit
-- **Rollback:** delete the two files; nothing else references them yet.
+- **Rollback:** supprimer les deux fichiers ; aucun autre ne les référence encore.
 
-### T-002 — `POST /checkout/{orderId}/gift-card` controller stub
+### T-002 — Créer l'ébauche du contrôleur `POST /checkout/{orderId}/gift-card`
 - **AC-IDs:** AC-001, AC-002, AC-003
-- **Test-IDs:** T-002-T1 (404 when order missing), T-002-T2 (415 when wrong content-type), T-002-T3 (returns 200 happy-path with stub service)
-- **Files in scope:** controller class + `@WebMvcTest`
+- **Test-IDs:** T-002-T1 (404 si la commande manque), T-002-T2 (415 pour un mauvais content-type), T-002-T3 (200 sur le parcours nominal avec service simulé)
+- **Files in scope:** classe du contrôleur + `@WebMvcTest`
 - **Dependencies:** T-001
 - **Gates:** format, compile, unit, slice
 ```
 
 ## Anti-patterns
 
-- "Implement gift cards" — too big.
-- A task with no `Test-IDs` — TDD impossible.
-- A task whose `Files in scope` is `**/*` — hook will block edits.
-- Two tasks editing the same file in parallel — serialize them.
-- A task that says "refactor X" without an AC — refactors happen inside the refactor phase of `$build`, not as a standalone task.
+- « Implémenter les cartes cadeaux » : trop grand.
+- Une tâche sans `Test-IDs` : TDD impossible.
+- Des `Files in scope` égaux à `**/*` : le hook bloquera.
+- Deux tâches modifiant le même fichier en parallèle : les sérialiser.
+- Une tâche de refactorisation sans AC : refactoriser dans la phase refactor de `$build`.
 
-## Self-check
+## Auto-vérification
 
-- [ ] Every AC from `01-spec.md` is reachable from at least one task's `AC-IDs`.
-- [ ] Every task has ≥1 `Test-ID`.
-- [ ] Every task fits 1–4 hours.
-- [ ] `Files in scope` is concrete paths, not glob patterns.
-- [ ] Dependency DAG has no cycles.
+- [ ] Chaque AC de `01-spec.md` est accessible depuis les `AC-IDs` d'au moins une tâche.
+- [ ] Chaque tâche possède au moins un `Test-ID`.
+- [ ] Chaque tâche tient dans 1 à 4 heures.
+- [ ] Les `Files in scope` sont des chemins concrets, pas des globs.
+- [ ] Le graphe des dépendances ne contient aucun cycle.

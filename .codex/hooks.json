@@ -1,5 +1,5 @@
 {
-  "description": "Spec-driven development guardrails for Codex.",
+  "description": "Garde-fous du développement piloté par les spécifications pour Codex.",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,17 +8,17 @@
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/block-impl-without-failing-test.sh\"",
-            "statusMessage": "Checking TDD state"
+            "statusMessage": "Vérification de l'état TDD"
           },
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-files-in-scope.sh\"",
-            "statusMessage": "Checking task scope"
+            "statusMessage": "Vérification du périmètre de la tâche"
           },
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/block-progress-on-open-questions.sh\"",
-            "statusMessage": "Checking open questions"
+            "statusMessage": "Vérification des questions ouvertes"
           }
         ]
       },
@@ -28,7 +28,7 @@
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/forbid-skip-flags.sh\"",
-            "statusMessage": "Checking forbidden flags"
+            "statusMessage": "Vérification des options interdites"
           }
         ]
       }
@@ -40,12 +40,12 @@
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/auto-format-touched.sh\"",
-            "statusMessage": "Formatting touched Java files"
+            "statusMessage": "Formatage des fichiers Java modifiés"
           },
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/log-tdd-state-transition.sh\"",
-            "statusMessage": "Recording TDD transition"
+            "statusMessage": "Enregistrement de la transition TDD"
           }
         ]
       }

@@ -1,6 +1,6 @@
 # Navigation
 
-Use `<Link>` for declarative internal navigation:
+Utiliser `<Link>` pour la navigation interne déclarative :
 
 ```tsx
 import Link from 'next/link';
@@ -10,9 +10,8 @@ export function ProductLink({id}: {id: string}) {
 }
 ```
 
-Use `redirect` or `permanentRedirect` in Server Components, Server Actions, or
-Route Handlers. Use `useRouter` in a Client Component only for navigation caused
-by client-only logic.
+Utiliser `redirect` ou `permanentRedirect` dans Server Components, Server Actions
+ou Route Handlers. Réserver `useRouter` au Client Component pour une logique purement client.
 
 ```tsx
 'use client';
@@ -25,9 +24,9 @@ export function CloseButton() {
 }
 ```
 
-Never pass an untrusted URL to `router.push` or `router.replace`. Use
-`usePathname` and `useSearchParams` only in Client Components. Prefer URL search
-parameters for shareable filter and pagination state.
+Ne jamais passer une URL non fiable à `router.push` ou `router.replace`. Utiliser
+`usePathname` et `useSearchParams` uniquement côté client et préférer l'URL pour
+les filtres et paginations partageables.
 
-Official reference:
+Référence officielle :
 [Linking and navigating](https://nextjs.org/docs/app/getting-started/linking-and-navigating).

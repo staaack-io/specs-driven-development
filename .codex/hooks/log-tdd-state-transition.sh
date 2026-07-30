@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # log-tdd-state-transition.sh
-# Codex PostToolUse hook for apply_patch (also matched by Edit|Write aliases).
-# When .tdd-state.json is touched OR an implementation log block is appended,
-# write a one-line audit entry to .specs/<feature>/.tdd-audit.log so transitions
-# are reviewable later.
+# Hook Codex PostToolUse pour apply_patch, également associé aux alias Edit|Write.
+# Lorsqu'un .tdd-state.json est modifié OU qu'un bloc est ajouté au journal
+# d'implémentation, écrire une ligne d'audit dans .specs/<feature>/.tdd-audit.log
+# afin que les transitions puissent être relues.
 
 set -euo pipefail
 

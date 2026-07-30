@@ -190,6 +190,20 @@ de porter tout l'historique de la fonctionnalité. Il est possible de fermer la
 session après une phase ou une tâche, puis de reprendre depuis les artefacts.
 Cette propriété limite la perte de contexte et garde chaque échange plus ciblé.
 
+## Hooks et harness : deux niveaux de protection
+
+Les **hooks** sont déclenchés automatiquement avant ou après une action Codex
+précise. Ils effectuent un contrôle court et ciblé : vérifier qu’un fichier est
+dans le périmètre, qu’un test rouge autorise une édition de production ou qu’une
+commande ne contourne pas les tests. Un hook peut refuser l’action immédiatement.
+
+Le **harness** est lancé explicitement par `$validate`, depuis un terminal ou en
+CI. Il examine l’état global du projet au moyen de dix couches : compilation,
+tests, analyses, architecture, couverture, mutations, contrat et sécurité.
+
+Ainsi, **le hook protège le geste en cours, tandis que le harness apporte les
+preuves globales avant la validation**.
+
 ## Le harness de qualité
 
 Le script `.github/scripts/harness.sh` sert de point d'entrée commun à l'agent,
@@ -251,7 +265,7 @@ l'[exemple greenfield](../examples/greenfield/README.md). Pour un dépôt déjà
 production, partez plutôt de l'[exemple brownfield](../examples/brownfield/README.md).
 
 Les prérequis et les deux modes d'installation sont détaillés dans le
-[README principal](../README.md#install).
+[README principal](../README.md#installation).
 
 
 ## Organisation du dépôt

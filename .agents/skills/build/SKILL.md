@@ -1,63 +1,81 @@
 ---
 name: build
-description: "Execute one planned SDD task through red, green, refactor, and simplify. Use when the user invokes $build or asks to implement a T-NNN task."
+description: "Exécuter une tâche SDD planifiée selon rouge, vert, refactorisation et simplification. Utiliser lorsque l’utilisateur invoque $build ou demande d’implémenter une tâche T-NNN."
 ---
 
 # $build
 
-**Phase:** 4 — build (TDD)
-**Owning agent:** `.codex/agents/spring-implementer.toml` (collaborates with `spring-test-engineer`)
-**Skills used:** `tdd-red-green-refactor`, `spring-boot-4-conventions`, `clarity-over-cleverness`, `junit5-testcontainers-patterns`, `spring-task-decomposition`
+**Phase :** 4 — implémentation TDD
+**Agent responsable :** `.codex/agents/spring-implementer.toml`, en
+collaboration avec `spring-test-engineer`
+**Skills utilisés :** `tdd-red-green-refactor`,
+`spring-boot-4-conventions`, `clarity-over-cleverness`,
+`junit5-testcontainers-patterns`, `spring-task-decomposition`
 
-## Stack routing
+## Routage selon la stack
 
-| Task type | Red step agent | Green/refactor/simplify agent |
-|---|---|---|
-| Backend (`src/main/java/**`, `src/test/java/**`) | `spring-test-engineer` | `spring-implementer` (this agent) |
-| Frontend (`app/**/*.{ts,tsx,js,jsx,css}`, `src/**/*.{ts,tsx,js,jsx,css}`) | `react-nextjs-test-engineer` | `react-nextjs-implementer` |
+| Type de tâche | Étape rouge | Étapes vert/refactorisation/simplification |
+| --- | --- | --- |
+| Backend Java | `spring-test-engineer` | `spring-implementer` |
+| Frontend React/Next.js | `react-nextjs-test-engineer` | `react-nextjs-implementer` |
 
-Determine the task type from its `files_in_scope` in `04-tasks.md`. If all files
-are frontend paths, delegate to the React/Next.js agents and load
-`react-nextjs-developer` separately. If mixed, split into sub-steps: backend
-first with Spring agents, then frontend with React/Next.js agents.
+Déterminer le type depuis `files_in_scope`. Pour du frontend, charger
+`react-nextjs-developer` séparément. Pour une tâche mixte, traiter d’abord le
+backend, puis le frontend.
 
-## Purpose
-Execute one task end-to-end through the four TDD phases (red → green → refactor → simplify), updating `.tdd-state.json` and appending a block to `05-implementation-log.md` after each phase.
+## Objectif
 
-## Inputs
-- `<task-id>` (e.g. `T-001`). Required.
+Exécuter une tâche de bout en bout selon rouge → vert → refactorisation →
+simplification, actualiser `.tdd-state.json` et compléter
+`05-implementation-log.md` après chaque étape.
 
-## Reads
-- `.specs/<feature-id>/04-tasks.md`
-- `.specs/<feature-id>/03-design.md`
-- `.specs/<feature-id>/.tdd-state.json`
-- `.agents/skills/tdd-red-green-refactor/SKILL.md` (authoritative)
+## Entrées
 
-## Writes
-- `src/test/**` and `src/main/**` files listed in `tasks[<task-id>].files_in_scope`.
-- `.specs/<feature-id>/.tdd-state.json` (phase transitions).
-- `.specs/<feature-id>/05-implementation-log.md` (one `### <task-id> — <phase>` block per phase).
+- `<task-id>`, par exemple `T-001`, obligatoire.
 
-## Process
-For the supplied `<task-id>`:
+## Lectures
 
-0. **Pre-flight commit check.** Run `git status`. If there are uncommitted changes from any prior task, refuse to start. List the changed files and remind: `git commit → $build <task-id>`.
-1. **Activate.** Set `.tdd-state.json` `active_task = <task-id>`. Refuse if any other task is `phase: red|green|refactor|simplify` (one task in flight at a time).
-2. **Red.** Write the smallest test that captures the next AC slice. Run it. Capture the failure message into `tasks[<task-id>].red_failure_excerpt`. Set `phase: "red"`. Append log block.
-3. **Green.** Write the minimum production code under `files_in_scope` to pass the test. Run only the new test, then run all tests. Set `phase: "green"`. Append log block.
-4. **Refactor.** Improve structure without changing behavior. Re-run all tests. Set `phase: "refactor"`. Append log block.
-5. **Simplify.** Apply `clarity-over-cleverness` (untangle ternaries, inline once-used helpers, kill dead options, name domain concepts, extract repeated literals). Re-run all tests. Set `phase: "simplify"`. Append log block.
-6. **Done.** Set `phase: "done"`, clear `active_task`. If more ACs in this task remain uncovered, immediately re-run from step 2 with the next slice (do not declare done early).
-7. **STOP — commit reminder.** Surface: files changed (`git status`), tests passing, suggested commit message. Recommend: `git status → git commit → $build <next-task-id>`. Do not auto-start the next task unless the user explicitly requests chaining.
+- `04-tasks.md` ;
+- `03-design.md` ;
+- `.tdd-state.json` ;
+- `tdd-red-green-refactor`, source de vérité.
 
-## Refuse if
-- `<task-id>` is not in `.tdd-state.json`.
-- Another task is mid-flight (not `pending` or `done`).
-- A `src/main/**` edit is attempted while `phase != "red"` and `red_failure_excerpt` is empty (this is also enforced by the Codex hook `block-impl-without-failing-test.sh`).
-- Any test edit lands outside `tasks[<task-id>].files_in_scope` (enforced by `enforce-files-in-scope.sh`).
+## Écritures
 
-## Done when
-- Every AC listed under `tasks[<task-id>].acs_covered` has at least one `@Tag("AC-NNN")` test.
-- All four phase blocks are present in `05-implementation-log.md` for this task.
-- `.tdd-state.json` shows `phase: "done"` for `<task-id>`.
-- Commit reminder surfaced (Step 7); user commits before starting the next task. After all tasks done, run `$test` then `$validate`.
+- uniquement les fichiers de test et de production déclarés dans
+  `files_in_scope` ;
+- `.tdd-state.json` ;
+- un bloc par étape dans `05-implementation-log.md`.
+
+## Processus
+
+0. Exécuter `git status`. Refuser de commencer si une tâche précédente laisse
+   des modifications non committées.
+1. Activer la tâche. Refuser si une autre tâche est en cours.
+2. **Rouge.** Écrire le plus petit test pour la prochaine tranche de critère,
+   l’exécuter, capturer l’échec attendu, passer la phase à `red` et consigner.
+3. **Vert.** Écrire le minimum de production, exécuter le nouveau test puis toute
+   la suite, passer à `green` et consigner.
+4. **Refactorisation.** Améliorer la structure sans changer le comportement,
+   relancer les tests, passer à `refactor` et consigner.
+5. **Simplification.** Appliquer `clarity-over-cleverness`, relancer les tests,
+   passer à `simplify` et consigner.
+6. **Fin.** Passer à `done` et vider `active_task`. Reprendre à l’étape rouge
+   si un critère de la tâche reste sans preuve.
+7. S’arrêter, afficher les fichiers, tests et message de commit suggéré. Ne pas
+   démarrer automatiquement la tâche suivante.
+
+## Refuser si
+
+- la tâche n’existe pas dans l’état TDD ;
+- une autre tâche est en cours ;
+- une édition de production survient hors phase `red` sans extrait d’échec ;
+- un test est modifié hors de `files_in_scope`.
+
+## Terminé lorsque
+
+- chaque critère couvert possède au moins un test `@Tag("AC-NNN")` ;
+- les quatre étapes sont consignées ;
+- la tâche vaut `done` ;
+- le rappel de commit est affiché. Après toutes les tâches, exécuter `$test`
+  puis `$validate`.

@@ -1,80 +1,80 @@
-# Spec: <FEATURE-ID> — <short title>
+# Spécification : <FEATURE-ID> — <titre court>
 
-> Owner: `spec-author` · Phase 1 · Template: `.codex/templates/spec.template.md`
+> Responsable : `spec-author` · Phase 1 · Modèle : `.codex/templates/spec.template.md`
 >
-> **No invention.** If something is not in the source ticket, the conversation, or the codebase, log it as a `Q-NNN` and ask the user.
+> **Aucune invention.** Si une information ne figure ni dans le ticket source, ni dans la conversation, ni dans le code existant, l'enregistrer comme `Q-NNN` et interroger l'utilisateur.
 
 ## Source
 
-- Tracker: <Jira | GitHub | Linear | Azure Boards | ad-hoc>
-- ID: <e.g. SHOP-1422 or owner/repo#123>
-- URL: <link>
-- Snapshot date: <YYYY-MM-DD>
-- Snapshot summary:
-  > <verbatim or paraphrased title + description from the tracker>
+- Outil de suivi : <Jira | GitHub | Linear | Azure Boards | ad-hoc>
+- Identifiant : <par exemple SHOP-1422 ou owner/repo#123>
+- URL : <lien>
+- Date de capture : <YYYY-MM-DD>
+- Résumé de la capture :
+  > <titre et description du ticket, cités ou reformulés>
 
 ## Goal
 
-<one paragraph describing the user-visible outcome>
+<un paragraphe décrivant le résultat visible par l'utilisateur>
 
 ## Acceptance Criteria
 
-Use EARS-lite shapes (see `docs/spec-format.md`). One condition per AC. IDs are stable and never reused.
+Utiliser les formes EARS-lite décrites dans `docs/spec-format.md`. Une condition par AC. Les identifiants restent stables et ne sont jamais réutilisés.
 
-- AC-001: <The system shall …> | <When …, the system shall …> | <If …, then the system shall …> | <While …, the system shall …> | <Where …, the system shall …>
-- AC-002: …
+- AC-001 : <Le système doit…> | <Quand…, le système doit…> | <Si…, alors le système doit…> | <Pendant que…, le système doit…> | <Lorsque la fonctionnalité…, le système doit…>
+- AC-002 : …
 
 ## Domain Entities and Relationships
 
-> Conceptual model only (business language, no class/table/library details). If unknown, add `Q-NNN`.
+> Modèle conceptuel uniquement : vocabulaire métier, sans détails de classes, tables ou bibliothèques. Si une information manque, ajouter une `Q-NNN`.
 
-### Entities
+### Entités
 
-- **<Entity name>** — purpose: <what it represents>; key business attributes: <attribute list>
+- **<Nom de l'entité>** — rôle : <ce qu'elle représente> ; attributs métier principaux : <liste>
 
-### Relationships
+### Relations
 
-- **<Entity A> 1..* <Entity B>** — meaning: <business rule>
-- **<Entity C> 0..1 <Entity D>** — meaning: <optional association rule>
+- **<Entité A> 1..* <Entité B>** — sens : <règle métier>
+- **<Entité C> 0..1 <Entité D>** — sens : <règle d'association optionnelle>
 
 ## Non-Goals
 
-- <explicitly out of scope>
+- <élément explicitement hors périmètre>
 
 ## Glossary
 
-- **Term** — definition.
+- **Terme** — définition.
 
 ## Assumptions
 
-> Only assumptions explicitly stated by the user or the source ticket. The agent never adds assumptions silently.
+> Uniquement les hypothèses explicitement fournies par l'utilisateur ou le ticket source. L'agent n'ajoute jamais d'hypothèse silencieusement.
 
-- (none)
+- (aucune)
 
 ## Out-of-Band Inputs
 
-> Anything provided by the user during the spec session that is not in the source ticket (e.g. screenshots pasted in chat, verbal clarifications). Recorded for traceability.
+> Toute information fournie pendant la session mais absente du ticket source, par exemple une capture d'écran ou une précision dans le chat. Elle est consignée pour assurer la traçabilité.
 
-- (none)
+- (aucune)
 
 ## Open Questions
 
-> Every uncertainty MUST be logged here. The agent does not pick a default.
+> Toute incertitude DOIT être consignée ici. L'agent ne choisit pas de valeur par défaut.
 
-- Q-001: <question>
-  - Why it matters: <impact on design or behavior>
-  - Candidate options identified: <option-A>, <option-B>
-  - Status: open
+- Q-001 : <question>
+  - Pourquoi c'est important : <impact sur la conception ou le comportement>
+  - Options candidates identifiées : <option-A>, <option-B>
+  - Statut : open
 
 ## Resolved Questions
 
-> Filled by the agent after the user answers. Verbatim user text + timestamp.
+> Rempli par l'agent après la réponse de l'utilisateur, avec le texte exact et l'horodatage.
 
-- (none yet)
+- (aucune pour le moment)
 
 ## Sign-off
 
-- [ ] All AC are atomic and testable.
-- [ ] All `Q-NNN` are resolved or explicitly deferred-with-rationale.
-- [ ] Source recorded.
-- [ ] Reviewed by user on <YYYY-MM-DD>.
+- [ ] Tous les AC sont atomiques et testables.
+- [ ] Toutes les `Q-NNN` sont résolues ou explicitement différées avec justification.
+- [ ] La source est consignée.
+- [ ] Revue effectuée par l'utilisateur le <YYYY-MM-DD>.

@@ -1,46 +1,66 @@
 ---
 name: spec
-description: "Turn feature intent or a ticket into an EARS-style SDD specification. Use when the user invokes $spec or asks to specify a feature."
+description: "Transformer une intention ou un ticket en spécification SDD au format EARS. Utiliser lorsque l’utilisateur invoque $spec ou demande de spécifier une fonctionnalité."
 ---
 
 # $spec
 
-**Phase:** 1 — specify
-**Owning agent:** `.codex/agents/spec-author.toml`
-**Skills used:** `ears-spec-authoring`, `issue-tracker-ingestion`, `requirements-traceability`
+**Phase :** 1 — spécification
+**Agent responsable :** `.codex/agents/spec-author.toml`
+**Skills utilisés :** `ears-spec-authoring`, `issue-tracker-ingestion`,
+`requirements-traceability`
 
-## Purpose
-Turn raw intent (a sentence, a paragraph, or a ticket URL) into a complete EARS-style specification at `.specs/<feature-id>/01-spec.md`.
+## Objectif
 
-## Inputs
-Either:
-- Free text describing the feature, OR
-- A ticket reference (`JIRA-123`, GitHub issue URL, Linear ID, Azure work item URL).
+Transformer une intention brute, une phrase, un paragraphe ou l’URL d’un ticket
+en spécification EARS complète sous
+`.specs/<feature-id>/01-spec.md`.
 
-If a ticket is supplied, fetch it via the configured MCP server (see `.agents/skills/issue-tracker-ingestion/SKILL.md`) and treat its body as the source.
+## Entrées
 
-## Reads
-- The supplied text or ticket.
-- `.specs/_onboarding.md` (for stack context).
-- `.codex/templates/spec.template.md`.
-- `.codex/checklists/spec-review.md` (so the spec is born review-ready).
+Fournir soit :
 
-## Writes
-- `.specs/<feature-id>/01-spec.md` (feature-id = kebab-case slug derived from the title, prefixed with date `YYYY-MM-DD-`).
+- un texte libre décrivant la fonctionnalité ;
+- une référence de ticket : `JIRA-123`, URL d’issue GitHub, identifiant Linear
+  ou URL Azure Boards.
 
-## Process
-1. Derive `<feature-id>`. Refuse if a folder with that id already exists unless the user passes `--continue`.
-2. Extract: business goal, primary actor, in-scope, explicitly-out-of-scope.
-3. Write acceptance criteria as `AC-001`, `AC-002`, ... using strict EARS forms (Ubiquitous, Event-driven, State-driven, Unwanted-behavior, Optional). Every AC must be testable.
-4. List non-functional requirements (latency, throughput, security, observability) with concrete numbers. If unknown, file an `Open Question` instead of guessing.
-5. Capture `Open Questions` as `Q-001`, `Q-002`. **Never invent answers.** Stop and surface the questions to the user.
-6. Render the file using `.codex/templates/spec.template.md`.
+Pour un ticket, le récupérer via le serveur MCP configuré décrit dans
+`issue-tracker-ingestion` et traiter son contenu comme source.
 
-## Refuse if
-- The input has fewer than 3 distinct nouns/verbs (likely too vague — ask the user to expand).
-- Any acceptance criterion would require unstated assumptions.
+## Lectures
 
-## Done when
-- `01-spec.md` exists with at least one AC and zero invented answers.
-- All ambiguities are listed under `## Open Questions` with `Q-NNN` IDs.
-- The user has been told the next command is `$spec-review` (after they answer any Q-NNN).
+- texte ou ticket fourni ;
+- `.specs/_onboarding.md` pour le contexte de stack ;
+- `.codex/templates/spec.template.md` ;
+- `.codex/checklists/spec-review.md`.
+
+## Écritures
+
+- `.specs/<feature-id>/01-spec.md`, avec un identifiant en `kebab-case`
+  préfixé par la date `YYYY-MM-DD-`.
+
+## Processus
+
+1. Déduire `<feature-id>`. Refuser si le dossier existe déjà, sauf avec
+   `--continue`.
+2. Extraire l’objectif métier, l’acteur principal, le périmètre et les
+   exclusions explicites.
+3. Écrire des critères `AC-001`, `AC-002`, etc., selon les formes EARS.
+   Chaque critère doit être testable.
+4. Consigner les exigences non fonctionnelles avec des valeurs mesurables.
+   Si elles sont inconnues, ouvrir une question au lieu de deviner.
+5. Créer les questions `Q-001`, `Q-002`, etc. **Ne jamais inventer de
+   réponse.** S’arrêter et les présenter à l’utilisateur.
+6. Produire le fichier avec le modèle.
+
+## Refuser si
+
+- l’entrée contient moins de trois noms ou verbes distincts et reste trop vague ;
+- un critère exige une supposition non formulée.
+
+## Terminé lorsque
+
+- `01-spec.md` existe avec au moins un critère et aucune réponse inventée ;
+- toutes les ambiguïtés figurent sous `## Open Questions` avec un identifiant ;
+- l’utilisateur sait que l’étape suivante est `$spec-review`, après résolution
+  des questions.

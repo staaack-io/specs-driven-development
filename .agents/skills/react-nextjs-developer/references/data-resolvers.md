@@ -1,8 +1,8 @@
-# Route Data
+# Données de route
 
-In the App Router, load route data in the page, layout, or a nested async Server
-Component. Dynamic route `params` and `searchParams` are asynchronous in current
-Next.js versions; follow the installed version's generated types.
+Avec App Router, charger les données dans la page, le layout ou un Server
+Component asynchrone imbriqué. Dans les versions récentes, `params` et
+`searchParams` sont asynchrones ; suivre les types générés par la version installée.
 
 ```tsx
 import {notFound} from 'next/navigation';
@@ -21,10 +21,10 @@ export default async function Page({
 }
 ```
 
-Use `loading.tsx` for route loading UI, `not-found.tsx` with `notFound()` for a
-missing resource, and `error.tsx` for unexpected exceptions. Model expected
-errors as return values or UI states instead of throwing them.
+Utiliser `loading.tsx` pour le chargement, `not-found.tsx` avec `notFound()` pour
+une ressource absente et `error.tsx` pour les exceptions inattendues. Représenter
+les erreurs attendues comme valeurs de retour ou états d'interface.
 
-Official references:
+Références officielles :
 [Fetching data](https://nextjs.org/docs/app/getting-started/fetching-data) and
 [Error handling](https://nextjs.org/docs/app/getting-started/error-handling).

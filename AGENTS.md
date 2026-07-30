@@ -1,81 +1,97 @@
-# Spec-driven Spring + React and Next.js
+# Développement piloté par les spécifications avec Spring, React et Next.js
 
-This repository uses the spec-driven workflow documented in
-`docs/methodology.md`. These instructions apply to Codex in every task.
+Ce dépôt utilise le workflow de développement piloté par les spécifications
+documenté dans `docs/methodology.md`. Ces instructions s’appliquent à Codex
+pour chaque tâche.
 
-## Codex workflow surfaces
+## Surfaces du workflow Codex
 
-- Reusable workflows and domain guidance live as separate skills under
-  `.agents/skills/<name>/SKILL.md`.
-- Project agents live under `.codex/agents/<name>.toml`.
-- Templates and checklists live under `.codex/templates/` and
+- Les workflows réutilisables et les recommandations métier vivent dans des
+  skills séparés sous `.agents/skills/<name>/SKILL.md`.
+- Les agents du projet vivent sous `.codex/agents/<name>.toml`.
+- Les modèles et checklists vivent sous `.codex/templates/` et
   `.codex/checklists/`.
-- Lifecycle guardrails live in `.codex/hooks.json` and `.codex/hooks/`.
-- The deterministic harness remains under `.github/scripts/`; that directory is
-  infrastructure, not a GitHub Copilot integration.
+- Les garde-fous du cycle de vie vivent dans `.codex/hooks.json` et
+  `.codex/hooks/`.
+- Le harness déterministe reste sous `.github/scripts/` ; ce dossier est une
+  infrastructure, pas une intégration GitHub Copilot.
 
-Invoke workflow skills explicitly with `$spec`, `$spec-review`, `$epic-plan`,
-`$plan`, `$build`, `$test`, `$validate`, `$review`, `$ship`, `$onboard`,
-`$wire-harness`, `$status`, `$help`, or `$code-simplify`. Natural-language
-requests may activate the same skills through their descriptions.
+Invoquer explicitement les skills de workflow avec `$spec`, `$spec-review`,
+`$epic-plan`, `$plan`, `$build`, `$test`, `$validate`, `$review`,
+`$ship`, `$onboard`, `$wire-harness`, `$status`, `$help` ou
+`$code-simplify`. Une demande en langage naturel peut activer les mêmes skills
+via leur description.
 
-When a workflow skill declares an owning agent, delegate that phase to the
-matching project agent when Codex subagents are available. Keep dependent phases
-sequential. Do not invent new roles or combine multiple skills into one.
+Lorsqu’un skill de workflow désigne un agent responsable, déléguer cette phase à
+l’agent de projet correspondant si les sous-agents Codex sont disponibles.
+Garder les phases dépendantes séquentielles. Ne pas inventer de rôle et ne pas
+combiner plusieurs skills en un seul.
 
-## Source documents
+## Documents de référence
 
-Read the relevant document before changing a workflow artifact or its rules:
+Lire le document pertinent avant de modifier un artefact du workflow ou ses
+règles :
 
-- `docs/methodology.md` — phases and gates.
-- `docs/harness-principles.md` — self-validation requirements.
-- `docs/artifact-contract.md` — `.specs/<feature-id>/` layout.
-- `docs/spec-format.md` — EARS-lite acceptance criteria and open questions.
+- `docs/methodology.md` — phases et portes de contrôle ;
+- `docs/harness-principles.md` — exigences d’auto-validation ;
+- `docs/artifact-contract.md` — structure de `.specs/<feature-id>/` ;
+- `docs/spec-format.md` — critères d’acceptation EARS-lite et questions
+  ouvertes.
 
-## Phases 1–3: no invention
+## Phases 1 à 3 : ne rien inventer
 
-- Never silently choose a DB engine, auth scheme, error envelope, pagination
-  rule, unit, currency, retention policy, or other missing requirement.
-- Record missing decisions as `Q-NNN` under `## Open Questions` and stop for the
-  user.
-- Keep `AC-NNN`, `Q-NNN`, and `T-NNN` identifiers stable; never renumber them.
-- For Epic-sized work, produce `03-epic-design.md` and
-  `03a-epic-roadmap.md` before slice-level design and tasks.
-- Do not advance while an earlier artifact has unresolved questions unless the
-  user explicitly defers them with a recorded rationale.
+- Ne jamais choisir silencieusement un moteur de base de données, un mécanisme
+  d’authentification, une enveloppe d’erreur, une règle de pagination, une unité,
+  une devise, une politique de conservation ou toute autre exigence manquante.
+- Consigner les décisions manquantes sous forme de `Q-NNN` dans
+  `## Open Questions`, puis s’arrêter pour demander à l’utilisateur.
+- Conserver les identifiants `AC-NNN`, `Q-NNN` et `T-NNN` stables ; ne
+  jamais les renuméroter.
+- Pour une Epic, produire `03-epic-design.md` et `03a-epic-roadmap.md` avant
+  la conception détaillée et les tâches de chaque tranche.
+- Ne pas avancer tant qu’un artefact antérieur contient des questions non
+  résolues, sauf report explicite de l’utilisateur accompagné d’une justification
+  consignée.
 
-## Phase 4: TDD and scope
+## Phase 4 : TDD et périmètre
 
-- Never edit `src/main/**` unless the active task in
-  `.specs/<feature>/.tdd-state.json` has a recorded failing test.
-- Edit only files listed in the active task's `files_in_scope`.
-- Follow red → green → refactor → simplify for backend and frontend tasks.
-- Never delete a test, remove an assertion, lower a quality threshold, or add an
-  unexplained disabled test.
-- Never use build or verification bypasses such as `-DskipTests`,
-  `-Dpit.skip`, `-Dcheckstyle.skip`, `-Dspotbugs.skip`, or `--no-verify`.
-- Do not add a production or test dependency without explicit user approval.
+- Ne jamais modifier `src/main/**` tant que la tâche active dans
+  `.specs/<feature>/.tdd-state.json` ne contient pas un test en échec consigné.
+- Modifier uniquement les fichiers déclarés dans `files_in_scope` pour la tâche
+  active.
+- Suivre rouge → vert → refactorisation → simplification pour les tâches backend
+  et frontend.
+- Ne jamais supprimer un test, retirer une assertion, abaisser un seuil de qualité
+  ou ajouter un test désactivé sans explication.
+- Ne jamais contourner la compilation ou la vérification avec
+  `-DskipTests`, `-Dpit.skip`, `-Dcheckstyle.skip`, `-Dspotbugs.skip` ou
+  `--no-verify`.
+- Ne pas ajouter de dépendance de production ou de test sans l’accord explicite
+  de l’utilisateur.
 
-## Validation and review
+## Validation et revue
 
-- During `$validate` and `$review`, do not modify production code or tests.
-- Treat a missing configured report as an error.
-- Treat a skipped test without a documented reason as an error.
-- Require every waiver to reference an ADR.
-- Use `.github/scripts/harness.sh` as the shared local and CI entry point.
+- Pendant `$validate` et `$review`, ne pas modifier le code de production ni
+  les tests.
+- Considérer l’absence d’un rapport configuré comme une erreur.
+- Considérer un test ignoré sans raison documentée comme une erreur.
+- Exiger que chaque dérogation référence un ADR.
+- Utiliser `.github/scripts/harness.sh` comme point d’entrée commun en local et
+  en CI.
 
-## Commit and deployment boundaries
+## Limites de commit et de déploiement
 
-- Never run `git commit`; show the diff and suggest a commit message for the
-  user to execute.
-- Never push or deploy unless the user explicitly requests that action.
-- `$ship` prepares a plan and a command for the user; it does not deploy.
+- Ne jamais exécuter `git commit` ; montrer le diff et proposer à l’utilisateur
+  un message de commit à exécuter lui-même.
+- Ne jamais pousser ni déployer sans demande explicite de l’utilisateur.
+- `$ship` prépare un plan et une commande pour l’utilisateur ; il ne déploie
+  rien.
 
-## Stack conventions
+## Conventions de stack
 
-When changing Spring code, apply the separate skills
-`spring-boot-4-conventions`, `spring-security-baseline`, and the relevant test or
-architecture skills. When changing React or Next.js code, apply
-`react-nextjs-developer` and the React/Next.js agent for the active phase. Do not
-copy guidance from one skill into another; load each relevant skill
-independently.
+Lors d’une modification Spring, appliquer séparément les skills
+`spring-boot-4-conventions`, `spring-security-baseline` et les skills de test
+ou d’architecture pertinents. Lors d’une modification React ou Next.js,
+appliquer `react-nextjs-developer` et l’agent React/Next.js de la phase active.
+Ne pas recopier les recommandations d’un skill dans un autre ; charger chaque
+skill pertinent indépendamment.

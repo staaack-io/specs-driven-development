@@ -1,7 +1,7 @@
-# Nested Providers
+# Providers imbriqués
 
-React resolves Context from the nearest provider above a consumer. A nested
-provider can intentionally override a value for one subtree.
+React résout Context depuis le provider le plus proche au-dessus du consommateur.
+Un provider imbriqué peut remplacer volontairement une valeur pour un sous-arbre.
 
 ```tsx
 <ThemeContext value="light">
@@ -12,12 +12,12 @@ provider can intentionally override a value for one subtree.
 </ThemeContext>
 ```
 
-Use nested providers only when the scope is meaningful and visible in the
-component tree. Avoid provider stacks that hide unrelated global state.
+Utiliser les providers imbriqués uniquement lorsque leur périmètre est clair dans
+l'arbre. Éviter les empilements qui masquent un état global sans lien.
 
-In Next.js, keep Client providers below the root `<html>` and `<body>` when
-possible so static Server Component content remains optimizable. Never store
-request-specific authentication or secrets in a shared client provider.
+Dans Next.js, placer si possible les providers client sous `<html>` et `<body>`
+afin que le contenu serveur statique reste optimisable. Ne jamais stocker
+authentification propre à une requête ou secrets dans un provider client partagé.
 
-Official reference:
+Référence officielle :
 [Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components#context-providers).

@@ -1,42 +1,42 @@
-# Spec Review Checklist
+# Checklist de revue de spécification
 
-Used by `spec-author` to gate exit from Phase 2.
+Utilisée par `spec-author` pour autoriser la sortie de la phase 2.
 
-## Source & framing
+## Source et cadrage
 
-- [ ] Source recorded (tracker, ID, URL, snapshot date) OR explicitly marked `ad-hoc`.
-- [ ] Goal is one paragraph and describes a user-visible outcome.
-- [ ] Non-goals are present and explicit.
-- [ ] Glossary covers every domain term used in AC.
-- [ ] `## Domain Entities and Relationships` is present.
-- [ ] Entities are described in business terms (no class/table/library leakage).
-- [ ] Relationships include clear cardinality and business meaning.
+- [ ] La source est consignée (outil de suivi, identifiant, URL, date de capture) OU explicitement marquée `ad-hoc`.
+- [ ] L'objectif tient en un paragraphe et décrit un résultat visible par l'utilisateur.
+- [ ] Les non-objectifs sont présents et explicites.
+- [ ] Le glossaire couvre chaque terme métier utilisé dans les AC.
+- [ ] La section `## Domain Entities and Relationships` est présente.
+- [ ] Les entités sont décrites en termes métier, sans fuite de classes, tables ou bibliothèques.
+- [ ] Les relations précisent clairement leur cardinalité et leur sens métier.
 
-## Acceptance criteria
+## Critères d'acceptation
 
-- [ ] Every AC has a stable ID `AC-NNN` (zero-padded, monotonically increasing).
-- [ ] Every AC follows an EARS-lite shape (ubiquitous / event / state / optional / unwanted).
-- [ ] Every AC is atomic (one condition, one outcome).
-- [ ] Every AC is testable (the agent can describe a Given/When/Then test for it).
-- [ ] No AC contains implementation choices (class names, libraries, columns, defaults).
-- [ ] Vague NFRs ("fast", "secure", "scalable") have been replaced with measurable conditions OR demoted to `Q-NNN`.
+- [ ] Chaque AC possède un identifiant stable `AC-NNN` (complété par des zéros et croissant).
+- [ ] Chaque AC suit une forme EARS-lite (universelle, événement, état, optionnelle ou indésirable).
+- [ ] Chaque AC est atomique : une condition et un résultat.
+- [ ] Chaque AC est testable : l'agent peut décrire un test Étant donné/Quand/Alors.
+- [ ] Aucun AC ne contient de choix d'implémentation (noms de classes, bibliothèques, colonnes, valeurs par défaut).
+- [ ] Les exigences non fonctionnelles vagues (« rapide », « sécurisé », « extensible ») sont remplacées par des conditions mesurables OU transformées en `Q-NNN`.
 
-## No-invention
+## Absence d'invention
 
-- [ ] Assumptions list contains only user/source-stated items.
-- [ ] No silent defaults (DB engine, auth scheme, pagination, error envelope, …).
-- [ ] All `Q-NNN` items are resolved or explicitly deferred-with-rationale.
+- [ ] La liste des hypothèses ne contient que des éléments fournis par l'utilisateur ou la source.
+- [ ] Aucun choix par défaut silencieux (moteur de base de données, authentification, pagination, format d'erreur, etc.).
+- [ ] Toutes les `Q-NNN` sont résolues ou explicitement différées avec justification.
 
-## Completeness
+## Exhaustivité
 
-- [ ] Source ticket's stated AC are all reflected (or explicitly excluded as non-goals).
-- [ ] Out-of-band inputs (chat clarifications, screenshots) recorded under `## Out-of-Band Inputs`.
+- [ ] Tous les AC du ticket source sont repris, ou explicitement exclus comme non-objectifs.
+- [ ] Les informations hors ticket (précisions du chat, captures d'écran) sont consignées sous `## Out-of-Band Inputs`.
 
-## Cutover safety
+## Sécurité de bascule
 
-- [ ] Any user-visible cutover (migration, behavior swap, UI change) either has a feature flag with a documented rollback procedure OR carries an explicit waiver with user sign-off.
+- [ ] Toute bascule visible (migration, remplacement de comportement, changement d'interface) possède soit un feature flag et une procédure de retour arrière, soit une dérogation explicitement approuvée par l'utilisateur.
 
-## Sign-off
+## Validation
 
-- [ ] Reviewed by user.
-- [ ] Verdict recorded in `02-spec-review.md` (`approve` or `request-changes`).
+- [ ] Revue effectuée par l'utilisateur.
+- [ ] Verdict consigné dans `02-spec-review.md` (`approve` ou `request-changes`).

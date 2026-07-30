@@ -1,43 +1,43 @@
 #!/usr/bin/env bash
 # traceability.sh
-# Builds the AC-NNN -> tests + code matrix for a feature and writes
+# Construit la matrice AC-NNN → tests + code pour une fonctionnalité et écrit
 # .specs/<feature>/07a-traceability.md.
 #
-# Usage: scripts/traceability.sh <feature-id>
+# Utilisation : scripts/traceability.sh <feature-id>
 
 set -euo pipefail
 
 FEATURE="${1:-}"
 if [ -z "$FEATURE" ]; then
-  echo "Usage: $0 <feature-id>" >&2
+  echo "Utilisation : $0 <feature-id>" >&2
   exit 2
 fi
 
 SPEC="$(ls .specs/$FEATURE/01-*.md 2>/dev/null | head -n 1)"
 if [ -z "$SPEC" ] || [ ! -f "$SPEC" ]; then
-  echo "ERROR: spec not found at .specs/$FEATURE/01-*.md" >&2
+  echo "ERREUR : spécification introuvable dans .specs/$FEATURE/01-*.md" >&2
   exit 2
 fi
 
 OUT=".specs/$FEATURE/07a-traceability.md"
 
-# Extract AC-NNN headings and titles from the spec.
+# Extraire les titres AC-NNN depuis la spécification.
 mapfile -t acs < <(grep -E '^### AC-[0-9]+' "$SPEC" | sed -E 's/^### (AC-[0-9]+)[[:space:]]*[:.-][[:space:]]*(.*)/\1|\2/')
 
 {
-  echo "# Traceability: $FEATURE"
+  echo "# Traçabilité : $FEATURE"
   echo
-  echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "Généré le : $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo
-  echo "| AC | Title | Tests | Production code |"
-  echo "|----|-------|-------|-----------------|"
+  echo "| AC | Titre | Tests | Code de production |"
+  echo "|----|-------|-------|--------------------|"
   for entry in "${acs[@]}"; do
     ac="${entry%%|*}"
     title="${entry#*|}"
-    # Tests: search for @Tag("AC-NNN") in src/test.
+    # Tests : chercher @Tag("AC-NNN") dans src/test.
     tests=$(grep -RIl --include='*.java' "@Tag(\"$ac\")" src/test 2>/dev/null \
       | sed -E 's|^src/test/java/||; s|\.java$||; s|/|.|g' | tr '\n' ',' | sed 's/,$//')
-    # Code: best-effort — production classes referenced by those tests' imports.
+    # Code : au mieux, classes de production référencées par les imports des tests.
     test_files=$(grep -RIl --include='*.java' "@Tag(\"$ac\")" src/test 2>/dev/null || true)
     code=""
     if [ -n "$test_files" ]; then
@@ -45,13 +45,13 @@ mapfile -t acs < <(grep -E '^### AC-[0-9]+' "$SPEC" | sed -E 's/^### (AC-[0-9]+)
         | grep -v '^import (java\.|org\.junit|org\.springframework\.test|org\.testcontainers|static )' \
         | sed -E 's/^import (.+);$/\1/' | sort -u | tr '\n' ',' | sed 's/,$//')
     fi
-    echo "| $ac | ${title:-(no title)} | ${tests:-_(none)_} | ${code:-_(unknown)_} |"
+    echo "| $ac | ${title:-(sans titre)} | ${tests:-_(aucun)_} | ${code:-_(inconnu)_} |"
   done
   echo
   echo "## Notes"
   echo
-  echo "- An AC with no tests is a hard validation failure."
-  echo "- Production code column is heuristic (test imports). Verify manually for accuracy."
+  echo "- Un AC sans test constitue un échec strict de validation."
+  echo "- La colonne du code de production est heuristique et repose sur les imports des tests ; vérifier manuellement."
 } > "$OUT"
 
-echo "Wrote $OUT"
+echo "Fichier $OUT écrit"

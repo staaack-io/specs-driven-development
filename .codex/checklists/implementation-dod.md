@@ -1,40 +1,40 @@
-# Definition of Done — per task (`$build <task-id>`)
+# Définition de terminé — par tâche (`$build <task-id>`)
 
-A task is **done** only when ALL of the following are true.
+Une tâche est **terminée** uniquement lorsque TOUS les points suivants sont vrais.
 
 ## Red
 
-- [ ] At least one new test exists with the task's `Test-IDs`.
-- [ ] The new test(s) ran and **failed for the expected reason** (assertion mismatch, NPE, missing endpoint — not a compile error masked as a failure).
-- [ ] A `red` entry was appended to `05-implementation-log.md` with the failing command and its output snippet.
-- [ ] `.specs/<feature-id>/.tdd-state.json` was updated.
+- [ ] Au moins un nouveau test existe avec les `Test-IDs` de la tâche.
+- [ ] Les nouveaux tests ont été exécutés et **ont échoué pour la raison attendue** (écart d'assertion, NPE, endpoint manquant — pas une erreur de compilation déguisée en échec).
+- [ ] Une entrée `red` a été ajoutée à `05-implementation-log.md` avec la commande en échec et un extrait de sa sortie.
+- [ ] `.specs/<feature-id>/.tdd-state.json` a été mis à jour.
 
 ## Green
 
-- [ ] Production code edits stayed within `Files in scope` for the task.
-- [ ] The minimum production code was written to pass the test (no extra features, no speculative abstractions).
-- [ ] All new test(s) now pass.
-- [ ] A `green` entry was appended to `05-implementation-log.md`.
+- [ ] Les modifications du code de production restent dans les `Files in scope` de la tâche.
+- [ ] Le minimum de code de production nécessaire au passage du test a été écrit, sans fonctionnalité supplémentaire ni abstraction spéculative.
+- [ ] Tous les nouveaux tests réussissent.
+- [ ] Une entrée `green` a été ajoutée à `05-implementation-log.md`.
 
 ## Refactor + Simplify
 
-- [ ] The full module suite (`mvn -q verify -pl <module>`) is green.
-- [ ] `$code-simplify` ran (clarity-over-cleverness pass) and the suite is still green.
-- [ ] `refactor` and `simplify` entries appended to `05-implementation-log.md`.
+- [ ] La suite complète du module (`mvn -q verify -pl <module>`) réussit.
+- [ ] `$code-simplify` a été exécuté (clarté plutôt qu'astuce) et la suite réussit toujours.
+- [ ] Les entrées `refactor` et `simplify` ont été ajoutées à `05-implementation-log.md`.
 
-## Quality
+## Qualité
 
-- [ ] No `@Disabled` test introduced without a `# DisabledReason: <link>` comment.
-- [ ] No assertion removed.
-- [ ] No coverage threshold lowered.
-- [ ] Spotless / Checkstyle clean on touched files.
+- [ ] Aucun test `@Disabled` n'est introduit sans commentaire `# DisabledReason: <link>`.
+- [ ] Aucune assertion n'est supprimée.
+- [ ] Aucun seuil de couverture n'est abaissé.
+- [ ] Spotless et Checkstyle passent sur les fichiers modifiés.
 
-## Traceability
+## Traçabilité
 
-- [ ] Every new test references its AC via `@DisplayName("AC-NNN: …")` or `@Tag("AC-NNN")`.
-- [ ] The task entry in `04-tasks.md` is marked `done` with the implementing commit SHA.
+- [ ] Chaque nouveau test référence son AC via `@DisplayName("AC-NNN: …")` ou `@Tag("AC-NNN")`.
+- [ ] L'entrée de la tâche dans `04-tasks.md` est marquée `done` avec le SHA du commit d'implémentation.
 
-## Forbidden
+## Interdictions
 
-- [ ] No `git commit` was attempted; commits only happen after `$review` approves.
-- [ ] No `mvn -DskipTests`, `-Dpit.skip`, `-Dcheckstyle.skip`, `--no-verify` was used.
+- [ ] Aucun `git commit` n'a été tenté ; les commits n'interviennent qu'après approbation de `$review`.
+- [ ] Aucun `mvn -DskipTests`, `-Dpit.skip`, `-Dcheckstyle.skip` ou `--no-verify` n'a été utilisé.

@@ -1,14 +1,14 @@
-# Onboarding report: legacy-orders
+# Rapport d'onboarding : legacy-orders
 
-| Field        | Value                                       |
-|--------------|---------------------------------------------|
-| Run          | 2025-01-20T09:14:02Z                        |
-| Classifier   | **brownfield**                              |
-| Java source  | 312 files / ~30k LoC under `com.legacy.orders` |
-| Java tests   | 492 files (480 unit + 12 IT)                 |
-| Modules      | 1 (single root package; no boundaries)      |
+| Champ | Valeur |
+|---|---|
+| Exécution | 2025-01-20T09:14:02Z |
+| Classification | **brownfield** |
+| Sources Java | 312 fichiers, environ 30k lignes sous `com.legacy.orders` |
+| Tests Java | 492 fichiers, 480 unitaires et 12 d'intégration |
+| Modules | 1, package racine unique sans frontières |
 
-## Stack snapshot (`.specs/_stack.json`)
+## État de la stack (`.specs/_stack.json`)
 
 ```json
 {
@@ -25,67 +25,55 @@
 }
 ```
 
-## Baseline harness run (`.specs/_baseline.json` summary)
+## Exécution de référence du harness
 
-| Layer                          | Status   | Note                                                 |
-|--------------------------------|----------|------------------------------------------------------|
-| Spotless                       | skipped  | plugin not configured                                |
-| Checkstyle                     | skipped  | plugin not configured                                |
-| Compile + Error Prone          | partial  | compile passes; Error Prone not configured           |
-| SpotBugs                       | skipped  | plugin not configured                                |
-| ArchUnit                       | skipped  | dependency absent                                    |
-| Surefire (unit)                | pass     | 480 tests, 0 failures, 0 errors, 7 skipped           |
-| Failsafe (IT)                  | warn     | 12 tests pass against H2 in-memory (NOT prod engine) |
-| JaCoCo (overall)               | n/a      | not configured                                       |
-| PIT mutation                   | n/a      | not configured                                       |
-| OWASP Dependency Check         | n/a      | not configured                                       |
+| Couche | Statut | Note |
+|---|---|---|
+| Spotless | skipped | plugin non configuré |
+| Checkstyle | skipped | plugin non configuré |
+| Compilation + Error Prone | partial | compilation réussie, Error Prone absent |
+| SpotBugs | skipped | plugin non configuré |
+| ArchUnit | skipped | dépendance absente |
+| Surefire, unitaire | pass | 480 tests, aucun échec, 7 ignorés |
+| Failsafe, intégration | warn | 12 tests sur H2 en mémoire, différent du moteur de production |
+| JaCoCo | n/a | non configuré |
+| Mutation PIT | n/a | non configuré |
+| OWASP Dependency-Check | n/a | non configuré |
 
-> Coverage was measured ad-hoc by running JaCoCo CLI against the test JARs:
-> **line 71%, branch 58%**. This is the de-facto baseline — the floor for any
-> new code (95% on changed lines) still applies, but the project floor stays
-> at 71% and is raised one step at a time.
+> Une mesure ponctuelle avec le CLI JaCoCo donne **71 % de lignes et 58 % de
+> branches**. Cette valeur devient la référence de fait. Le nouveau code conserve
+> son seuil de 95 %, tandis que le plancher du projet augmente progressivement.
 
-## Findings
+## Constats
 
-1. **Migration tool absent in a Postgres-backed service.** Schema drift is a
-   live risk. *Action:* introduce Flyway (`flyway-core` + `db/migration/`),
-   baseline `V1__baseline.sql` from `pg_dump --schema-only` of production.
-2. **H2 in-memory used for integration tests against a Postgres app.** Tests
-   cannot exercise Postgres-specific behavior (jsonb, partial indexes, ON
-   CONFLICT). *Action:* swap to Testcontainers Postgres image matching prod
-   minor version. Convert the 12 IT tests in one PR.
-3. **No format/lint/static-analysis layers.** *Action:* copy
-   `shared/maven/parent-pom-fragment.xml` and adopt Spotless + Checkstyle
-   immediately (low risk); add SpotBugs after the first format-only PR
-   merges to keep diff size manageable.
-4. **No coverage enforcement.** *Action:* wire JaCoCo at the **measured
-   baseline** (line 71%, branch 58%), then raise the floor by 2pp each
-   sprint until it hits the methodology's 90%/90%.
-5. **No mutation testing.** *Action:* defer until coverage is at 80%/75%; PIT
-   on a low-coverage codebase is noise.
-6. **No module boundaries.** *Action:* introduce
-   ArchUnit with a single "no cycles" rule first to catch regression while
-   the team carves out bounded contexts.
-7. **Spring Boot 3.2 vs the methodology's target Spring Boot 4 / Framework 7.**
-   *Action:* track as a separate roadmap item; not blocking for `$spec`.
-   The harness fragment supports both.
+1. **Aucun outil de migration pour un service Postgres.** Introduire Flyway et
+   créer `V1__baseline.sql` depuis un `pg_dump --schema-only` de production.
+2. **H2 pour les tests d'intégration d'une application Postgres.** Remplacer par
+   Testcontainers avec la même version mineure de Postgres que la production.
+3. **Aucun formatage, lint ou analyse statique.** Adopter Spotless et Checkstyle,
+   puis SpotBugs dans une PR séparée pour limiter le diff.
+4. **Aucune couverture imposée.** Raccorder JaCoCo aux valeurs mesurées, puis
+   augmenter le plancher de deux points par sprint jusqu'à 90 %.
+5. **Aucun test de mutation.** Différer PIT jusqu'à une couverture d'au moins 80 % lignes et 75 % branches.
+6. **Aucune frontière de modules.** Commencer par une règle ArchUnit d'absence de cycles.
+7. **Spring Boot 3.2 au lieu de Boot 4.** Suivre la migration comme un élément de roadmap distinct, sans bloquer `$spec`.
 
-## Recommended next commands (in order)
+## Prochaines commandes recommandées, dans l'ordre
 
-1. Land the harness POM fragment (PR 1: Spotless + Checkstyle only).
-2. Adopt Flyway and baseline against prod (PR 2).
-3. Replace H2 IT with Testcontainers (PR 3).
-4. Add JaCoCo at baseline floor (PR 4).
-5. Add SpotBugs + Error Prone (PR 5).
-6. Add OWASP Dependency Check (PR 6).
-7. Add ArchUnit "no cycles" rule (PR 7).
-8. **Only then** run `$spec` for the first new feature using this toolkit.
+1. Intégrer Spotless et Checkstyle dans le POM.
+2. Adopter Flyway et capturer le schéma de production.
+3. Remplacer H2 par Testcontainers.
+4. Ajouter JaCoCo au plancher de référence.
+5. Ajouter SpotBugs et Error Prone.
+6. Ajouter OWASP Dependency-Check.
+7. Ajouter la règle ArchUnit d'absence de cycles.
+8. **Ensuite seulement**, exécuter `$spec` pour la première fonctionnalité.
 
-The agent will not run `$spec` until at least PR 1–4 are green; otherwise
-`$validate` would always fail and the methodology becomes ceremony.
+L'agent ne lance pas `$spec` avant que les quatre premières PR soient vertes ;
+sinon `$validate` échouerait systématiquement et la méthode deviendrait cérémonielle.
 
-## Files written
+## Fichiers écrits
 
 - `.specs/_stack.json`
 - `.specs/_baseline.json`
-- `.specs/_onboarding.md` *(this file)*
+- `.specs/_onboarding.md`, ce fichier
