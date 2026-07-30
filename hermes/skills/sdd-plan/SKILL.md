@@ -81,7 +81,8 @@ Avec `--continue <feature-id>` :
 1. exiger au moins un brouillon `03-design.md` ;
 2. lire intégralement le design et, s'il existe, `04-tasks.md` ;
 3. extraire les questions ouvertes, les questions résolues, la dernière décision
-   utilisateur et toutes les demandes `CR-NNN` ;
+   utilisateur et toutes les demandes réelles `CR-NNN` ; ignorer la ligne
+   explicite `(aucune)` du modèle ;
 4. présenter les questions et demandes encore `open` avant de déléguer ;
 5. inclure les artefacts précédents, leurs chemins et tous ces éléments dans le
    contexte autonome du sous-agent ;
@@ -165,8 +166,9 @@ Après production du design et des tâches :
    de couverture des AC ;
 2. demander explicitement `approve` ou `request-changes` ;
 3. avec `request-changes`, créer une entrée `CR-NNN` stable pour chaque demande,
-   l'inscrire au statut `open` dans `03-design.md`, conserver les artefacts en
-   brouillon et proposer `/sdd-plan --continue <feature-id>` ;
+   remplacer la ligne `(aucune)` lors de la première demande, l'inscrire au
+   statut `open` dans `03-design.md`, conserver les artefacts en brouillon et
+   proposer `/sdd-plan --continue <feature-id>` ;
 4. avec `approve`, relire encore la porte TDD, inscrire la décision et la date
    dans `03-design.md`, puis créer l'état s'il est absent ou remplacer uniquement
    un état encore vierge avec toutes les tâches à `pending` et

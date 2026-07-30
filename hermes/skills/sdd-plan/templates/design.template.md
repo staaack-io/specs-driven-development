@@ -73,7 +73,7 @@
 
 | ID | Statut | Demandé le | Demande | Résolution | Résolu le |
 | --- | --- | --- | --- | --- | --- |
-| CR-001 | <open ou resolved> | <ISO-8601> | <retour utilisateur> | <résumé ou en attente> | <ISO-8601 ou en attente> |
+| (aucune) | — | — | — | — | — |
 
 ## User Decision
 
