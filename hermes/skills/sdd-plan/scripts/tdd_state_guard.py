@@ -45,6 +45,8 @@ def parse_state(data: bytes, label: str) -> dict:
         raise GuardError(f"{label} is not valid JSON: {error}") from error
     if not isinstance(value, dict) or not isinstance(value.get("tasks"), dict):
         raise GuardError(f"{label} must be an object with a tasks object")
+    if not value["tasks"]:
+        raise GuardError(f"{label} must contain at least one task")
     return value
 
 
