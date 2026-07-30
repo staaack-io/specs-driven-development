@@ -89,7 +89,10 @@ Avec `--continue <feature-id>` :
    contexte autonome du sous-agent ;
 6. après correction, conserver chaque `CR-NNN` et passer son statut à
    `resolved` avec un résumé et une date ; ne jamais supprimer l'historique ;
-7. conserver les identifiants des tâches dont l'objectif ne change pas.
+7. conserver les identifiants des tâches dont l'objectif ne change pas en
+   appliquant la table d'origine et l'algorithme de reprise de
+   `references/task-contract.md` ; ne jamais réattribuer tous les IDs depuis
+   zéro.
 
 Une reprise ne repart jamais uniquement de `01-spec.md` et
 `02-spec-review.md`. Si le brouillon attendu est absent, refuser `--continue` et
@@ -124,6 +127,8 @@ plan d'une implémentation commencée doit évoluer.
    `feature-id`, contenu des AC approuvés, décisions résolues, verdict de revue,
    preuves de stack, chemins des fichiers utiles, texte complet du rôle et, en
    reprise, le design, les tâches, les questions et les `CR-NNN` précédents.
+   Demander explicitement aux rôles de conserver leurs IDs locaux pour les
+   objectifs inchangés.
 2. Appeler `delegate_task` avec un objectif explicite d'analyse architecturale
    en lecture seule, le contrat de sortie fourni dans
    `references/delegation-contract.md` et `max_iterations: 30`.
