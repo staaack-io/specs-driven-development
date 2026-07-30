@@ -148,6 +148,33 @@ class GuardTest(unittest.TestCase):
             )
             self.assertFalse((feature / ".tdd-state.json").exists())
 
+    def test_commit_plan_rejects_an_empty_task_map(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-five"
+            feature.mkdir()
+            design = feature / "03-design.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            candidate.write_text(
+                json.dumps({"feature_id": feature.name, "active_task": None, "tasks": {}}),
+                encoding="utf-8",
+            )
+
+            self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+            self.assertFalse((feature / "03-design.md").exists())
+            self.assertFalse((feature / ".tdd-state.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
