@@ -248,6 +248,11 @@ def commit_plan(args: argparse.Namespace) -> None:
                 f"state changed concurrently: expected {args.expected_token}, "
                 f"found {current_token}"
             )
+        if current_token == token_for(candidate_data):
+            raise GuardError(
+                "candidate state is identical to the current state; transaction "
+                "recovery requires distinct state tokens"
+            )
         if current_data is not None:
             require_pristine(parse_state(current_data, str(state_path)), str(state_path))
 

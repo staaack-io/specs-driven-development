@@ -15,6 +15,11 @@ constitue jamais une protection suffisante.
 3. Exécuter `commit-plan` avec le token conservé et les deux candidats.
 4. Considérer l'approbation comme enregistrée uniquement si la commande réussit.
 
+L'état candidat doit produire une empreinte différente de l'état courant. Le
+script refuse deux états identiques, car leurs tokens ne permettraient pas de
+distinguer une transaction seulement préparée d'une transaction déjà validée
+pendant la récupération après crash.
+
 Après un succès, le script consomme les deux fichiers candidats. En cas
 d'échec, il les conserve pour le diagnostic.
 
