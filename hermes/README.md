@@ -13,7 +13,9 @@ Les skills suivants sont prêts à être copiés dans la distribution
 - `sdd-status` — état des fonctionnalités en lecture seule ;
 - `sdd-spec` — création guidée de `01-spec.md` ;
 - `sdd-spec-review` — revue avec décision utilisateur et production de
-  `02-spec-review.md`.
+  `02-spec-review.md` ;
+- `sdd-plan` — conception et tâches avec délégation interne à l'architecte
+  Spring ou React/Next.js.
 
 Les hooks ne font volontairement pas partie de ce lot. Ils seront activés après
 leur conversion au protocole Hermes et la réussite de tests de blocage.
@@ -53,6 +55,11 @@ Exemple pendant l'étape 4 :
 
 Le nom de travail `sdd-roles` désigne cette bibliothèque interne. Il ne doit pas
 être présenté comme une commande utilisateur `/sdd-roles`.
+
+Pour `/sdd-plan`, les deux premières fiches de rôle sont embarquées directement
+dans les références du skill. Les sous-agents analysent en lecture seule ;
+l'agent principal reste l'unique auteur de `03-design.md`, `04-tasks.md` et
+`.tdd-state.json`.
 
 ## Publication dans le profil
 

@@ -33,7 +33,8 @@ Choisir la dernière phase prouvée par un artefact valide :
 
 1. `01-spec.md` : spécification ;
 2. `02-spec-review.md` avec verdict `approve` : spécification approuvée ;
-3. `03-design.md` et `04-tasks.md` : planification ;
+3. `03-design.md` et `04-tasks.md` avec `status: approved` et
+   `.tdd-state.json` : planification approuvée ;
 4. `.tdd-state.json` avec une tâche active : implémentation ;
 5. `06-test-plan.md` : tests ;
 6. `07-validation-report.md` : validation ;
@@ -42,6 +43,9 @@ Choisir la dernière phase prouvée par un artefact valide :
 
 Un artefact présent mais contenant une question `Q-NNN` au statut `open`, ou un
 verdict négatif, bloque le passage à la phase suivante.
+
+Un design et des tâches présents avec `status: draft` ou sans état TDD signifient
+« planification en attente d'approbation », pas « planification terminée ».
 
 ## Sortie
 
