@@ -155,7 +155,9 @@ def write_state(args: argparse.Namespace) -> None:
     candidate_path = Path(args.state_candidate).resolve()
     candidate_data = candidate_path.read_bytes()
     candidate_mode = stat.S_IMODE(candidate_path.stat().st_mode)
-    parse_state(candidate_data, str(candidate_path))
+    candidate_state = parse_state(candidate_data, str(candidate_path))
+    if candidate_state.get("feature_id") != state_path.parent.name:
+        raise GuardError("candidate feature_id does not match the feature directory")
 
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as lock:

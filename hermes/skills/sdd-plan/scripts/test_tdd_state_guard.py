@@ -129,6 +129,25 @@ class GuardTest(unittest.TestCase):
             self.assertEqual(0o644, stat.S_IMODE(design_path.stat().st_mode))
             self.assertEqual(0o640, stat.S_IMODE(state_path.stat().st_mode))
 
+    def test_write_state_rejects_a_different_feature_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-four"
+            feature.mkdir()
+            candidate = feature / ".tdd-state.candidate.json"
+            candidate.write_text(json.dumps(state("another-feature")), encoding="utf-8")
+
+            self.run_guard(
+                "write-state",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+            self.assertFalse((feature / ".tdd-state.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
