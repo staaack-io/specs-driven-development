@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import json
+import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import tempfile
@@ -93,6 +95,39 @@ class GuardTest(unittest.TestCase):
             )
             self.assertEqual("decision: pending\n", original_design.read_text())
             self.assertEqual(concurrent, json.loads((feature / ".tdd-state.json").read_text()))
+
+    def test_commit_plan_preserves_existing_artifact_modes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-three"
+            feature.mkdir()
+            design_path = feature / "03-design.md"
+            state_path = feature / ".tdd-state.json"
+            design_path.write_text("decision: pending\n", encoding="utf-8")
+            state_path.write_text(json.dumps(state(feature.name)), encoding="utf-8")
+            os.chmod(design_path, 0o644)
+            os.chmod(state_path, 0o640)
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            design = feature / "03-design.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
+            os.chmod(design, 0o600)
+            os.chmod(candidate, 0o600)
+
+            self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                snapshot["token"],
+                "--design-candidate",
+                str(design),
+                "--state-candidate",
+                str(candidate),
+            )
+            self.assertEqual(0o644, stat.S_IMODE(design_path.stat().st_mode))
+            self.assertEqual(0o640, stat.S_IMODE(state_path.stat().st_mode))
 
 
 if __name__ == "__main__":
