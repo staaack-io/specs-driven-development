@@ -140,7 +140,9 @@ class GuardTest(unittest.TestCase):
             design = feature / "03-design.approved.candidate.md"
             candidate = feature / ".tdd-state.candidate.json"
             design.write_text("decision: approve\n", encoding="utf-8")
-            candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
+            revised_state = state(feature.name)
+            revised_state["plan_revision"] = 1
+            candidate.write_text(json.dumps(revised_state), encoding="utf-8")
             os.chmod(design, 0o600)
             os.chmod(candidate, 0o600)
 
@@ -241,6 +243,38 @@ class GuardTest(unittest.TestCase):
             self.assertTrue(snapshot["recovered"])
             self.assertEqual(token_for(state_data), snapshot["token"])
             self.assertEqual(target, (feature / "03-design.md").read_bytes())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+
+    def test_commit_plan_rejects_identical_state_tokens(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-eight"
+            feature.mkdir()
+            current_state = json.dumps(state(feature.name)).encode("utf-8")
+            design_path = feature / "03-design.md"
+            state_path = feature / ".tdd-state.json"
+            design_path.write_text("decision: pending\n", encoding="utf-8")
+            state_path.write_bytes(current_state)
+            design = feature / "03-design.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            candidate.write_bytes(current_state)
+
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                token_for(current_state),
+                "--design-candidate",
+                str(design),
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+
+            self.assertIn("identical", result["error"])
+            self.assertEqual("decision: pending\n", design_path.read_text())
+            self.assertEqual(current_state, state_path.read_bytes())
             self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 
 
