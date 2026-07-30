@@ -24,8 +24,12 @@ script refuse deux états identiques, car leurs tokens ne permettraient pas de
 distinguer une transaction seulement préparée d'une transaction déjà validée
 pendant la récupération après crash.
 
-Après un succès, le script consomme les trois fichiers candidats. En cas
-d'échec, il les conserve pour le diagnostic.
+Avant de consommer les trois fichiers candidats, le script écrit et synchronise
+un reçu durable `.tdd-state.commit.json`. Ce reçu conserve le token attendu,
+les empreintes des trois cibles et les chemins exacts des candidats. En cas
+d'échec antérieur au reçu, les candidats restent disponibles pour le diagnostic.
+En cas d'arrêt pendant leur suppression, un retry peut terminer le nettoyage
+uniquement si le reçu, les cibles et tout candidat restant correspondent encore.
 
 `commit-plan` acquiert le verrou, compare l'état courant au token et vérifie
 qu'un état existant est encore vierge. Avant le premier remplacement, il écrit
@@ -50,8 +54,9 @@ Un journal existant dont les empreintes attendue et cible sont identiques est
 décider sans risque entre rollback et roll-forward.
 
 Une récupération par roll-forward constitue un commit réussi : `commit-plan`
-retourne alors `committed: true` et consomme les candidats. Une récupération par
-rollback conserve l'erreur initiale et les candidats pour diagnostic.
+écrit le reçu, retourne `committed: true` et consomme les candidats. Une
+récupération par rollback conserve l'erreur initiale et les candidats pour
+diagnostic.
 
 Après un redémarrage, un nouvel appel `commit-plan` peut lui-même terminer le
 roll-forward avant la comparaison du token. Il retourne alors le succès

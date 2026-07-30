@@ -274,6 +274,103 @@ def snapshot(args: argparse.Namespace) -> None:
     )
 
 
+def finish_commit(
+    *,
+    state_path: Path,
+    design_path: Path,
+    tasks_path: Path,
+    expected_token: str,
+    state_data: bytes,
+    design_data: bytes,
+    tasks_data: bytes,
+    design_candidate: Path,
+    tasks_candidate: Path,
+    state_candidate: Path,
+) -> None:
+    receipt_path = state_path.parent / ".tdd-state.commit.json"
+    receipt = {
+        "version": 1,
+        "operation": "commit-plan",
+        "expected_state_token": expected_token,
+        "target_state_token": token_for(state_data),
+        "target_design_token": token_for(design_data),
+        "target_tasks_token": token_for(tasks_data),
+        "design_candidate": str(design_candidate),
+        "tasks_candidate": str(tasks_candidate),
+        "state_candidate": str(state_candidate),
+    }
+    atomic_replace(
+        receipt_path,
+        json.dumps(receipt, sort_keys=True).encode("utf-8"),
+        0o600,
+    )
+    fsync_directory(state_path.parent)
+    design_candidate.unlink(missing_ok=True)
+    tasks_candidate.unlink(missing_ok=True)
+    state_candidate.unlink(missing_ok=True)
+    fsync_directory(state_path.parent)
+
+
+def resume_completed_commit(
+    *,
+    state_path: Path,
+    design_path: Path,
+    tasks_path: Path,
+    expected_token: str,
+    design_candidate: Path,
+    tasks_candidate: Path,
+    state_candidate: Path,
+) -> str | None:
+    receipt_path = state_path.parent / ".tdd-state.commit.json"
+    receipt_data = read_bytes(receipt_path)
+    if receipt_data is None:
+        return None
+    try:
+        receipt = json.loads(receipt_data)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise GuardError(f"{receipt_path} is not valid JSON: {error}") from error
+    identity = {
+        "version": 1,
+        "operation": "commit-plan",
+        "expected_state_token": expected_token,
+        "design_candidate": str(design_candidate),
+        "tasks_candidate": str(tasks_candidate),
+        "state_candidate": str(state_candidate),
+    }
+    if not isinstance(receipt, dict) or any(
+        receipt.get(field) != value for field, value in identity.items()
+    ):
+        return None
+    target_state_token = receipt.get("target_state_token")
+    target_design_token = receipt.get("target_design_token")
+    target_tasks_token = receipt.get("target_tasks_token")
+    if not all(
+        isinstance(value, str)
+        for value in (target_state_token, target_design_token, target_tasks_token)
+    ):
+        raise GuardError(f"{receipt_path} has invalid target tokens")
+    if (
+        token_for(read_bytes(state_path)) != target_state_token
+        or token_for(read_bytes(design_path)) != target_design_token
+        or token_for(read_bytes(tasks_path)) != target_tasks_token
+    ):
+        return None
+    candidate_tokens = (
+        (design_candidate, target_design_token),
+        (tasks_candidate, target_tasks_token),
+        (state_candidate, target_state_token),
+    )
+    for candidate, expected in candidate_tokens:
+        data = read_bytes(candidate)
+        if data is not None and token_for(data) != expected:
+            return None
+    design_candidate.unlink(missing_ok=True)
+    tasks_candidate.unlink(missing_ok=True)
+    state_candidate.unlink(missing_ok=True)
+    fsync_directory(state_path.parent)
+    return target_state_token
+
+
 def commit_plan(args: argparse.Namespace) -> None:
     lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
         args.feature_dir
@@ -281,15 +378,38 @@ def commit_plan(args: argparse.Namespace) -> None:
     design_candidate = Path(args.design_candidate).resolve()
     tasks_candidate = Path(args.tasks_candidate).resolve()
     state_candidate = Path(args.state_candidate).resolve()
-    design_data = design_candidate.read_bytes()
+    try:
+        design_data = design_candidate.read_bytes()
+        tasks_data = tasks_candidate.read_bytes()
+        candidate_data = state_candidate.read_bytes()
+    except FileNotFoundError as error:
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with lock_path.open("a+b") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            recover_transaction(
+                state_path, design_path, tasks_path, transaction_path
+            )
+            completed_token = resume_completed_commit(
+                state_path=state_path,
+                design_path=design_path,
+                tasks_path=tasks_path,
+                expected_token=args.expected_token,
+                design_candidate=design_candidate,
+                tasks_candidate=tasks_candidate,
+                state_candidate=state_candidate,
+            )
+        if completed_token is None:
+            raise GuardError(
+                f"{error.filename} is missing and no matching completion receipt exists"
+            ) from error
+        print(json.dumps({"token": completed_token, "committed": True}))
+        return
     design_mode = stat.S_IMODE(design_candidate.stat().st_mode)
     if not design_data.strip():
         raise GuardError("approved design candidate is empty")
-    tasks_data = tasks_candidate.read_bytes()
     tasks_mode = stat.S_IMODE(tasks_candidate.stat().st_mode)
     if not tasks_data.strip():
         raise GuardError("approved tasks candidate is empty")
-    candidate_data = state_candidate.read_bytes()
     state_mode = stat.S_IMODE(state_candidate.stat().st_mode)
     candidate_state = parse_state(candidate_data, str(state_candidate))
     require_pristine(candidate_state, str(state_candidate))
@@ -312,9 +432,18 @@ def commit_plan(args: argparse.Namespace) -> None:
                 raise GuardError(
                     "recovered commit does not match the supplied plan candidates"
                 )
-            design_candidate.unlink(missing_ok=True)
-            tasks_candidate.unlink(missing_ok=True)
-            state_candidate.unlink(missing_ok=True)
+            finish_commit(
+                state_path=state_path,
+                design_path=design_path,
+                tasks_path=tasks_path,
+                expected_token=args.expected_token,
+                state_data=candidate_data,
+                design_data=design_data,
+                tasks_data=tasks_data,
+                design_candidate=design_candidate,
+                tasks_candidate=tasks_candidate,
+                state_candidate=state_candidate,
+            )
             print(json.dumps({"token": token_for(candidate_data), "committed": True}))
             return
         current_data = read_bytes(state_path)
@@ -336,9 +465,18 @@ def commit_plan(args: argparse.Namespace) -> None:
                     state_path, candidate_data, path_mode(state_path, state_mode)
                 )
                 fsync_directory(state_path.parent)
-                design_candidate.unlink(missing_ok=True)
-                tasks_candidate.unlink(missing_ok=True)
-                state_candidate.unlink(missing_ok=True)
+                finish_commit(
+                    state_path=state_path,
+                    design_path=design_path,
+                    tasks_path=tasks_path,
+                    expected_token=args.expected_token,
+                    state_data=candidate_data,
+                    design_data=design_data,
+                    tasks_data=tasks_data,
+                    design_candidate=design_candidate,
+                    tasks_candidate=tasks_candidate,
+                    state_candidate=state_candidate,
+                )
                 print(
                     json.dumps(
                         {"token": token_for(candidate_data), "committed": True}
@@ -402,9 +540,18 @@ def commit_plan(args: argparse.Namespace) -> None:
             if recovery_outcome != "committed":
                 raise
 
-    design_candidate.unlink(missing_ok=True)
-    tasks_candidate.unlink(missing_ok=True)
-    state_candidate.unlink(missing_ok=True)
+        finish_commit(
+            state_path=state_path,
+            design_path=design_path,
+            tasks_path=tasks_path,
+            expected_token=args.expected_token,
+            state_data=candidate_data,
+            design_data=design_data,
+            tasks_data=tasks_data,
+            design_candidate=design_candidate,
+            tasks_candidate=tasks_candidate,
+            state_candidate=state_candidate,
+        )
 
     print(json.dumps({"token": token_for(candidate_data), "committed": True}))
 
