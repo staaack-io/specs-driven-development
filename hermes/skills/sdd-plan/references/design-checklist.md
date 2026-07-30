@@ -25,6 +25,13 @@
 - L'agent principal est le seul auteur de `03-design.md` et `04-tasks.md`.
 - Les résultats full-stack sont fusionnés dans des artefacts uniques.
 
+## Reprise
+
+- `--continue` a chargé le design et les tâches existants.
+- Les questions résolues et demandes `CR-NNN` sont dans le contexte délégué.
+- Chaque demande corrigée reste consignée avec statut, résolution et date.
+- Aucun retour utilisateur ni identifiant de tâche inchangée n'est perdu.
+
 ## Tâches
 
 - Chaque AC est couvert.
@@ -36,5 +43,6 @@
 ## Sortie
 
 - Aucune question ouverte ne subsiste avant approbation.
+- Aucune demande `CR-NNN` ne reste ouverte avant approbation.
 - L'utilisateur approuve explicitement le plan.
 - L'état TDD n'est créé qu'après approbation.

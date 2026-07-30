@@ -15,7 +15,9 @@ Ne modifier aucun fichier. Ne choisir aucune décision absente des sources.
 
 Le champ `context` doit contenir toutes les informations nécessaires : rôle,
 racine du projet, feature-id, AC, questions résolues, verdict, preuves de stack,
-contraintes et chemins pertinents.
+contraintes et chemins pertinents. En reprise, ajouter le contenu de
+`03-design.md`, de `04-tasks.md` s'il existe, les questions de planification et
+les demandes `CR-NNN` avec leur statut.
 
 ## Sortie obligatoire
 
