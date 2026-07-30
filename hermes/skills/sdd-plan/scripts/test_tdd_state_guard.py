@@ -115,6 +115,42 @@ class GuardTest(unittest.TestCase):
             self.assertEqual("decision: approve\n", (feature / "03-design.md").read_text())
             self.assertEqual("# Approved tasks\n", (feature / "04-tasks.md").read_text())
             self.assertEqual(state(feature.name), json.loads((feature / ".tdd-state.json").read_text()))
+            self.assertTrue((feature / ".tdd-state.commit.json").exists())
+
+            tasks.write_text("# Approved tasks\n", encoding="utf-8")
+            retry = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                snapshot["token"],
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+            self.assertTrue(retry["committed"])
+            self.assertFalse(tasks.exists())
+
+            tasks.write_text("# Different tasks\n", encoding="utf-8")
+            rejected = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                snapshot["token"],
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+            self.assertIn("no matching completion receipt", rejected["error"])
+            self.assertEqual("# Different tasks\n", tasks.read_text())
 
     def test_concurrent_change_rejects_both_plan_writes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
