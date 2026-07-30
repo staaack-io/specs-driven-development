@@ -8,13 +8,14 @@
 
 ## Task Index
 
-| ID | Stack | Titre | AC-IDs | Dépend de | Portes |
-| --- | --- | --- | --- | --- | --- |
+| ID | Origine | Stack | Titre | AC-IDs | Dépend de | Portes |
+| --- | --- | --- | --- | --- | --- | --- |
 
 ## Tasks
 
 ### T-001 : <titre impératif court>
 
+- **Origine :** <spring-architect:T-001 | react-nextjs-architect:T-001>
 - **Stack :** <spring | react-nextjs>
 - **AC-IDs :** <AC-NNN>
 - **Test-IDs :** <T-001-T1 et objectif>

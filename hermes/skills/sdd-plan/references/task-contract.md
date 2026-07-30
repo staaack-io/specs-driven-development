@@ -39,7 +39,9 @@ Lorsque plusieurs architectes retournent des tâches :
 7. renommer les tests de chaque tâche en `<Task-ID>-T1`, `<Task-ID>-T2`, etc.,
    selon leur ordre local ;
 8. utiliser uniquement ces IDs globaux dans l'index, la couverture des AC,
-   `04-tasks.md` et `.tdd-state.json`.
+   `04-tasks.md` et `.tdd-state.json` ;
+9. conserver dans chaque tâche son origine qualifiée, par exemple
+   `spring-architect:T-001`, afin de permettre une reprise stable.
 
 Refuser la sortie si un Task-ID ou Test-ID global est dupliqué, si une
 dépendance ne correspond à aucune tâche, si le nombre de tâches change pendant
@@ -49,3 +51,30 @@ Exécuter cette normalisation avant de présenter le plan à l'utilisateur. Apr�
 chaque `request-changes` qui modifie le design ou les tâches, la réexécuter avant
 la nouvelle demande d'approbation afin que les arêtes inter-stack reflètent
 toujours le design proposé courant.
+
+## Identifiants pendant une reprise
+
+Avec `/sdd-plan --continue`, lire le précédent `04-tasks.md` avant toute
+attribution globale et construire la table `origine qualifiée -> ID global`.
+Demander à chaque rôle de préserver ses IDs locaux pour les tâches dont
+l'objectif ne change pas.
+
+Pour chaque tâche proposée :
+
+1. faire correspondre d'abord son origine qualifiée à la tâche précédente ;
+2. si l'origine locale a changé, autoriser comme second choix une correspondance
+   unique dans le même rôle avec le même titre impératif normalisé et exactement
+   les mêmes AC-IDs ;
+3. si la correspondance est unique et l'objectif inchangé, réutiliser l'ID
+   global précédent, même si son rang topologique a changé ;
+4. si plusieurs correspondances sont possibles, arrêter et demander une
+   clarification au lieu de renuméroter ;
+5. attribuer aux seules nouvelles tâches des IDs supérieurs au plus grand ID
+   global déjà présent, dans leur ordre topologique déterministe ;
+6. ne jamais réutiliser l'ID d'une tâche supprimée et ne jamais renuméroter une
+   tâche conservée pour combler un trou.
+
+L'ordre des sections dans `04-tasks.md` suit le tri topologique ; il n'a pas
+besoin de suivre l'ordre numérique des IDs lors d'une reprise. Réécrire ensuite
+les dépendances et Test-IDs à partir de la table finale, puis vérifier que toute
+référence historique désigne toujours la même tâche.
