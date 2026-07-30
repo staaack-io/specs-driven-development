@@ -39,6 +39,10 @@ opération :
 - si l'état ne correspond à aucune empreinte, elle refuse toute écriture et
   conserve le journal pour diagnostic manuel.
 
+Un journal existant dont les empreintes attendue et cible sont identiques est
+également refusé et conservé : il ne contient pas assez d'information pour
+décider sans risque entre rollback et roll-forward.
+
 La récupération conserve également les permissions des artefacts. Un
 changement concurrent provoque un refus et aucun état commencé n'est écrasé.
 

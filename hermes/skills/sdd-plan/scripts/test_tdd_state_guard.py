@@ -277,6 +277,31 @@ class GuardTest(unittest.TestCase):
             self.assertEqual(current_state, state_path.read_bytes())
             self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 
+    def test_snapshot_retains_an_ambiguous_legacy_journal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-nine"
+            feature.mkdir()
+            previous = b"decision: pending\n"
+            target = b"decision: approve\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            design_path = feature / "03-design.md"
+            state_path = feature / ".tdd-state.json"
+            journal_path = feature / ".tdd-state.transaction.json"
+            design_path.write_bytes(previous)
+            state_path.write_bytes(state_data)
+            journal = transaction(previous, target, state_data)
+            journal["expected_state_token"] = journal["target_state_token"]
+            journal_path.write_text(json.dumps(journal), encoding="utf-8")
+
+            result = self.run_guard(
+                "snapshot", "--feature-dir", str(feature), expected=2
+            )
+
+            self.assertIn("ambiguous", result["error"])
+            self.assertEqual(previous, design_path.read_bytes())
+            self.assertEqual(state_data, state_path.read_bytes())
+            self.assertTrue(journal_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
