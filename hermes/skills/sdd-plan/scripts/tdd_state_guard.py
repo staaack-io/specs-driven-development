@@ -432,6 +432,10 @@ def commit_plan(args: argparse.Namespace) -> None:
                 raise GuardError(
                     "recovered commit does not match the supplied plan candidates"
                 )
+            atomic_replace_with_mode(
+                state_path, candidate_data, path_mode(state_path, state_mode)
+            )
+            fsync_directory(state_path.parent)
             finish_commit(
                 state_path=state_path,
                 design_path=design_path,
