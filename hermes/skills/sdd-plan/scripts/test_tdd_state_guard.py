@@ -39,7 +39,13 @@ def artifact(data: bytes | None, mode: int = 0o644) -> dict:
     }
 
 
-def transaction(previous: bytes | None, target: bytes, state_data: bytes) -> dict:
+def transaction(
+    previous: bytes | None,
+    target: bytes,
+    state_data: bytes,
+    previous_tasks: bytes | None = None,
+    target_tasks: bytes = b"# Approved tasks\n",
+) -> dict:
     return {
         "version": 1,
         "operation": "commit-plan",
@@ -47,6 +53,8 @@ def transaction(previous: bytes | None, target: bytes, state_data: bytes) -> dic
         "target_state_token": token_for(state_data),
         "previous_design": artifact(previous),
         "next_design": artifact(target),
+        "previous_tasks": artifact(previous_tasks),
+        "next_tasks": artifact(target_tasks),
     }
 
 
@@ -83,8 +91,10 @@ class GuardTest(unittest.TestCase):
             feature = Path(temporary) / "feature-one"
             feature.mkdir()
             design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
             candidate = feature / ".tdd-state.candidate.json"
             design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Approved tasks\n", encoding="utf-8")
             candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
 
             snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
@@ -97,10 +107,13 @@ class GuardTest(unittest.TestCase):
                 snapshot["token"],
                 "--design-candidate",
                 str(design),
+                "--tasks-candidate",
+                str(tasks),
                 "--state-candidate",
                 str(candidate),
             )
             self.assertEqual("decision: approve\n", (feature / "03-design.md").read_text())
+            self.assertEqual("# Approved tasks\n", (feature / "04-tasks.md").read_text())
             self.assertEqual(state(feature.name), json.loads((feature / ".tdd-state.json").read_text()))
 
     def test_concurrent_change_rejects_both_plan_writes(self) -> None:
@@ -108,14 +121,18 @@ class GuardTest(unittest.TestCase):
             feature = Path(temporary) / "feature-two"
             feature.mkdir()
             original_design = feature / "03-design.md"
+            original_tasks = feature / "04-tasks.md"
             original_design.write_text("decision: pending\n", encoding="utf-8")
+            original_tasks.write_text("# Previous tasks\n", encoding="utf-8")
             snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
 
             concurrent = state(feature.name, phase="red")
             (feature / ".tdd-state.json").write_text(json.dumps(concurrent), encoding="utf-8")
             design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
             candidate = feature / ".tdd-state.candidate.json"
             design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Replacement tasks\n", encoding="utf-8")
             candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
 
             self.run_guard(
@@ -126,11 +143,14 @@ class GuardTest(unittest.TestCase):
                 snapshot["token"],
                 "--design-candidate",
                 str(design),
+                "--tasks-candidate",
+                str(tasks),
                 "--state-candidate",
                 str(candidate),
                 expected=2,
             )
             self.assertEqual("decision: pending\n", original_design.read_text())
+            self.assertEqual("# Previous tasks\n", original_tasks.read_text())
             self.assertEqual(concurrent, json.loads((feature / ".tdd-state.json").read_text()))
 
     def test_commit_plan_preserves_existing_artifact_modes(self) -> None:
@@ -138,20 +158,26 @@ class GuardTest(unittest.TestCase):
             feature = Path(temporary) / "feature-three"
             feature.mkdir()
             design_path = feature / "03-design.md"
+            tasks_path = feature / "04-tasks.md"
             state_path = feature / ".tdd-state.json"
             design_path.write_text("decision: pending\n", encoding="utf-8")
+            tasks_path.write_text("# Previous tasks\n", encoding="utf-8")
             state_path.write_text(json.dumps(state(feature.name)), encoding="utf-8")
             os.chmod(design_path, 0o644)
+            os.chmod(tasks_path, 0o600)
             os.chmod(state_path, 0o640)
             snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
 
             design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
             candidate = feature / ".tdd-state.candidate.json"
             design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Replacement tasks\n", encoding="utf-8")
             revised_state = state(feature.name)
             revised_state["plan_revision"] = 1
             candidate.write_text(json.dumps(revised_state), encoding="utf-8")
             os.chmod(design, 0o600)
+            os.chmod(tasks, 0o644)
             os.chmod(candidate, 0o600)
 
             self.run_guard(
@@ -162,10 +188,13 @@ class GuardTest(unittest.TestCase):
                 snapshot["token"],
                 "--design-candidate",
                 str(design),
+                "--tasks-candidate",
+                str(tasks),
                 "--state-candidate",
                 str(candidate),
             )
             self.assertEqual(0o644, stat.S_IMODE(design_path.stat().st_mode))
+            self.assertEqual(0o600, stat.S_IMODE(tasks_path.stat().st_mode))
             self.assertEqual(0o640, stat.S_IMODE(state_path.stat().st_mode))
 
     def test_write_state_rejects_a_different_feature_id(self) -> None:
@@ -192,8 +221,10 @@ class GuardTest(unittest.TestCase):
             feature = Path(temporary) / "feature-five"
             feature.mkdir()
             design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
             candidate = feature / ".tdd-state.candidate.json"
             design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Approved tasks\n", encoding="utf-8")
             candidate.write_text(
                 json.dumps({"feature_id": feature.name, "active_task": None, "tasks": {}}),
                 encoding="utf-8",
@@ -207,6 +238,8 @@ class GuardTest(unittest.TestCase):
                 "absent",
                 "--design-candidate",
                 str(design),
+                "--tasks-candidate",
+                str(tasks),
                 "--state-candidate",
                 str(candidate),
                 expected=2,
@@ -222,6 +255,7 @@ class GuardTest(unittest.TestCase):
             target = b"decision: approve\n"
             state_data = json.dumps(state(feature.name)).encode("utf-8")
             (feature / "03-design.md").write_bytes(target)
+            (feature / "04-tasks.md").write_bytes(b"# Approved tasks\n")
             (feature / ".tdd-state.transaction.json").write_text(
                 json.dumps(transaction(previous, target, state_data)), encoding="utf-8"
             )
@@ -231,6 +265,7 @@ class GuardTest(unittest.TestCase):
             self.assertTrue(snapshot["recovered"])
             self.assertEqual("absent", snapshot["token"])
             self.assertEqual(previous, (feature / "03-design.md").read_bytes())
+            self.assertFalse((feature / "04-tasks.md").exists())
             self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 
     def test_snapshot_rolls_forward_design_when_state_was_committed(self) -> None:
@@ -241,9 +276,18 @@ class GuardTest(unittest.TestCase):
             target = b"decision: approve\n"
             state_data = json.dumps(state(feature.name)).encode("utf-8")
             (feature / "03-design.md").write_bytes(previous)
+            (feature / "04-tasks.md").write_bytes(b"# Previous tasks\n")
             (feature / ".tdd-state.json").write_bytes(state_data)
             (feature / ".tdd-state.transaction.json").write_text(
-                json.dumps(transaction(previous, target, state_data)), encoding="utf-8"
+                json.dumps(
+                    transaction(
+                        previous,
+                        target,
+                        state_data,
+                        previous_tasks=b"# Previous tasks\n",
+                    )
+                ),
+                encoding="utf-8",
             )
 
             snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
@@ -251,6 +295,9 @@ class GuardTest(unittest.TestCase):
             self.assertTrue(snapshot["recovered"])
             self.assertEqual(token_for(state_data), snapshot["token"])
             self.assertEqual(target, (feature / "03-design.md").read_bytes())
+            self.assertEqual(
+                b"# Approved tasks\n", (feature / "04-tasks.md").read_bytes()
+            )
             self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 
     def test_commit_plan_rejects_identical_state_tokens(self) -> None:
@@ -263,8 +310,10 @@ class GuardTest(unittest.TestCase):
             design_path.write_text("decision: pending\n", encoding="utf-8")
             state_path.write_bytes(current_state)
             design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
             candidate = feature / ".tdd-state.candidate.json"
             design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Replacement tasks\n", encoding="utf-8")
             candidate.write_bytes(current_state)
 
             result = self.run_guard(
@@ -275,6 +324,8 @@ class GuardTest(unittest.TestCase):
                 token_for(current_state),
                 "--design-candidate",
                 str(design),
+                "--tasks-candidate",
+                str(tasks),
                 "--state-candidate",
                 str(candidate),
                 expected=2,
@@ -315,13 +366,16 @@ class GuardTest(unittest.TestCase):
             feature = Path(temporary) / "feature-ten"
             feature.mkdir()
             design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
             candidate = feature / ".tdd-state.candidate.json"
             design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Approved tasks\n", encoding="utf-8")
             candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
             arguments = SimpleNamespace(
                 feature_dir=str(feature),
                 expected_token="absent",
                 design_candidate=str(design),
+                tasks_candidate=str(tasks),
                 state_candidate=str(candidate),
             )
             original_fsync_directory = GUARD.fsync_directory
@@ -330,7 +384,7 @@ class GuardTest(unittest.TestCase):
             def fail_after_state_replace(directory: Path) -> None:
                 nonlocal fsync_calls
                 fsync_calls += 1
-                if fsync_calls == 3:
+                if fsync_calls == 4:
                     raise OSError("simulated directory fsync failure")
                 original_fsync_directory(directory)
 
@@ -345,8 +399,10 @@ class GuardTest(unittest.TestCase):
             result = json.loads(output.getvalue())
             self.assertTrue(result["committed"])
             self.assertEqual("decision: approve\n", (feature / "03-design.md").read_text())
+            self.assertEqual("# Approved tasks\n", (feature / "04-tasks.md").read_text())
             self.assertEqual(state(feature.name), json.loads((feature / ".tdd-state.json").read_text()))
             self.assertFalse(design.exists())
+            self.assertFalse(tasks.exists())
             self.assertFalse(candidate.exists())
             self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 

@@ -9,33 +9,39 @@ constitue jamais une protection suffisante.
 
 1. Avant toute délégation, exécuter `snapshot --feature-dir <chemin>` et
    conserver le `token` retourné (`absent` ou `sha256:<empreinte>`).
-2. Après l'approbation humaine, préparer dans le dossier de la fonctionnalité :
-   - `03-design.approved.candidate.md` ;
+2. Pendant la revue humaine, écrire uniquement les candidats suivants et
+   préserver les artefacts approuvés existants :
+   - `03-design.candidate.md` ;
+   - `04-tasks.candidate.md` ;
+3. Après l'approbation humaine, inscrire la décision dans le design candidat et
+   préparer :
    - `.tdd-state.candidate.json`.
-3. Exécuter `commit-plan` avec le token conservé et les deux candidats.
-4. Considérer l'approbation comme enregistrée uniquement si la commande réussit.
+4. Exécuter `commit-plan` avec le token conservé et les trois candidats.
+5. Considérer l'approbation comme enregistrée uniquement si la commande réussit.
 
 L'état candidat doit produire une empreinte différente de l'état courant. Le
 script refuse deux états identiques, car leurs tokens ne permettraient pas de
 distinguer une transaction seulement préparée d'une transaction déjà validée
 pendant la récupération après crash.
 
-Après un succès, le script consomme les deux fichiers candidats. En cas
+Après un succès, le script consomme les trois fichiers candidats. En cas
 d'échec, il les conserve pour le diagnostic.
 
 `commit-plan` acquiert le verrou, compare l'état courant au token et vérifie
 qu'un état existant est encore vierge. Avant le premier remplacement, il écrit
 et synchronise sur disque `.tdd-state.transaction.json`. Ce journal contient
-les empreintes de l'état avant/après ainsi que les versions précédente et cible
-du design. Le script remplace ensuite le design, puis l'état TDD, et ne supprime
-le journal qu'après synchronisation des deux artefacts.
+les empreintes de l'état avant/après ainsi que les versions précédentes et cibles
+du design et des tâches. Le script remplace ensuite le design, les tâches, puis
+l'état TDD, et ne supprime le journal qu'après synchronisation des trois artefacts.
 
 Après un arrêt brutal, la première commande `snapshot`, `commit-plan` ou
 `write-state` qui obtient le verrou récupère la transaction avant toute autre
 opération :
 
-- si l'état possède encore l'empreinte attendue, elle restaure l'ancien design ;
-- si l'état possède l'empreinte cible, elle réinstalle le design approuvé ;
+- si l'état possède encore l'empreinte attendue, elle restaure l'ancien design
+  et les anciennes tâches ;
+- si l'état possède l'empreinte cible, elle réinstalle le design et les tâches
+  approuvés ;
 - si l'état ne correspond à aucune empreinte, elle refuse toute écriture et
   conserve le journal pour diagnostic manuel.
 
