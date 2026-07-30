@@ -72,8 +72,10 @@ high-water mark ni supprimer un tombstone.
 
 Pour un ancien `04-tasks.md` sans registre, initialiser une seule fois le
 high-water mark avec le plus grand `T-NNN` trouvé dans `03-design.md`,
-`04-tasks.md` et `.tdd-state.json`, puis écrire le registre avant d'attribuer un
-nouvel ID.
+`04-tasks.md` et `.tdd-state.json`. Construire aussi l'ensemble de tous les IDs
+émis trouvés dans ces trois artefacts, puis initialiser `retired_ids` avec chaque
+ID de cet ensemble qui n'est pas une tâche active du précédent `04-tasks.md`.
+Écrire ce registre migré avant d'attribuer un nouvel ID.
 
 Pour chaque tâche proposée :
 
