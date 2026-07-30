@@ -4,14 +4,16 @@ Ce dossier contient la source de l'adaptateur Hermes du framework SDD. Il est
 développé séparément de l'intégration Codex existante afin de permettre une
 migration progressive et des comparaisons fiables.
 
-## Premier lot
+## Skills convertis
 
 Les skills suivants sont prêts à être copiés dans la distribution
 `staaack-io/hermes-agent-profile-staaack` :
 
 - `sdd-help` — aide en lecture seule ;
 - `sdd-status` — état des fonctionnalités en lecture seule ;
-- `sdd-spec` — création guidée de `01-spec.md`.
+- `sdd-spec` — création guidée de `01-spec.md` ;
+- `sdd-spec-review` — revue avec décision utilisateur et production de
+  `02-spec-review.md`.
 
 Les hooks ne font volontairement pas partie de ce lot. Ils seront activés après
 leur conversion au protocole Hermes et la réussite de tests de blocage.
