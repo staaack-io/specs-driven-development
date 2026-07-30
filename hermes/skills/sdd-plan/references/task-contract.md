@@ -26,6 +26,12 @@ découpage.
 
 Lorsque plusieurs architectes retournent des tâches :
 
+Avant toute qualification ou renumérotation, valider séparément la sortie de
+chaque rôle : ses Task-IDs doivent être uniques, ses Test-IDs doivent être
+uniques et chaque `depends_on` local doit désigner exactement une tâche de cette
+sortie. Refuser immédiatement le retour enfant en cas de doublon ou de référence
+ambiguë ; une renumérotation globale ne doit jamais masquer cette erreur.
+
 1. qualifier chaque ID local par son rôle, par exemple
    `spring-architect:T-001` et `react-nextjs-architect:T-001` ;
 2. qualifier de la même façon chaque entrée `depends_on` avant la fusion ;
@@ -43,9 +49,10 @@ Lorsque plusieurs architectes retournent des tâches :
 9. conserver dans chaque tâche son origine qualifiée, par exemple
    `spring-architect:T-001`, afin de permettre une reprise stable.
 
-Refuser la sortie si un Task-ID ou Test-ID global est dupliqué, si une
-dépendance ne correspond à aucune tâche, si le nombre de tâches change pendant
-la normalisation ou si le graphe contient un cycle.
+Refuser la sortie si la validation locale échoue, si un Task-ID ou Test-ID
+global est dupliqué, si une dépendance ne correspond à aucune tâche, si le
+nombre de tâches change pendant la normalisation ou si le graphe contient un
+cycle.
 
 Exécuter cette normalisation avant de présenter le plan à l'utilisateur. Après
 chaque `request-changes` qui modifie le design ou les tâches, la réexécuter avant

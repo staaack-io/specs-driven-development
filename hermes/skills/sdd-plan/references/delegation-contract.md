@@ -69,6 +69,8 @@ Retourner un unique bloc JSON valide :
 
 - Dans une délégation full-stack, `id`, `test_ids` et `depends_on` sont locaux
   au rôle enfant. Le parent doit les qualifier puis les renuméroter globalement.
+- Chaque rôle produit des `id` de tâche et `test_ids` uniques dans sa propre
+  sortie. Le parent rejette les doublons avant de construire la table globale.
 - `ready` exige zéro question ouverte.
 - `needs-input` exige au moins une question et ne doit pas inventer de réponse.
 - `blocked` explique une preuve manquante ou une contradiction.
