@@ -21,6 +21,7 @@ Si `.specs/` n'existe pas, l'indiquer et recommander `/sdd-spec`.
 Pour chaque fonctionnalité, lire si présents :
 
 - les artefacts numérotés de `01-spec.md` à `09-ship-plan.md` ;
+- `03-design.candidate.md` et `04-tasks.candidate.md` ;
 - `.tdd-state.json` ;
 - `target/harness-summary.json` à la racine du projet.
 
@@ -41,11 +42,18 @@ Choisir la dernière phase prouvée par un artefact valide :
 7. `08-code-review.md` : revue ;
 8. `09-ship-plan.md` : préparation de livraison.
 
+Lorsqu'au moins un candidat de planification existe, lire les candidats avant
+les versions approuvées de `03-design.md` et `04-tasks.md`. Ils représentent la
+révision courante : un ancien plan approuvé et son état TDD ne prouvent pas que
+cette nouvelle révision est approuvée.
+
 Un artefact présent mais contenant une question `Q-NNN` au statut `open`, ou un
 verdict négatif, bloque le passage à la phase suivante.
 
-Un design et des tâches présents avec `status: draft` ou sans état TDD signifient
-« planification en attente d'approbation », pas « planification terminée ».
+Un design et des tâches candidats, présents avec `status: draft`, contenant une
+question ouverte ou un verdict négatif, signifient « planification en attente
+d'approbation », pas « planification terminée ». Dans ce cas, recommander
+`/sdd-plan --continue <feature-id>`.
 
 ## Sortie
 
