@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import fcntl
 import hashlib
 import json
@@ -84,18 +85,128 @@ def atomic_replace(path: Path, data: bytes, fallback_mode: int = 0o644) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def feature_paths(feature_dir: str) -> tuple[Path, Path, Path]:
+def atomic_replace_with_mode(path: Path, data: bytes, mode: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, mode)
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def fsync_directory(directory: Path) -> None:
+    descriptor = os.open(directory, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def path_mode(path: Path, fallback: int) -> int:
+    try:
+        return stat.S_IMODE(path.stat().st_mode)
+    except FileNotFoundError:
+        return fallback
+
+
+def feature_paths(feature_dir: str) -> tuple[Path, Path, Path, Path]:
     directory = Path(feature_dir).resolve()
     return (
         directory / ".tdd-state.lock",
         directory / ".tdd-state.json",
         directory / "03-design.md",
+        directory / ".tdd-state.transaction.json",
     )
 
 
+def encode_artifact(data: bytes | None, mode: int | None) -> dict:
+    if data is None:
+        return {"exists": False}
+    return {
+        "exists": True,
+        "data_b64": base64.b64encode(data).decode("ascii"),
+        "mode": mode,
+    }
+
+
+def decode_artifact(value: object, label: str) -> tuple[bytes | None, int | None]:
+    if not isinstance(value, dict) or not isinstance(value.get("exists"), bool):
+        raise GuardError(f"{label} is invalid")
+    if not value["exists"]:
+        return None, None
+    encoded = value.get("data_b64")
+    mode = value.get("mode")
+    if not isinstance(encoded, str) or not isinstance(mode, int):
+        raise GuardError(f"{label} is invalid")
+    try:
+        return base64.b64decode(encoded, validate=True), mode
+    except ValueError as error:
+        raise GuardError(f"{label} contains invalid base64") from error
+
+
+def recover_transaction(
+    state_path: Path, design_path: Path, transaction_path: Path
+) -> bool:
+    transaction_data = read_bytes(transaction_path)
+    if transaction_data is None:
+        return False
+    try:
+        transaction = json.loads(transaction_data)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise GuardError(f"{transaction_path} is not valid JSON: {error}") from error
+    if (
+        not isinstance(transaction, dict)
+        or transaction.get("version") != 1
+        or transaction.get("operation") != "commit-plan"
+    ):
+        raise GuardError(f"{transaction_path} is not a supported transaction")
+    expected_token = transaction.get("expected_state_token")
+    target_token = transaction.get("target_state_token")
+    if not isinstance(expected_token, str) or not isinstance(target_token, str):
+        raise GuardError(f"{transaction_path} has invalid state tokens")
+
+    previous_data, previous_mode = decode_artifact(
+        transaction.get("previous_design"), "previous_design"
+    )
+    next_data, next_mode = decode_artifact(
+        transaction.get("next_design"), "next_design"
+    )
+    current_token = token_for(read_bytes(state_path))
+    if current_token == target_token:
+        if next_data is None or next_mode is None:
+            raise GuardError(f"{transaction_path} has no target design")
+        atomic_replace_with_mode(design_path, next_data, next_mode)
+    elif current_token == expected_token:
+        if previous_data is None:
+            design_path.unlink(missing_ok=True)
+        elif previous_mode is not None:
+            atomic_replace_with_mode(design_path, previous_data, previous_mode)
+    else:
+        raise GuardError(
+            "cannot recover plan transaction: state matches neither the expected "
+            "nor the committed token"
+        )
+    fsync_directory(state_path.parent)
+    transaction_path.unlink()
+    fsync_directory(state_path.parent)
+    return True
+
+
 def snapshot(args: argparse.Namespace) -> None:
-    _, state_path, _ = feature_paths(args.feature_dir)
-    data = read_bytes(state_path)
+    lock_path, state_path, design_path, transaction_path = feature_paths(args.feature_dir)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+b") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        recovered = recover_transaction(state_path, design_path, transaction_path)
+        data = read_bytes(state_path)
     pristine = None
     if data is not None:
         state = parse_state(data, str(state_path))
@@ -104,11 +215,15 @@ def snapshot(args: argparse.Namespace) -> None:
             pristine = True
         except GuardError:
             pristine = False
-    print(json.dumps({"token": token_for(data), "pristine": pristine}))
+    print(
+        json.dumps(
+            {"token": token_for(data), "pristine": pristine, "recovered": recovered}
+        )
+    )
 
 
 def commit_plan(args: argparse.Namespace) -> None:
-    lock_path, state_path, design_path = feature_paths(args.feature_dir)
+    lock_path, state_path, design_path, transaction_path = feature_paths(args.feature_dir)
     design_candidate = Path(args.design_candidate).resolve()
     state_candidate = Path(args.state_candidate).resolve()
     design_data = design_candidate.read_bytes()
@@ -125,6 +240,7 @@ def commit_plan(args: argparse.Namespace) -> None:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        recover_transaction(state_path, design_path, transaction_path)
         current_data = read_bytes(state_path)
         current_token = token_for(current_data)
         if current_token != args.expected_token:
@@ -136,14 +252,35 @@ def commit_plan(args: argparse.Namespace) -> None:
             require_pristine(parse_state(current_data, str(state_path)), str(state_path))
 
         previous_design = read_bytes(design_path)
-        atomic_replace(design_path, design_data, design_mode)
+        previous_design_mode = (
+            path_mode(design_path, design_mode) if previous_design is not None else None
+        )
+        target_design_mode = path_mode(design_path, design_mode)
+        target_state_mode = path_mode(state_path, state_mode)
+        transaction = {
+            "version": 1,
+            "operation": "commit-plan",
+            "expected_state_token": current_token,
+            "target_state_token": token_for(candidate_data),
+            "previous_design": encode_artifact(previous_design, previous_design_mode),
+            "next_design": encode_artifact(design_data, target_design_mode),
+        }
+        transaction_data = json.dumps(transaction, sort_keys=True).encode("utf-8")
+        transaction_written = False
         try:
-            atomic_replace(state_path, candidate_data, state_mode)
+            atomic_replace(transaction_path, transaction_data, 0o600)
+            fsync_directory(state_path.parent)
+            transaction_written = True
+            atomic_replace_with_mode(design_path, design_data, target_design_mode)
+            fsync_directory(state_path.parent)
+            atomic_replace_with_mode(state_path, candidate_data, target_state_mode)
+            fsync_directory(state_path.parent)
+            transaction_path.unlink()
+            fsync_directory(state_path.parent)
+            transaction_written = False
         except Exception:
-            if previous_design is None:
-                design_path.unlink(missing_ok=True)
-            else:
-                atomic_replace(design_path, previous_design)
+            if transaction_written:
+                recover_transaction(state_path, design_path, transaction_path)
             raise
 
     design_candidate.unlink(missing_ok=True)
@@ -153,7 +290,7 @@ def commit_plan(args: argparse.Namespace) -> None:
 
 
 def write_state(args: argparse.Namespace) -> None:
-    lock_path, state_path, _ = feature_paths(args.feature_dir)
+    lock_path, state_path, design_path, transaction_path = feature_paths(args.feature_dir)
     candidate_path = Path(args.state_candidate).resolve()
     candidate_data = candidate_path.read_bytes()
     candidate_mode = stat.S_IMODE(candidate_path.stat().st_mode)
@@ -164,6 +301,7 @@ def write_state(args: argparse.Namespace) -> None:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        recover_transaction(state_path, design_path, transaction_path)
         current_token = token_for(read_bytes(state_path))
         if current_token != args.expected_token:
             raise GuardError(

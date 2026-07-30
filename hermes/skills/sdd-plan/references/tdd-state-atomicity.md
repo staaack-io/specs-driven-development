@@ -18,10 +18,24 @@ constitue jamais une protection suffisante.
 Après un succès, le script consomme les deux fichiers candidats. En cas
 d'échec, il les conserve pour le diagnostic.
 
-`commit-plan` acquiert le verrou, compare l'état courant au token, vérifie qu'un
-état existant est encore vierge, puis remplace le design approuvé et l'état TDD
-pendant la même section critique. Un changement concurrent provoque un refus et
-aucun état commencé n'est écrasé.
+`commit-plan` acquiert le verrou, compare l'état courant au token et vérifie
+qu'un état existant est encore vierge. Avant le premier remplacement, il écrit
+et synchronise sur disque `.tdd-state.transaction.json`. Ce journal contient
+les empreintes de l'état avant/après ainsi que les versions précédente et cible
+du design. Le script remplace ensuite le design, puis l'état TDD, et ne supprime
+le journal qu'après synchronisation des deux artefacts.
+
+Après un arrêt brutal, la première commande `snapshot`, `commit-plan` ou
+`write-state` qui obtient le verrou récupère la transaction avant toute autre
+opération :
+
+- si l'état possède encore l'empreinte attendue, elle restaure l'ancien design ;
+- si l'état possède l'empreinte cible, elle réinstalle le design approuvé ;
+- si l'état ne correspond à aucune empreinte, elle refuse toute écriture et
+  conserve le journal pour diagnostic manuel.
+
+La récupération conserve également les permissions des artefacts. Un
+changement concurrent provoque un refus et aucun état commencé n'est écrasé.
 
 ## Autres écrivains
 
