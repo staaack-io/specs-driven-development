@@ -47,7 +47,9 @@ ambiguë ; une renumérotation globale ne doit jamais masquer cette erreur.
 8. utiliser uniquement ces IDs globaux dans l'index, la couverture des AC,
    `04-tasks.md` et `.tdd-state.json` ;
 9. conserver dans chaque tâche son origine qualifiée, par exemple
-   `spring-architect:T-001`, afin de permettre une reprise stable.
+   `spring-architect:T-001`, afin de permettre une reprise stable ;
+10. lors du premier plan, initialiser `Task ID Registry` avec le plus grand ID
+    global attribué comme `high_water_mark` et `(aucun)` comme `retired_ids`.
 
 Refuser la sortie si la validation locale échoue, si un Task-ID ou Test-ID
 global est dupliqué, si une dépendance ne correspond à aucune tâche, si le
@@ -62,9 +64,16 @@ toujours le design proposé courant.
 ## Identifiants pendant une reprise
 
 Avec `/sdd-plan --continue`, lire le précédent `04-tasks.md` avant toute
-attribution globale et construire la table `origine qualifiée -> ID global`.
+attribution globale. Lire `Task ID Registry`, conserver son `high_water_mark` et
+ses `retired_ids`, puis construire la table `origine qualifiée -> ID global`.
 Demander à chaque rôle de préserver ses IDs locaux pour les tâches dont
-l'objectif ne change pas.
+l'objectif ne change pas. Le registre est monotone : ne jamais diminuer le
+high-water mark ni supprimer un tombstone.
+
+Pour un ancien `04-tasks.md` sans registre, initialiser une seule fois le
+high-water mark avec le plus grand `T-NNN` trouvé dans `03-design.md`,
+`04-tasks.md` et `.tdd-state.json`, puis écrire le registre avant d'attribuer un
+nouvel ID.
 
 Pour chaque tâche proposée :
 
@@ -76,12 +85,18 @@ Pour chaque tâche proposée :
    global précédent, même si son rang topologique a changé ;
 4. si plusieurs correspondances sont possibles, arrêter et demander une
    clarification au lieu de renuméroter ;
-5. attribuer aux seules nouvelles tâches des IDs supérieurs au plus grand ID
-   global déjà présent, dans leur ordre topologique déterministe ;
-6. ne jamais réutiliser l'ID d'une tâche supprimée et ne jamais renuméroter une
-   tâche conservée pour combler un trou.
+5. ajouter aux `retired_ids` chaque ID précédemment actif qui ne correspond plus
+   à une tâche, sans retirer les tombstones existants ;
+6. attribuer aux seules nouvelles tâches des IDs strictement supérieurs au
+   `high_water_mark`, dans leur ordre topologique déterministe, et augmenter le
+   registre après chaque attribution ;
+7. ne jamais réutiliser un ID retiré et ne jamais renuméroter une tâche conservée
+   pour combler un trou ;
+8. écrire le `high_water_mark` et les `retired_ids` mis à jour dans le nouveau
+   `04-tasks.md`.
 
 L'ordre des sections dans `04-tasks.md` suit le tri topologique ; il n'a pas
 besoin de suivre l'ordre numérique des IDs lors d'une reprise. Réécrire ensuite
 les dépendances et Test-IDs à partir de la table finale, puis vérifier que toute
-référence historique désigne toujours la même tâche.
+référence historique désigne toujours la même tâche et qu'aucun ID actif
+n'apparaît dans `retired_ids`.

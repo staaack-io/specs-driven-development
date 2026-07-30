@@ -6,6 +6,11 @@
 
 - Conception : `.specs/<FEATURE-ID>/03-design.md`
 
+## Task ID Registry
+
+- high_water_mark: <plus grand entier T-NNN jamais attribué>
+- retired_ids: <liste de T-NNN retirés | (aucun)>
+
 ## Task Index
 
 | ID | Origine | Stack | Titre | AC-IDs | Dépend de | Portes |

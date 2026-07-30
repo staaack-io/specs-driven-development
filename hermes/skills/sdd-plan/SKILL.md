@@ -94,7 +94,8 @@ Avec `--continue <feature-id>` :
 7. conserver les identifiants des tâches dont l'objectif ne change pas en
    appliquant la table d'origine et l'algorithme de reprise de
    `references/task-contract.md` ; ne jamais réattribuer tous les IDs depuis
-   zéro.
+   zéro ; préserver également le `high_water_mark` et les `retired_ids` du
+   registre des tâches.
 
 Une reprise ne repart jamais uniquement de `01-spec.md` et
 `02-spec-review.md`. Si le brouillon attendu est absent, refuser `--continue` et
