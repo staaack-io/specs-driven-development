@@ -216,5 +216,7 @@ Ne jamais déduire l'approbation du seul lancement de `/sdd-plan`.
 - aucune question ouverte ne subsiste ;
 - aucune demande `CR-NNN` ne reste `open` ;
 - `.tdd-state.json` existe avec des tâches `pending` ;
-- la prochaine commande est `/sdd-build T-001`, signalée comme non installée
-  si nécessaire.
+- la prochaine commande est `/sdd-build <Task-ID>`, où `<Task-ID>` est la
+  première tâche `pending` dans l'ordre topologique dont toutes les dépendances
+  sont déjà `green` (ou qui n'a aucune dépendance), signalée comme non installée
+  si nécessaire ; ne jamais supposer que cette tâche est `T-001`.
