@@ -15,9 +15,12 @@ Ne modifier aucun fichier. Ne choisir aucune décision absente des sources.
 
 Le champ `context` doit contenir toutes les informations nécessaires : rôle,
 racine du projet, feature-id, AC, questions résolues, verdict, preuves de stack,
-contraintes et chemins pertinents. En reprise, ajouter le contenu de
-`03-design.md`, de `04-tasks.md` s'il existe, les questions de planification et
-les demandes `CR-NNN` avec leur statut.
+contraintes et chemins pertinents. En reprise, sélectionner séparément le design
+et les tâches selon la règle candidat d'abord : `03-design.candidate.md` puis
+`03-design.md`, et `04-tasks.candidate.md` puis `04-tasks.md`. Ajouter au contexte
+le chemin choisi et son contenu complet, ainsi que les questions de
+planification et les demandes `CR-NNN` avec leur statut. Ne jamais substituer
+une ancienne version approuvée à un candidat existant.
 
 ## Sortie obligatoire
 
