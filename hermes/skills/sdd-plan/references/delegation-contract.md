@@ -17,10 +17,12 @@ Le champ `context` doit contenir toutes les informations nécessaires : rôle,
 racine du projet, feature-id, AC, questions résolues, verdict, preuves de stack,
 contraintes et chemins pertinents. En reprise, sélectionner séparément le design
 et les tâches selon la règle candidat d'abord : `03-design.candidate.md` puis
-`03-design.md`, et `04-tasks.candidate.md` puis `04-tasks.md`. Ajouter au contexte
-le chemin choisi et son contenu complet, ainsi que les questions de
-planification et les demandes `CR-NNN` avec leur statut. Ne jamais substituer
-une ancienne version approuvée à un candidat existant.
+`03-design.md`, et `04-tasks.candidate.md` puis `04-tasks.md`. La sélection des
+tâches est optionnelle : si aucun des deux fichiers de tâches n'existe, l'indiquer
+explicitement dans le contexte et poursuivre la délégation. Pour chaque artefact
+sélectionné, ajouter le chemin choisi et son contenu complet, ainsi que les
+questions de planification et les demandes `CR-NNN` avec leur statut. Ne jamais
+substituer une ancienne version approuvée à un candidat existant.
 
 ## Sortie obligatoire
 
