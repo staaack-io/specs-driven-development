@@ -63,15 +63,20 @@ toujours le design proposé courant.
 
 ## Identifiants pendant une reprise
 
-Avec `/sdd-plan --continue`, lire le précédent `04-tasks.md` avant toute
+Avec `/sdd-plan --continue`, si `04-tasks.md` existe, le lire avant toute
 attribution globale. Lire `Task ID Registry`, conserver son `high_water_mark` et
 ses `retired_ids`, puis construire la table `origine qualifiée -> ID global`.
 Demander à chaque rôle de préserver ses IDs locaux pour les tâches dont
 l'objectif ne change pas. Le registre est monotone : ne jamais diminuer le
 high-water mark ni supprimer un tombstone.
 
-Pour un ancien `04-tasks.md` sans registre, initialiser une seule fois le
-high-water mark avec le plus grand `T-NNN` trouvé dans `03-design.md`,
+Si `04-tasks.md` est absent parce que la première délégation s'est arrêtée avec
+`needs-input`, traiter la reprise comme la première attribution de tâches :
+table d'origine vide, `high_water_mark: 0` et `retired_ids: (aucun)`. Appliquer
+ensuite la normalisation initiale et écrire le registre avec les tâches créées.
+
+Pour un `04-tasks.md` existant mais ancien et sans registre, initialiser une
+seule fois le high-water mark avec le plus grand `T-NNN` trouvé dans `03-design.md`,
 `04-tasks.md` et `.tdd-state.json`. Construire aussi l'ensemble de tous les IDs
 émis trouvés dans ces trois artefacts, puis initialiser `retired_ids` avec chaque
 ID de cet ensemble qui n'est pas une tâche active du précédent `04-tasks.md`.
