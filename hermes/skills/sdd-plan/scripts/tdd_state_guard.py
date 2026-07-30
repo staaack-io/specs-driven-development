@@ -172,6 +172,10 @@ def recover_transaction(
     target_token = transaction.get("target_state_token")
     if not isinstance(expected_token, str) or not isinstance(target_token, str):
         raise GuardError(f"{transaction_path} has invalid state tokens")
+    if expected_token == target_token:
+        raise GuardError(
+            f"{transaction_path} is ambiguous because its state tokens are identical"
+        )
 
     previous_data, previous_mode = decode_artifact(
         transaction.get("previous_design"), "previous_design"
