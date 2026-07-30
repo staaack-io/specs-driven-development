@@ -89,7 +89,15 @@ Depuis la racine du dépôt :
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-help
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-status
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-spec
+python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-spec-review
+python3 -m unittest -v \
+  hermes/skills/sdd-spec-review/scripts/test_review_decision_guard.py
 ```
+
+Le test de la porte humaine vérifie qu'une première revue réussie reste
+`ready-for-approval` et qu'une décision finale conserve une preuve utilisateur
+explicite. `/sdd-plan` et `/sdd-status` rejettent un ancien rapport final qui ne
+contient pas cette preuve.
 
 La validation avec Hermes sur le VPS reste obligatoire avant publication d'une
 version stable du profil.

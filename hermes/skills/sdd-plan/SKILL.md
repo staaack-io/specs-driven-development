@@ -25,7 +25,10 @@ Avant toute délégation :
 
 1. lire `.specs/<feature-id>/01-spec.md` ;
 2. lire `.specs/<feature-id>/02-spec-review.md` ;
-3. exiger `verdict: approve` ;
+3. exiger `verdict: approve`, puis exécuter le garde frère
+   `../sdd-spec-review/scripts/review_decision_guard.py validate-final` sur
+   `02-spec-review.md` ; si le garde est absent ou échoue, refuser la
+   planification et recommander `/sdd-spec-review --continue <feature-id>` ;
 4. exiger zéro `Q-NNN` au statut `open` ;
 5. refuser d'écraser un plan existant sans `--continue` ;
 6. avec `--continue`, lire d'abord `03-design.candidate.md` et
