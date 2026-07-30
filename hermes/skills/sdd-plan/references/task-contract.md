@@ -29,8 +29,9 @@ Lorsque plusieurs architectes retournent des tâches :
 1. qualifier chaque ID local par son rôle, par exemple
    `spring-architect:T-001` et `react-nextjs-architect:T-001` ;
 2. qualifier de la même façon chaque entrée `depends_on` avant la fusion ;
-3. fusionner les tâches et ajouter uniquement les dépendances inter-stack
-   prouvées par le design approuvé ;
+3. fusionner les tâches et dériver les dépendances inter-stack depuis les AC et
+   décisions approuvés ainsi que le design proposé courant ; le design n'a pas
+   besoin d'être déjà marqué `approved` à cette étape ;
 4. effectuer un tri topologique. À priorité égale, ordonner par rôle
    `spring-architect`, puis `react-nextjs-architect`, puis par ID local ;
 5. attribuer les IDs globaux `T-001`, `T-002`, etc. dans cet ordre ;
@@ -43,3 +44,8 @@ Lorsque plusieurs architectes retournent des tâches :
 Refuser la sortie si un Task-ID ou Test-ID global est dupliqué, si une
 dépendance ne correspond à aucune tâche, si le nombre de tâches change pendant
 la normalisation ou si le graphe contient un cycle.
+
+Exécuter cette normalisation avant de présenter le plan à l'utilisateur. Après
+chaque `request-changes` qui modifie le design ou les tâches, la réexécuter avant
+la nouvelle demande d'approbation afin que les arêtes inter-stack reflètent
+toujours le design proposé courant.
