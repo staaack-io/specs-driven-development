@@ -444,7 +444,8 @@ class GuardTest(unittest.TestCase):
 
     def test_commit_retry_accepts_a_matching_recovered_transaction(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            feature = Path(temporary) / "feature-eleven"
+            root = Path(temporary)
+            feature = root / "feature-eleven"
             feature.mkdir()
             previous_design = b"decision: pending\n"
             target_design = b"decision: approve\n"
@@ -459,7 +460,10 @@ class GuardTest(unittest.TestCase):
             candidate.write_bytes(state_data)
             (feature / "03-design.md").write_bytes(target_design)
             (feature / "04-tasks.md").write_bytes(target_tasks)
-            (feature / ".tdd-state.json").write_bytes(state_data)
+            state_source = root / "state-source.json"
+            state_source.write_bytes(state_data)
+            state_path = feature / ".tdd-state.json"
+            state_path.symlink_to(state_source)
             journal = transaction(
                 previous_design,
                 target_design,
@@ -490,6 +494,9 @@ class GuardTest(unittest.TestCase):
             self.assertFalse(tasks.exists())
             self.assertFalse(candidate.exists())
             self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+            self.assertFalse(state_path.is_symlink())
+            state_source.write_text("{}", encoding="utf-8")
+            self.assertEqual(state_data, state_path.read_bytes())
 
     def test_legacy_recovery_does_not_replace_the_tasks_file(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

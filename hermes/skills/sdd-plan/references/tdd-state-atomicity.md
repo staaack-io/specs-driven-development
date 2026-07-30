@@ -64,9 +64,10 @@ uniquement si l'état, le design et les tâches récupérés correspondent exact
 aux trois candidats fournis ; toute différence impose un diagnostic manuel.
 La même vérification idempotente s'applique si le journal a déjà été supprimé :
 un token attendu obsolète est accepté uniquement lorsque les trois cibles
-courantes correspondent exactement aux candidats. Avant le succès, le garde
-rematérialise les trois entrées par remplacement atomique afin qu'aucun symlink,
-hard link ou identité de fichier externe ne survive au commit.
+courantes correspondent exactement aux candidats. Après un roll-forward comme
+après une reprise sans journal, le garde rematérialise les trois entrées par
+remplacement atomique avant le succès afin qu'aucun symlink, hard link ou
+identité de fichier externe ne survive au commit.
 
 La récupération conserve également les permissions des artefacts. Un
 changement concurrent provoque un refus et aucun état commencé n'est écrasé.
