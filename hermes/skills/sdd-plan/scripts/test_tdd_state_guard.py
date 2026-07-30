@@ -455,6 +455,31 @@ class GuardTest(unittest.TestCase):
             self.assertFalse(candidate.exists())
             self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 
+    def test_legacy_recovery_does_not_replace_the_tasks_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-twelve"
+            feature.mkdir()
+            previous_design = b"decision: pending\n"
+            target_design = b"decision: approve\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            tasks_path = feature / "04-tasks.md"
+            tasks_path.write_bytes(b"# Existing tasks\n")
+            original_inode = tasks_path.stat().st_ino
+            (feature / "03-design.md").write_bytes(previous_design)
+            (feature / ".tdd-state.json").write_bytes(state_data)
+            journal = transaction(previous_design, target_design, state_data)
+            del journal["previous_tasks"]
+            del journal["next_tasks"]
+            (feature / ".tdd-state.transaction.json").write_text(
+                json.dumps(journal), encoding="utf-8"
+            )
+
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            self.assertTrue(snapshot["recovered"])
+            self.assertEqual(original_inode, tasks_path.stat().st_ino)
+            self.assertEqual(b"# Existing tasks\n", tasks_path.read_bytes())
+
 
 if __name__ == "__main__":
     unittest.main()
