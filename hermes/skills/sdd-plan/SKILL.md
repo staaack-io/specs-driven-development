@@ -29,7 +29,9 @@ Avant toute délégation :
 4. exiger zéro `Q-NNN` au statut `open` ;
 5. refuser d'écraser un plan existant sans `--continue` ;
 6. avec `--continue`, lire `03-design.md` et `04-tasks.md` lorsqu'ils existent ;
-7. ne jamais modifier les artefacts des étapes 1 et 2.
+7. lire `.tdd-state.json` s'il existe et appliquer la porte de protection de
+   l'état TDD avant toute délégation ;
+8. ne jamais modifier les artefacts des étapes 1 et 2.
 
 ## Références
 
@@ -86,6 +88,27 @@ Une reprise ne repart jamais uniquement de `01-spec.md` et
 `02-spec-review.md`. Si le brouillon attendu est absent, refuser `--continue` et
 expliquer qu'un premier `/sdd-plan <feature-id>` est requis.
 
+## Protection de l'état TDD
+
+Si `.specs/<feature-id>/.tdd-state.json` existe :
+
+1. exiger un JSON valide et conserver son contenu exact comme référence ;
+2. considérer l'implémentation comme commencée si `active_task` n'est pas nul,
+   si une tâche a une phase différente de `pending`, ou si un champ de preuve
+   RED/GREEN n'est pas nul ;
+3. si l'implémentation a commencé, refuser la planification avant toute
+   délégation et ne modifier aucun artefact ; montrer la tâche et les preuves
+   qui ont fermé la porte ;
+4. si toutes les tâches sont `pending`, qu'aucune tâche n'est active et qu'aucune
+   preuve n'existe, autoriser la reprise mais préserver le fichier jusqu'à
+   l'approbation du nouveau plan ;
+5. relire l'état immédiatement avant toute écriture après une délégation. S'il a
+   changé ou si l'implémentation a démarré entre-temps, arrêter sans écrire.
+
+Ne jamais migrer, vider ou recréer silencieusement un état commencé. Recommander
+une nouvelle fonctionnalité ou un processus de changement distinct lorsque le
+plan d'une implémentation commencée doit évoluer.
+
 ## Délégation en lecture seule
 
 1. Préparer un contexte autonome contenant : chemin absolu du projet,
@@ -117,7 +140,8 @@ revenir dans leur résumé pour être traitée par l'agent principal.
    délégation avec le contexte complet. Déplacer chaque question traitée vers
    `Resolved Questions` avec sa réponse et sa date.
 6. Si le résultat vaut `ready`, l'agent principal écrit `03-design.md` et
-   `04-tasks.md` à partir des modèles. Les sous-agents ne les écrivent pas.
+   `04-tasks.md` à partir des modèles, seulement après avoir revérifié la porte
+   de l'état TDD. Les sous-agents ne les écrivent pas.
 7. Créer un ADR seulement lorsqu'au moins deux options plausibles existent et
    que la décision est explicitement prouvée. Une décision manquante devient
    une question, jamais un ADR inventé.
@@ -134,8 +158,9 @@ Après production du design et des tâches :
 3. avec `request-changes`, créer une entrée `CR-NNN` stable pour chaque demande,
    l'inscrire au statut `open` dans `03-design.md`, conserver les artefacts en
    brouillon et proposer `/sdd-plan --continue <feature-id>` ;
-4. avec `approve`, inscrire la décision et la date dans `03-design.md`, puis
-   créer `.tdd-state.json` avec toutes les tâches à `pending` et
+4. avec `approve`, relire encore la porte TDD, inscrire la décision et la date
+   dans `03-design.md`, puis créer l'état s'il est absent ou remplacer uniquement
+   un état encore vierge avec toutes les tâches à `pending` et
    `active_task: null`.
 
 Ne jamais déduire l'approbation du seul lancement de `/sdd-plan`.
@@ -143,6 +168,8 @@ Ne jamais déduire l'approbation du seul lancement de `/sdd-plan`.
 ## Contraintes d'écriture
 
 - Écrire uniquement dans `.specs/<feature-id>/`.
+- Ne jamais modifier `.tdd-state.json` lorsqu'une tâche est active, non
+  `pending`, ou possède une preuve RED/GREEN.
 - Ne jamais modifier le code, les tests, les dépendances ou la configuration du
   projet pendant la planification.
 - Utiliser des chemins concrets dans `Files in scope`, jamais des globs.
