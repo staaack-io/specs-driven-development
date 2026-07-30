@@ -320,6 +320,21 @@ def commit_plan(args: argparse.Namespace) -> None:
         current_data = read_bytes(state_path)
         current_token = token_for(current_data)
         if current_token != args.expected_token:
+            committed_without_journal = (
+                current_token == token_for(candidate_data)
+                and read_bytes(design_path) == design_data
+                and read_bytes(tasks_path) == tasks_data
+            )
+            if committed_without_journal:
+                design_candidate.unlink(missing_ok=True)
+                tasks_candidate.unlink(missing_ok=True)
+                state_candidate.unlink(missing_ok=True)
+                print(
+                    json.dumps(
+                        {"token": token_for(candidate_data), "committed": True}
+                    )
+                )
+                return
             raise GuardError(
                 f"state changed concurrently: expected {args.expected_token}, "
                 f"found {current_token}"

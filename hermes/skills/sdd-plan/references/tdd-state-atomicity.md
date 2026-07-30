@@ -57,6 +57,9 @@ Après un redémarrage, un nouvel appel `commit-plan` peut lui-même terminer le
 roll-forward avant la comparaison du token. Il retourne alors le succès
 uniquement si l'état, le design et les tâches récupérés correspondent exactement
 aux trois candidats fournis ; toute différence impose un diagnostic manuel.
+La même vérification idempotente s'applique si le journal a déjà été supprimé :
+un token attendu obsolète est accepté uniquement lorsque les trois cibles
+courantes correspondent exactement aux candidats.
 
 La récupération conserve également les permissions des artefacts. Un
 changement concurrent provoque un refus et aucun état commencé n'est écrasé.
