@@ -67,6 +67,8 @@ Retourner un unique bloc JSON valide :
 
 ## Règles
 
+- Dans une délégation full-stack, `id`, `test_ids` et `depends_on` sont locaux
+  au rôle enfant. Le parent doit les qualifier puis les renuméroter globalement.
 - `ready` exige zéro question ouverte.
 - `needs-input` exige au moins une question et ne doit pas inventer de réponse.
 - `blocked` explique une preuve manquante ou une contradiction.
