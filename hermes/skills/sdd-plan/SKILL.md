@@ -83,7 +83,9 @@ Avec `--continue <feature-id>` :
 2. lire intégralement le design et, s'il existe, `04-tasks.md` ;
 3. extraire les questions ouvertes, les questions résolues, la dernière décision
    utilisateur et toutes les demandes réelles `CR-NNN` ; ignorer la ligne
-   explicite `(aucune)` du modèle ;
+   explicite `(aucune)` du modèle ainsi que l'ancienne ligne `CR-001` si tous ses
+   autres champs contiennent encore littéralement les marqueurs `<...>` du
+   modèle ; ne jamais ignorer un `CR-001` contenant une vraie demande ;
 4. présenter les questions et demandes encore `open` avant de déléguer ;
 5. inclure les artefacts précédents, leurs chemins et tous ces éléments dans le
    contexte autonome du sous-agent ;
@@ -178,9 +180,11 @@ Après production du design et des tâches :
    de couverture des AC ;
 2. demander explicitement `approve` ou `request-changes` ;
 3. avec `request-changes`, créer une entrée `CR-NNN` stable pour chaque demande,
-   remplacer la ligne `(aucune)` lors de la première demande, l'inscrire au
-   statut `open` dans `03-design.md`, conserver les artefacts en brouillon et
-   proposer `/sdd-plan --continue <feature-id>` ;
+   remplacer lors de la première demande soit la ligne `(aucune)`, soit
+   l'ancienne ligne `CR-001` dont tous les champs sont encore des marqueurs
+   `<...>` ; inscrire ensuite la vraie demande au statut `open` dans
+   `03-design.md`, conserver les artefacts en brouillon et proposer
+   `/sdd-plan --continue <feature-id>` ;
 4. avec `approve`, préparer le design approuvé et l'état vierge dans les deux
    fichiers candidats imposés par `references/tdd-state-atomicity.md`, puis
    appeler `commit-plan` avec le token capturé avant la délégation ;
