@@ -43,6 +43,10 @@ Un journal existant dont les empreintes attendue et cible sont identiques est
 également refusé et conservé : il ne contient pas assez d'information pour
 décider sans risque entre rollback et roll-forward.
 
+Une récupération par roll-forward constitue un commit réussi : `commit-plan`
+retourne alors `committed: true` et consomme les candidats. Une récupération par
+rollback conserve l'erreur initiale et les candidats pour diagnostic.
+
 La récupération conserve également les permissions des artefacts. Un
 changement concurrent provoque un refus et aucun état commencé n'est écrasé.
 

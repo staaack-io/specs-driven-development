@@ -154,10 +154,10 @@ def decode_artifact(value: object, label: str) -> tuple[bytes | None, int | None
 
 def recover_transaction(
     state_path: Path, design_path: Path, transaction_path: Path
-) -> bool:
+) -> str | None:
     transaction_data = read_bytes(transaction_path)
     if transaction_data is None:
-        return False
+        return None
     try:
         transaction = json.loads(transaction_data)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -188,11 +188,13 @@ def recover_transaction(
         if next_data is None or next_mode is None:
             raise GuardError(f"{transaction_path} has no target design")
         atomic_replace_with_mode(design_path, next_data, next_mode)
+        outcome = "committed"
     elif current_token == expected_token:
         if previous_data is None:
             design_path.unlink(missing_ok=True)
         elif previous_mode is not None:
             atomic_replace_with_mode(design_path, previous_data, previous_mode)
+        outcome = "rolled-back"
     else:
         raise GuardError(
             "cannot recover plan transaction: state matches neither the expected "
@@ -201,7 +203,7 @@ def recover_transaction(
     fsync_directory(state_path.parent)
     transaction_path.unlink()
     fsync_directory(state_path.parent)
-    return True
+    return outcome
 
 
 def snapshot(args: argparse.Namespace) -> None:
@@ -209,7 +211,9 @@ def snapshot(args: argparse.Namespace) -> None:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        recovered = recover_transaction(state_path, design_path, transaction_path)
+        recovery_outcome = recover_transaction(
+            state_path, design_path, transaction_path
+        )
         data = read_bytes(state_path)
     pristine = None
     if data is not None:
@@ -221,7 +225,12 @@ def snapshot(args: argparse.Namespace) -> None:
             pristine = False
     print(
         json.dumps(
-            {"token": token_for(data), "pristine": pristine, "recovered": recovered}
+            {
+                "token": token_for(data),
+                "pristine": pristine,
+                "recovered": recovery_outcome is not None,
+                "recovery_outcome": recovery_outcome,
+            }
         )
     )
 
@@ -288,9 +297,13 @@ def commit_plan(args: argparse.Namespace) -> None:
             fsync_directory(state_path.parent)
             transaction_written = False
         except Exception:
+            recovery_outcome = None
             if transaction_written:
-                recover_transaction(state_path, design_path, transaction_path)
-            raise
+                recovery_outcome = recover_transaction(
+                    state_path, design_path, transaction_path
+                )
+            if recovery_outcome != "committed":
+                raise
 
     design_candidate.unlink(missing_ok=True)
     state_candidate.unlink(missing_ok=True)
