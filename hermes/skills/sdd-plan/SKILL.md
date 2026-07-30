@@ -58,12 +58,17 @@ Appliquer `references/stack-evidence.md`. Un fichier générique comme `pom.xml`
 `build.gradle*`, `src/main/java/`, `package.json`, `app/` ou `pages/` ne prouve
 jamais à lui seul un framework.
 
-- Spring : exiger une preuve Spring spécifique ;
-- React/Next.js : exiger une preuve React ou Next.js spécifique ;
-- full-stack : exiger une preuve spécifique pour chaque famille.
+- établir le périmètre de la fonctionnalité depuis les AC et décisions
+  approuvées ;
+- Spring : exiger une preuve Spring spécifique reliée à ce périmètre ;
+- React/Next.js : exiger une preuve React ou Next.js spécifique reliée à ce
+  périmètre ;
+- full-stack : exiger une preuve spécifique et reliée au périmètre pour chaque
+  famille.
 
-Si plusieurs stacks existent mais que le périmètre de la fonctionnalité reste
-ambigu, demander à l'utilisateur avant de déléguer.
+Dans un monorepo, ne jamais déduire la stack de la seule présence d'un framework
+ailleurs dans le dépôt. Si le lien entre les preuves et le périmètre de la
+fonctionnalité reste ambigu, demander à l'utilisateur avant de déléguer.
 
 Si aucune stack prise en charge n'est prouvée, arrêter avec `stack: unknown`,
 présenter les fichiers inspectés et recommander `/sdd-onboard` si disponible.

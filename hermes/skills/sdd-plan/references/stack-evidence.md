@@ -3,6 +3,23 @@
 Détecter un framework à partir de son contenu, jamais à partir du seul nom d'un
 outil de build ou d'un dossier générique.
 
+## Périmètre fonctionnel
+
+Une preuve de framework n'est utilisable que si elle concerne aussi la
+fonctionnalité approuvée. Établir d'abord son périmètre à partir des AC, des
+décisions résolues et des modules, routes, composants ou fichiers qu'ils
+désignent.
+
+Dans un monorepo, relier ensuite chaque preuve forte à ce périmètre par au moins
+un élément concret : module concerné, chemin cité par la spécification, import
+depuis le code visé ou cartographie explicite dans `.specs/_onboarding.md`.
+La simple présence de Spring, React ou Next.js dans un autre module du dépôt ne
+prouve pas la stack de la fonctionnalité.
+
+Si le lien entre une preuve forte et le périmètre ne peut pas être établi,
+demander une clarification. Sans clarification, classer la stack `unknown` et
+ne déléguer aucun rôle.
+
 ## Spring
 
 Accepter Spring lorsqu'au moins une preuve forte existe :
@@ -35,9 +52,12 @@ pas être routés vers `react-nextjs-architect`.
 
 ## Résultat
 
-- `spring` : Spring uniquement est prouvé ;
-- `react-nextjs` : React ou Next.js uniquement est prouvé ;
-- `full-stack` : les deux familles sont prouvées et concernées par la feature ;
+- `spring` : Spring est prouvé et concerne la fonctionnalité, sans périmètre
+  React ou Next.js concerné ;
+- `react-nextjs` : React ou Next.js est prouvé et concerne la fonctionnalité,
+  sans périmètre Spring concerné ;
+- `full-stack` : les deux familles sont prouvées et concernent la
+  fonctionnalité ;
 - `unknown` : preuve absente, générique ou contradictoire.
 
 Avec `unknown`, ne déléguer aucun architecte. Montrer les preuves inspectées et
