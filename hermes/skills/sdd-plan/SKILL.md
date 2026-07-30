@@ -182,7 +182,7 @@ Après production du design et des tâches :
 2. demander explicitement `approve` ou `request-changes` ;
 3. avec `request-changes`, créer une entrée `CR-NNN` stable pour chaque demande,
    remplacer lors de la première demande soit la ligne `(aucune)`, soit
-   l'ancienne ligne `CR-001` dont tous les champs sont encore des marqueurs
+   l'ancienne ligne `CR-001` dont tous les autres champs sont encore des marqueurs
    `<...>` ; inscrire ensuite la vraie demande au statut `open` dans
    `03-design.md`, conserver les artefacts en brouillon et proposer
    `/sdd-plan --continue <feature-id>` ;
