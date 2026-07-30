@@ -111,8 +111,9 @@ expliquer qu'un premier `/sdd-plan <feature-id>` est requis.
 1. Toujours exécuter `scripts/tdd_state_guard.py snapshot` comme décrit dans
    `references/tdd-state-atomicity.md` et conserver le token retourné, y compris
    lorsqu'il vaut `absent`.
-2. Si l'état existe, exiger un JSON valide et considérer l'implémentation comme
-   commencée si `active_task` n'est pas nul,
+2. Si l'état existe, exiger un JSON valide, conserver son contenu exact comme
+   référence et considérer l'implémentation comme commencée si `active_task`
+   n'est pas nul,
    si une tâche a une phase différente de `pending`, ou si un champ de preuve
    RED/GREEN n'est pas nul ;
 3. si l'implémentation a commencé, refuser la planification avant toute

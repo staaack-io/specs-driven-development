@@ -67,6 +67,17 @@ Le contenu de `hermes/skills/<nom>/` devient
 `skills/<nom>/` dans le dépôt de distribution Hermes. Les dossiers de ressources
 restent avec leur skill afin que le profil installé soit autonome.
 
+Le dossier `hermes/skills/` de ce dépôt est la source canonique. Avant de publier
+le profil, vérifier la parité exacte des deux arborescences depuis cette racine :
+
+```bash
+python3 hermes/scripts/check_profile_parity.py \
+  /chemin/vers/hermes-agent-profile-staaack
+```
+
+Le contrôle échoue si un fichier manque, si le profil contient un fichier en
+plus ou si le contenu d'un fichier diffère.
+
 Ne pas utiliser un lien direct vers `.agents/skills/` : ce dossier contient la
 version Codex et ses chemins ne sont pas tous portables vers Hermes.
 
