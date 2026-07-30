@@ -50,10 +50,11 @@ cette nouvelle révision est approuvée.
 Un artefact présent mais contenant une question `Q-NNN` au statut `open`, ou un
 verdict négatif, bloque le passage à la phase suivante.
 
-Un design et des tâches candidats, présents avec `status: draft`, contenant une
-question ouverte ou un verdict négatif, signifient « planification en attente
-d'approbation », pas « planification terminée ». Dans ce cas, recommander
-`/sdd-plan --continue <feature-id>`.
+La présence d'un design ou de tâches candidats avec `status: draft` signifie
+toujours « planification en attente d'approbation », même sans question ouverte
+ni verdict négatif. Une question ouverte ou un verdict négatif dans un candidat
+impose le même statut. Dans ces cas, ne pas annoncer une planification terminée
+et recommander `/sdd-plan --continue <feature-id>`.
 
 ## Sortie
 
