@@ -37,6 +37,7 @@ Toujours lire :
 - [contrat de délégation](references/delegation-contract.md) ;
 - [contrat des tâches](references/task-contract.md) ;
 - [checklist de conception](references/design-checklist.md) ;
+- [preuves de stack](references/stack-evidence.md) ;
 - [modèle de conception](templates/design.template.md) ;
 - [modèle de tâches](templates/tasks.template.md) ;
 - [modèle d'état TDD](templates/tdd-state.template.json).
@@ -50,16 +51,20 @@ Lire ensuite le rôle correspondant :
 
 ## Détection de la stack
 
-Inspecter les fichiers réels sans inventer :
+Appliquer `references/stack-evidence.md`. Un fichier générique comme `pom.xml`,
+`build.gradle*`, `src/main/java/`, `package.json`, `app/` ou `pages/` ne prouve
+jamais à lui seul un framework.
 
-- Spring : `pom.xml`, `build.gradle*`, `src/main/java/` ou
-  `.specs/_onboarding.md` le prouve ;
-- React/Next.js : `package.json`, `next.config.*`, `app/`, `pages/` ou
-  `.specs/_onboarding.md` le prouve ;
-- full-stack : les deux familles sont prouvées.
+- Spring : exiger une preuve Spring spécifique ;
+- React/Next.js : exiger une preuve React ou Next.js spécifique ;
+- full-stack : exiger une preuve spécifique pour chaque famille.
 
 Si plusieurs stacks existent mais que le périmètre de la fonctionnalité reste
 ambigu, demander à l'utilisateur avant de déléguer.
+
+Si aucune stack prise en charge n'est prouvée, arrêter avec `stack: unknown`,
+présenter les fichiers inspectés et recommander `/sdd-onboard` si disponible.
+Ne jamais choisir l'architecte le plus proche par défaut.
 
 ## Délégation en lecture seule
 
