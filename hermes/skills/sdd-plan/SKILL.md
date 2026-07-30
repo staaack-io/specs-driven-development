@@ -28,7 +28,9 @@ Avant toute délégation :
 3. exiger `verdict: approve` ;
 4. exiger zéro `Q-NNN` au statut `open` ;
 5. refuser d'écraser un plan existant sans `--continue` ;
-6. avec `--continue`, lire `03-design.md` et `04-tasks.md` lorsqu'ils existent ;
+6. avec `--continue`, lire d'abord `03-design.candidate.md` et
+   `04-tasks.candidate.md` lorsqu'ils existent, sinon les artefacts approuvés
+   `03-design.md` et `04-tasks.md` ;
 7. capturer le token de `.tdd-state.json`, présent ou absent, avec le garde
    atomique et appliquer la porte de protection avant toute délégation ;
 8. ne jamais modifier les artefacts des étapes 1 et 2.
@@ -79,8 +81,9 @@ Ne jamais choisir l'architecte le plus proche par défaut.
 
 Avec `--continue <feature-id>` :
 
-1. exiger au moins un brouillon `03-design.md` ;
-2. lire intégralement le design et, s'il existe, `04-tasks.md` ;
+1. exiger au moins `03-design.candidate.md` ou `03-design.md` ;
+2. lire intégralement le candidat s'il existe, sinon le design approuvé ; faire
+   de même pour `04-tasks.candidate.md` et `04-tasks.md` ;
 3. extraire les questions ouvertes, les questions résolues, la dernière décision
    utilisateur et toutes les demandes réelles `CR-NNN` ; ignorer la ligne
    explicite `(aucune)` du modèle ainsi que l'ancienne ligne `CR-001` si tous ses
@@ -159,15 +162,17 @@ revenir dans leur résumé pour être traitée par l'agent principal.
    fichiers concurrents. Dériver les dépendances inter-stack depuis les
    exigences approuvées et le design proposé courant, sans attendre que ce
    design porte déjà le statut `approved`.
-4. Si le résultat vaut `needs-input`, écrire uniquement un brouillon de
-   `03-design.md` contenant les faits et questions reçus, puis demander les
-   décisions à l'utilisateur. Ne pas créer `04-tasks.md` ni l'état TDD.
+4. Si le résultat vaut `needs-input`, écrire uniquement
+   `03-design.candidate.md` avec les faits et questions reçus, puis demander les
+   décisions à l'utilisateur. Ne modifier ni `03-design.md`, ni `04-tasks.md`,
+   ni l'état TDD.
 5. Après les réponses, consigner les décisions dans le brouillon et relancer la
    délégation avec le contexte complet. Déplacer chaque question traitée vers
    `Resolved Questions` avec sa réponse et sa date.
-6. Si le résultat vaut `ready`, l'agent principal écrit `03-design.md` et
-   `04-tasks.md` à partir des modèles, seulement après avoir revérifié la porte
-   de l'état TDD. Les sous-agents ne les écrivent pas.
+6. Si le résultat vaut `ready`, l'agent principal écrit
+   `03-design.candidate.md` et `04-tasks.candidate.md` à partir des modèles,
+   seulement après avoir revérifié la porte de l'état TDD. Il préserve les
+   artefacts approuvés jusqu'à l'approbation. Les sous-agents ne les écrivent pas.
 7. Créer un ADR seulement lorsqu'au moins deux options plausibles existent et
    que la décision est explicitement prouvée. Une décision manquante devient
    une question, jamais un ADR inventé.
@@ -186,11 +191,12 @@ Après production du design et des tâches :
    remplacer lors de la première demande soit la ligne `(aucune)`, soit
    l'ancienne ligne `CR-001` dont tous les autres champs sont encore des marqueurs
    `<...>` ; inscrire ensuite la vraie demande au statut `open` dans
-   `03-design.md`, conserver les artefacts en brouillon et proposer
+   `03-design.candidate.md`, conserver les candidats en brouillon et proposer
    `/sdd-plan --continue <feature-id>` ;
-4. avec `approve`, préparer le design approuvé et l'état vierge dans les deux
-   fichiers candidats imposés par `references/tdd-state-atomicity.md`, puis
-   appeler `commit-plan` avec le token capturé avant la délégation ;
+4. avec `approve`, inscrire la décision dans le candidat design, préparer l'état
+   vierge, puis appeler `commit-plan` avec le design, les tâches et l'état
+   candidats imposés par `references/tdd-state-atomicity.md`, ainsi que le token
+   capturé avant la délégation ;
 5. si la comparaison-et-échange échoue, ne pas inscrire l'approbation et montrer
    l'état concurrent ; sinon seulement annoncer le plan comme approuvé.
 

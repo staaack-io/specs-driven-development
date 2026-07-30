@@ -117,12 +117,13 @@ def path_mode(path: Path, fallback: int) -> int:
         return fallback
 
 
-def feature_paths(feature_dir: str) -> tuple[Path, Path, Path, Path]:
+def feature_paths(feature_dir: str) -> tuple[Path, Path, Path, Path, Path]:
     directory = Path(feature_dir).resolve()
     return (
         directory / ".tdd-state.lock",
         directory / ".tdd-state.json",
         directory / "03-design.md",
+        directory / "04-tasks.md",
         directory / ".tdd-state.transaction.json",
     )
 
@@ -153,7 +154,10 @@ def decode_artifact(value: object, label: str) -> tuple[bytes | None, int | None
 
 
 def recover_transaction(
-    state_path: Path, design_path: Path, transaction_path: Path
+    state_path: Path,
+    design_path: Path,
+    tasks_path: Path,
+    transaction_path: Path,
 ) -> str | None:
     transaction_data = read_bytes(transaction_path)
     if transaction_data is None:
@@ -183,17 +187,52 @@ def recover_transaction(
     next_data, next_mode = decode_artifact(
         transaction.get("next_design"), "next_design"
     )
+    has_previous_tasks = "previous_tasks" in transaction
+    has_next_tasks = "next_tasks" in transaction
+    if has_previous_tasks != has_next_tasks:
+        raise GuardError(f"{transaction_path} has incomplete task artifacts")
+    legacy_tasks = not has_previous_tasks
+    if has_previous_tasks:
+        previous_tasks_data, previous_tasks_mode = decode_artifact(
+            transaction.get("previous_tasks"), "previous_tasks"
+        )
+        next_tasks_data, next_tasks_mode = decode_artifact(
+            transaction.get("next_tasks"), "next_tasks"
+        )
+    else:
+        # Journals created before tasks joined the transaction never changed
+        # 04-tasks.md, so preserve its current bytes and permissions.
+        previous_tasks_data = next_tasks_data = read_bytes(tasks_path)
+        current_tasks_mode = (
+            path_mode(tasks_path, 0o644) if next_tasks_data is not None else None
+        )
+        previous_tasks_mode = next_tasks_mode = current_tasks_mode
     current_token = token_for(read_bytes(state_path))
     if current_token == target_token:
-        if next_data is None or next_mode is None:
-            raise GuardError(f"{transaction_path} has no target design")
+        if (
+            next_data is None
+            or next_mode is None
+            or (
+                not legacy_tasks
+                and (next_tasks_data is None or next_tasks_mode is None)
+            )
+        ):
+            raise GuardError(f"{transaction_path} has incomplete target artifacts")
         atomic_replace_with_mode(design_path, next_data, next_mode)
+        if next_tasks_data is not None and next_tasks_mode is not None:
+            atomic_replace_with_mode(tasks_path, next_tasks_data, next_tasks_mode)
         outcome = "committed"
     elif current_token == expected_token:
         if previous_data is None:
             design_path.unlink(missing_ok=True)
         elif previous_mode is not None:
             atomic_replace_with_mode(design_path, previous_data, previous_mode)
+        if previous_tasks_data is None:
+            tasks_path.unlink(missing_ok=True)
+        elif previous_tasks_mode is not None:
+            atomic_replace_with_mode(
+                tasks_path, previous_tasks_data, previous_tasks_mode
+            )
         outcome = "rolled-back"
     else:
         raise GuardError(
@@ -207,12 +246,14 @@ def recover_transaction(
 
 
 def snapshot(args: argparse.Namespace) -> None:
-    lock_path, state_path, design_path, transaction_path = feature_paths(args.feature_dir)
+    lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
+        args.feature_dir
+    )
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         recovery_outcome = recover_transaction(
-            state_path, design_path, transaction_path
+            state_path, design_path, tasks_path, transaction_path
         )
         data = read_bytes(state_path)
     pristine = None
@@ -236,13 +277,20 @@ def snapshot(args: argparse.Namespace) -> None:
 
 
 def commit_plan(args: argparse.Namespace) -> None:
-    lock_path, state_path, design_path, transaction_path = feature_paths(args.feature_dir)
+    lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
+        args.feature_dir
+    )
     design_candidate = Path(args.design_candidate).resolve()
+    tasks_candidate = Path(args.tasks_candidate).resolve()
     state_candidate = Path(args.state_candidate).resolve()
     design_data = design_candidate.read_bytes()
     design_mode = stat.S_IMODE(design_candidate.stat().st_mode)
     if not design_data.strip():
         raise GuardError("approved design candidate is empty")
+    tasks_data = tasks_candidate.read_bytes()
+    tasks_mode = stat.S_IMODE(tasks_candidate.stat().st_mode)
+    if not tasks_data.strip():
+        raise GuardError("approved tasks candidate is empty")
     candidate_data = state_candidate.read_bytes()
     state_mode = stat.S_IMODE(state_candidate.stat().st_mode)
     candidate_state = parse_state(candidate_data, str(state_candidate))
@@ -253,7 +301,7 @@ def commit_plan(args: argparse.Namespace) -> None:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        recover_transaction(state_path, design_path, transaction_path)
+        recover_transaction(state_path, design_path, tasks_path, transaction_path)
         current_data = read_bytes(state_path)
         current_token = token_for(current_data)
         if current_token != args.expected_token:
@@ -274,6 +322,11 @@ def commit_plan(args: argparse.Namespace) -> None:
             path_mode(design_path, design_mode) if previous_design is not None else None
         )
         target_design_mode = path_mode(design_path, design_mode)
+        previous_tasks = read_bytes(tasks_path)
+        previous_tasks_mode = (
+            path_mode(tasks_path, tasks_mode) if previous_tasks is not None else None
+        )
+        target_tasks_mode = path_mode(tasks_path, tasks_mode)
         target_state_mode = path_mode(state_path, state_mode)
         transaction = {
             "version": 1,
@@ -282,6 +335,8 @@ def commit_plan(args: argparse.Namespace) -> None:
             "target_state_token": token_for(candidate_data),
             "previous_design": encode_artifact(previous_design, previous_design_mode),
             "next_design": encode_artifact(design_data, target_design_mode),
+            "previous_tasks": encode_artifact(previous_tasks, previous_tasks_mode),
+            "next_tasks": encode_artifact(tasks_data, target_tasks_mode),
         }
         transaction_data = json.dumps(transaction, sort_keys=True).encode("utf-8")
         transaction_written = False
@@ -290,6 +345,8 @@ def commit_plan(args: argparse.Namespace) -> None:
             fsync_directory(state_path.parent)
             transaction_written = True
             atomic_replace_with_mode(design_path, design_data, target_design_mode)
+            fsync_directory(state_path.parent)
+            atomic_replace_with_mode(tasks_path, tasks_data, target_tasks_mode)
             fsync_directory(state_path.parent)
             atomic_replace_with_mode(state_path, candidate_data, target_state_mode)
             fsync_directory(state_path.parent)
@@ -300,19 +357,22 @@ def commit_plan(args: argparse.Namespace) -> None:
             recovery_outcome = None
             if transaction_written:
                 recovery_outcome = recover_transaction(
-                    state_path, design_path, transaction_path
+                    state_path, design_path, tasks_path, transaction_path
                 )
             if recovery_outcome != "committed":
                 raise
 
     design_candidate.unlink(missing_ok=True)
+    tasks_candidate.unlink(missing_ok=True)
     state_candidate.unlink(missing_ok=True)
 
     print(json.dumps({"token": token_for(candidate_data), "committed": True}))
 
 
 def write_state(args: argparse.Namespace) -> None:
-    lock_path, state_path, design_path, transaction_path = feature_paths(args.feature_dir)
+    lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
+        args.feature_dir
+    )
     candidate_path = Path(args.state_candidate).resolve()
     candidate_data = candidate_path.read_bytes()
     candidate_mode = stat.S_IMODE(candidate_path.stat().st_mode)
@@ -323,7 +383,7 @@ def write_state(args: argparse.Namespace) -> None:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        recover_transaction(state_path, design_path, transaction_path)
+        recover_transaction(state_path, design_path, tasks_path, transaction_path)
         current_token = token_for(read_bytes(state_path))
         if current_token != args.expected_token:
             raise GuardError(
@@ -347,6 +407,7 @@ def parser() -> argparse.ArgumentParser:
     commit_command.add_argument("--feature-dir", required=True)
     commit_command.add_argument("--expected-token", required=True)
     commit_command.add_argument("--design-candidate", required=True)
+    commit_command.add_argument("--tasks-candidate", required=True)
     commit_command.add_argument("--state-candidate", required=True)
     commit_command.set_defaults(handler=commit_plan)
 
