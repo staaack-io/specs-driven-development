@@ -29,8 +29,8 @@ Avant toute délégation :
 4. exiger zéro `Q-NNN` au statut `open` ;
 5. refuser d'écraser un plan existant sans `--continue` ;
 6. avec `--continue`, lire `03-design.md` et `04-tasks.md` lorsqu'ils existent ;
-7. lire `.tdd-state.json` s'il existe et appliquer la porte de protection de
-   l'état TDD avant toute délégation ;
+7. capturer le token de `.tdd-state.json`, présent ou absent, avec le garde
+   atomique et appliquer la porte de protection avant toute délégation ;
 8. ne jamais modifier les artefacts des étapes 1 et 2.
 
 ## Références
@@ -41,6 +41,7 @@ Toujours lire :
 - [contrat des tâches](references/task-contract.md) ;
 - [checklist de conception](references/design-checklist.md) ;
 - [preuves de stack](references/stack-evidence.md) ;
+- [atomicité de l'état TDD](references/tdd-state-atomicity.md) ;
 - [modèle de conception](templates/design.template.md) ;
 - [modèle de tâches](templates/tasks.template.md) ;
 - [modèle d'état TDD](templates/tdd-state.template.json).
@@ -96,10 +97,11 @@ expliquer qu'un premier `/sdd-plan <feature-id>` est requis.
 
 ## Protection de l'état TDD
 
-Si `.specs/<feature-id>/.tdd-state.json` existe :
-
-1. exiger un JSON valide et conserver son contenu exact comme référence ;
-2. considérer l'implémentation comme commencée si `active_task` n'est pas nul,
+1. Toujours exécuter `scripts/tdd_state_guard.py snapshot` comme décrit dans
+   `references/tdd-state-atomicity.md` et conserver le token retourné, y compris
+   lorsqu'il vaut `absent`.
+2. Si l'état existe, exiger un JSON valide et considérer l'implémentation comme
+   commencée si `active_task` n'est pas nul,
    si une tâche a une phase différente de `pending`, ou si un champ de preuve
    RED/GREEN n'est pas nul ;
 3. si l'implémentation a commencé, refuser la planification avant toute
@@ -108,8 +110,9 @@ Si `.specs/<feature-id>/.tdd-state.json` existe :
 4. si toutes les tâches sont `pending`, qu'aucune tâche n'est active et qu'aucune
    preuve n'existe, autoriser la reprise mais préserver le fichier jusqu'à
    l'approbation du nouveau plan ;
-5. relire l'état immédiatement avant toute écriture après une délégation. S'il a
-   changé ou si l'implémentation a démarré entre-temps, arrêter sans écrire.
+5. ne jamais remplacer l'état directement après une délégation : la validation
+   finale et le remplacement appartiennent à la même section critique décrite
+   dans `references/tdd-state-atomicity.md`.
 
 Ne jamais migrer, vider ou recréer silencieusement un état commencé. Recommander
 une nouvelle fonctionnalité ou un processus de changement distinct lorsque le
@@ -169,16 +172,19 @@ Après production du design et des tâches :
    remplacer la ligne `(aucune)` lors de la première demande, l'inscrire au
    statut `open` dans `03-design.md`, conserver les artefacts en brouillon et
    proposer `/sdd-plan --continue <feature-id>` ;
-4. avec `approve`, relire encore la porte TDD, inscrire la décision et la date
-   dans `03-design.md`, puis créer l'état s'il est absent ou remplacer uniquement
-   un état encore vierge avec toutes les tâches à `pending` et
-   `active_task: null`.
+4. avec `approve`, préparer le design approuvé et l'état vierge dans les deux
+   fichiers candidats imposés par `references/tdd-state-atomicity.md`, puis
+   appeler `commit-plan` avec le token capturé avant la délégation ;
+5. si la comparaison-et-échange échoue, ne pas inscrire l'approbation et montrer
+   l'état concurrent ; sinon seulement annoncer le plan comme approuvé.
 
 Ne jamais déduire l'approbation du seul lancement de `/sdd-plan`.
 
 ## Contraintes d'écriture
 
 - Écrire uniquement dans `.specs/<feature-id>/`.
+- Toute écriture de `.tdd-state.json` passe par
+  `scripts/tdd_state_guard.py` ; aucune commande ne le remplace directement.
 - Ne jamais modifier `.tdd-state.json` lorsqu'une tâche est active, non
   `pending`, ou possède une preuve RED/GREEN.
 - Ne jamais modifier le code, les tests, les dépendances ou la configuration du
