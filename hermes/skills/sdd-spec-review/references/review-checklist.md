@@ -41,6 +41,11 @@ Attribuer à chaque contrôle `pass`, `fail` ou `n/a`, avec une preuve courte.
 - Un résultat technique réussi vaut seulement `ready-for-approval`.
 - Le verdict `approve` exige une réponse explicite de l'utilisateur pendant la
   revue.
+- La première invocation réussie s'arrête avec `ready-for-approval` et tous les
+  champs de décision en attente.
+- Le lancement de `/sdd-spec-review`, à lui seul, n'est jamais une approbation.
+- Un verdict final conserve la décision exacte et son mode de preuve ; le nom
+  `utilisateur` n'est autorisé qu'après validation de cette preuve par le garde.
 - `open_questions` compte les questions ouvertes de la spécification et les
   nouvelles questions découvertes pendant la revue, sans compter deux fois une
   question transférée dans la spécification.

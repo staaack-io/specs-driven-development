@@ -33,7 +33,10 @@ pas.
 Choisir la dernière phase prouvée par un artefact valide :
 
 1. `01-spec.md` : spécification ;
-2. `02-spec-review.md` avec verdict `approve` : spécification approuvée ;
+2. `02-spec-review.md` avec verdict `approve` et preuve finale acceptée par
+   `../sdd-spec-review/scripts/review_decision_guard.py validate-final` :
+   spécification approuvée ; si le garde est absent ou échoue, traiter la revue
+   comme en attente et recommander `/sdd-spec-review --continue <feature-id>` ;
 3. `03-design.md` et `04-tasks.md` avec `status: approved` et
    `.tdd-state.json` : planification approuvée ;
 4. `.tdd-state.json` avec une tâche active : implémentation ;

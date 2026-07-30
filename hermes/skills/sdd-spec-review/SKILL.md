@@ -11,6 +11,8 @@ Auditer `01-spec.md`, demander la décision finale de l'utilisateur et produire
 ## Entrée
 
 - accepter un `feature-id` facultatif ;
+- accepter `--decision approve|request-changes` uniquement avec `--continue`
+  lorsqu'un rapport provisoire valide existe déjà ;
 - sans argument, choisir le dossier de fonctionnalité contenant le
   `01-spec.md` le plus récemment modifié ;
 - refuser si `.specs/<feature-id>/01-spec.md` n'existe pas ;
@@ -23,6 +25,7 @@ Lire avant la revue :
 
 - [checklist de revue](references/review-checklist.md) ;
 - [modèle de rapport](templates/spec-review.template.md) ;
+- [porte de décision humaine](references/decision-gate.md) ;
 - `.specs/<feature-id>/01-spec.md`.
 
 Lire également `docs/spec-format.md` s'il existe dans le projet. Utiliser la
@@ -53,19 +56,30 @@ checklist embarquée comme source de secours.
    questions ouvertes dans la spécification et des nouvelles questions de la
    revue au statut `open`. Une question `transferred` est comptée uniquement
    depuis la spécification.
-9. Si le verdict est `ready-for-approval`, présenter le résumé à l'utilisateur
-   et demander explicitement `approve` ou `request-changes`. Ne jamais déduire
-   son accord du seul lancement de la commande.
-10. Inscrire la décision, le nom fourni ou `utilisateur`, et la date dans le
-    rapport. Le verdict final doit être exactement `approve` ou
-    `request-changes`. Refuser `approve` tant que `open_questions` n'est pas
-    égal à zéro.
+9. Si le résultat technique permet une approbation, écrire obligatoirement un
+   rapport provisoire avec `verdict: ready-for-approval`, `reviewer: en attente`,
+   `reviewed_at: en attente`, `next_command: en attente` et toute la section
+   `User Decision` en attente. Valider ce rapport avec
+   `scripts/review_decision_guard.py validate-provisional`.
+10. Présenter le résumé, demander une réponse exacte `approve` ou
+    `request-changes`, puis **arrêter ce tour sans finaliser le rapport**. Le seul
+    lancement de la commande, l'absence de réponse, `continue` ou une approbation
+    antérieure ne constituent jamais une décision.
+11. Finaliser uniquement après une réponse explicite reçue après le rapport
+    provisoire, ou avec `--continue <feature-id> --decision <décision>` sur un
+    rapport déjà provisoire. Appliquer intégralement
+    `references/decision-gate.md` et utiliser le garde ; ne jamais écrire les
+    champs finaux directement.
+12. Refuser `approve` tant que `open_questions` n'est pas égal à zéro.
 
 ## Contraintes d'écriture
 
-- Écrire uniquement `.specs/<feature-id>/02-spec-review.md`.
+- Écrire uniquement `.specs/<feature-id>/02-spec-review.md` ; le garde peut
+  créer le verrou technique `.spec-review.lock` dans le même dossier.
 - Ne jamais modifier `01-spec.md`, du code, des tests, un design ou des tâches.
 - Ne pas inventer de source, de règle métier ou d'approbation utilisateur.
+- Ne jamais attribuer `reviewer: utilisateur`, une date finale ou une preuve de
+  décision avant que le garde ait accepté une réponse explicite.
 - Conserver les constats précédents lors d'un `--continue` et marquer leur état
   `open | resolved | accepted` au lieu de les supprimer.
 - Lors d'un `--continue`, conserver aussi les nouvelles questions précédentes.
@@ -83,6 +97,8 @@ Le rapport doit contenir ces champs stables :
 - `open_questions` ;
 - `reviewer` ;
 - `reviewed_at` ;
+- `decision_evidence` ;
+- `decision_evidence_mode` ;
 - `next_command`.
 
 Avec `approve`, proposer `/sdd-plan` ou `/sdd-epic-plan` selon la taille de la

@@ -14,9 +14,11 @@
 - acs_total: <nombre>
 - acs_failed: <nombre>
 - open_questions: <nombre total>
-- reviewer: <utilisateur | en attente>
+- reviewer: <nom | utilisateur | en attente>
 - reviewed_at: <ISO-8601 | en attente>
-- next_command: <commande>
+- decision_evidence: <approve | request-changes | en attente>
+- decision_evidence_mode: <direct-response | decision-option | en attente>
+- next_command: en attente
 
 ## Checklist
 
@@ -40,9 +42,11 @@
 ## User Decision
 
 - Décision : <approve | request-changes | en attente>
-- Relecteur : <nom ou utilisateur>
+- Relecteur : <nom | utilisateur | en attente>
 - Date : <ISO-8601 | en attente>
 - Commentaire : <texte ou aucun>
+- Preuve explicite : <approve | request-changes | en attente>
+- Mode de preuve : <direct-response | decision-option | en attente>
 
 ## Handoff
 
