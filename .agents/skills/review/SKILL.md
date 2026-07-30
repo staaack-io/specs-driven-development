@@ -14,10 +14,12 @@ description: "Perform the pre-commit SDD code review against the approved artifa
 | Changed files in diff | Agent |
 |---|---|
 | Java/Kotlin/POM/SQL only | `spring-code-reviewer` (this agent) |
-| Angular (`.ts`, `.html`, `.scss`) only | `angular-code-reviewer` |
+| React/Next.js (`.ts`, `.tsx`, `.js`, `.jsx`, `.css`) only | `react-nextjs-code-reviewer` |
 | Both | Run both reviewers; merge findings into a single `08-code-review.md` |
 
-Inspect the diff file list (`git diff --name-only <base>...HEAD`). If it contains only frontend files, delegate entirely to `angular-code-reviewer`.
+Inspect the diff file list (`git diff --name-only <base>...HEAD`). If it contains
+only frontend files, delegate entirely to `react-nextjs-code-reviewer` and load
+`react-nextjs-developer` separately.
 
 ## Purpose
 Run a structured self-review of the diff before the user commits. Produces `08-code-review.md` with categorized findings.

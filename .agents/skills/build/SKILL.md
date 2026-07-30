@@ -14,9 +14,12 @@ description: "Execute one planned SDD task through red, green, refactor, and sim
 | Task type | Red step agent | Green/refactor/simplify agent |
 |---|---|---|
 | Backend (`src/main/java/**`, `src/test/java/**`) | `spring-test-engineer` | `spring-implementer` (this agent) |
-| Frontend (`src/**/*.ts`, `src/**/*.html`, `src/**/*.scss`) | `angular-test-engineer` | `angular-implementer` |
+| Frontend (`app/**/*.{ts,tsx,js,jsx,css}`, `src/**/*.{ts,tsx,js,jsx,css}`) | `react-nextjs-test-engineer` | `react-nextjs-implementer` |
 
-Determine the task type from its `files_in_scope` in `04-tasks.md`. If all files are frontend paths, delegate to the Angular agents. If mixed, split into sub-steps: backend first (Spring agents), then frontend (Angular agents).
+Determine the task type from its `files_in_scope` in `04-tasks.md`. If all files
+are frontend paths, delegate to the React/Next.js agents and load
+`react-nextjs-developer` separately. If mixed, split into sub-steps: backend
+first with Spring agents, then frontend with React/Next.js agents.
 
 ## Purpose
 Execute one task end-to-end through the four TDD phases (red → green → refactor → simplify), updating `.tdd-state.json` and appending a block to `05-implementation-log.md` after each phase.

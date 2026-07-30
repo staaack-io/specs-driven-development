@@ -17,8 +17,9 @@ doit aussi rendre explicites ses hypothèses, prouver que les critères
 d'acceptation sont couverts et fournir les éléments permettant à un humain de
 prendre la décision finale.
 
-Ce guide synthétise les fichiers du dépôt et le parcours end-to-end présenté
-par Loiane Groner dans l'article
+Ce guide adapte à Spring Boot, React et Next.js les fichiers du dépôt et le
+parcours end-to-end initialement présenté par Loiane Groner avec Angular dans
+l'article
 [Specs-Driven Development in Practice](https://loiane.com/2026/05/specs-driven-development-end-to-end-with-spring-boot-angular/).
 
 
@@ -78,10 +79,10 @@ capable d'exécuter ses contrôles. Cette phase évite que chaque nouvelle deman
 reparte d'une conversation vide, sans conventions partagées.
 
 Pour un projet neuf, créez d'abord la structure applicative avec les outils
-officiels — Spring Initializr pour Spring Boot et Angular CLI pour Angular —
-puis ajoutez le framework. Les agents travaillent ainsi sur une base compatible
-avec les versions réellement choisies par l'équipe au lieu d'inventer un
-scaffold.
+officiels — Spring Initializr pour Spring Boot et `create-next-app` pour Next.js
+— puis ajoutez le framework. Les agents travaillent ainsi sur une base
+compatible avec les versions réellement choisies par l'équipe au lieu
+d'inventer un scaffold.
 
 Après avoir copié les dossiers adaptés à votre outil, exécutez :
 
@@ -151,11 +152,11 @@ l'agent à justifier ses propres choix :
 | Rôle                                             | Responsabilité                                                 |
 |--------------------------------------------------|----------------------------------------------------------------|
 | `spec-author`                                    | Transformer la demande en critères d'acceptation sans inventer |
-| `spring-architect` / `angular-architect`         | Concevoir la solution et découper le travail                   |
-| `spring-test-engineer` / `angular-test-engineer` | Écrire les tests et élargir la couverture                      |
-| `spring-implementer` / `angular-implementer`     | Produire le minimum de code nécessaire pour passer les tests   |
-| `spring-validator` / `angular-validator`         | Lire les rapports du harness et contrôler la traçabilité       |
-| `spring-code-reviewer` / `angular-code-reviewer` | Examiner le diff avant le commit                               |
+| `spring-architect` / `react-nextjs-architect`         | Concevoir la solution et découper le travail                   |
+| `spring-test-engineer` / `react-nextjs-test-engineer` | Écrire les tests et élargir la couverture                      |
+| `spring-implementer` / `react-nextjs-implementer`     | Produire le minimum de code nécessaire pour passer les tests   |
+| `spring-validator` / `react-nextjs-validator`         | Lire les rapports du harness et contrôler la traçabilité       |
+| `spring-code-reviewer` / `react-nextjs-code-reviewer` | Examiner le diff avant le commit                               |
 
 Le routage dépend du périmètre détecté : backend, frontend ou full-stack. Une
 fonctionnalité full-stack fait intervenir les deux familles de rôles, avec des
@@ -163,9 +164,9 @@ tâches et des preuves propres à chaque partie.
 
 Pour un flux full-stack, le contrat de l'API est défini dans la conception avant
 l'interface. Une séquence courante consiste à stabiliser les réponses, erreurs
-et validations Spring Boot, puis à développer le formulaire Angular contre ce
-contrat. Des tâches backend et frontend réellement indépendantes peuvent aussi
-avancer en parallèle dès que le contrat partagé est approuvé.
+et validations Spring Boot, puis à développer le formulaire React/Next.js
+contre ce contrat. Des tâches backend et frontend réellement indépendantes
+peuvent aussi avancer en parallèle dès que le contrat partagé est approuvé.
 
 ## Le TDD contrôlé par état
 
@@ -270,7 +271,7 @@ workflows référencent les skills métier dont ils ont besoin sans les fusionne
 ## Aller plus loin
 
 - [Article end-to-end de Loiane Groner](https://loiane.com/2026/05/specs-driven-development-end-to-end-with-spring-boot-angular/) —
-  source et exemple Spring Boot + Angular
+  source méthodologique d'origine avec Spring Boot et Angular
 - [Méthodologie détaillée](methodology.md) — phases, contrats d'entrée et de sortie
 - [Principes du harness](harness-principles.md) — contrôles, seuils et rapports
 - [Format des spécifications](spec-format.md) — critères EARS-lite et conventions

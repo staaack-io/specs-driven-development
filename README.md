@@ -1,7 +1,8 @@
-# Spec-Driven Development for Spring Boot 4 + Angular
+# Spec-Driven Development for Spring Boot 4 + React and Next.js
 
 A Codex toolkit that drives **Spring Framework 7 / Spring Boot 4** and
-**Angular** full-stack development through a documented, self-validating
+**React with Next.js App Router** full-stack development through a documented,
+self-validating
 workflow:
 
 > **specify → review → plan → implement (TDD) → test → validate → review → commit**
@@ -37,17 +38,18 @@ This toolkit is a **set of files you drop into your repo**, not a package you `n
 ### Prerequisites
 
 - **Backend:** Java 25 + Maven 3.9+ (for the Spring harness to run).
-- **Frontend:** Node.js 22+ and Angular CLI 20+ (for the Angular harness — lint, typecheck, unit tests, build, e2e).
+- **Frontend:** Node.js 22+ and the package manager selected by the Next.js
+  project (for lint, typecheck, unit tests, build, and e2e scripts).
 - [Codex](https://developers.openai.com/codex/) installed and authenticated.
 - `bash`, `git`, `jq` on your `PATH` (the harness scripts use them).
 
-For backend-only projects, Angular tooling is not required (and vice versa).
+For backend-only projects, Next.js tooling is not required (and vice versa).
 
 ### Option A — Start a new project from this toolkit
 
 ```bash
 # 1. Clone (or use as a template)
-git clone https://github.com/loiane/specs-driven-development-spring-angular.git my-service
+git clone https://github.com/staaack-io/specs-driven-development.git my-service
 cd my-service
 rm -rf .git && git init
 
@@ -67,7 +69,7 @@ chmod +x .github/scripts/*.sh .codex/hooks/*.sh
 
 ```bash
 # From the root of your existing repo:
-git clone --depth=1 https://github.com/loiane/specs-driven-development-spring-angular.git /tmp/sdd
+git clone --depth=1 https://github.com/staaack-io/specs-driven-development.git /tmp/sdd
 
 # Copy the Codex workflow and its documentation:
 cp /tmp/sdd/AGENTS.md .
@@ -190,23 +192,23 @@ Each feature lives under `.specs/<feature-id>/`:
 | --- | --- | --- |
 | `01-spec.md` | Specify | `spec-author` |
 | `02-spec-review.md` | Review specs | `spec-author` |
-| `03-epic-design.md` | Plan (Epic mode) | `spring-architect` / `angular-architect` |
-| `03a-epic-roadmap.md` | Plan (Epic mode) | `spring-architect` / `angular-architect` |
-| `03-design.md` | Plan | `spring-architect` / `angular-architect` |
-| `04-tasks.md` | Plan | `spring-architect` / `angular-architect` |
-| `05-implementation-log.md` | Implement (TDD) | `spring-implementer` + `spring-test-engineer` / `angular-implementer` + `angular-test-engineer` |
-| `06-test-plan.md` | Test | `spring-test-engineer` / `angular-test-engineer` |
-| `07-validation-report.md` | Validate | `spring-validator` / `angular-validator` |
-| `07a-traceability.md` | Validate | `spring-validator` / `angular-validator` |
-| `08-code-review.md` | Code review | `spring-code-reviewer` / `angular-code-reviewer` |
+| `03-epic-design.md` | Plan (Epic mode) | `spring-architect` / `react-nextjs-architect` |
+| `03a-epic-roadmap.md` | Plan (Epic mode) | `spring-architect` / `react-nextjs-architect` |
+| `03-design.md` | Plan | `spring-architect` / `react-nextjs-architect` |
+| `04-tasks.md` | Plan | `spring-architect` / `react-nextjs-architect` |
+| `05-implementation-log.md` | Implement (TDD) | `spring-implementer` + `spring-test-engineer` / `react-nextjs-implementer` + `react-nextjs-test-engineer` |
+| `06-test-plan.md` | Test | `spring-test-engineer` / `react-nextjs-test-engineer` |
+| `07-validation-report.md` | Validate | `spring-validator` / `react-nextjs-validator` |
+| `07a-traceability.md` | Validate | `spring-validator` / `react-nextjs-validator` |
+| `08-code-review.md` | Code review | `spring-code-reviewer` / `react-nextjs-code-reviewer` |
 
 ### Stack routing
 
-Each workflow skill defaults to the Spring agent but delegates to the Angular
-counterpart based on feature scope:
+Each workflow skill defaults to the Spring agent but delegates to the
+React/Next.js counterpart based on feature scope:
 
 - **Backend-only** → Spring agents
-- **Frontend-only** → Angular agents
+- **Frontend-only** → React/Next.js agents
 - **Full-stack** → both agents collaborate, splitting tasks by stack
 
 The routing contract is documented in each workflow skill's `## Stack routing`
@@ -235,13 +237,14 @@ example.
 - DB engine + migration tool (Flyway/Liquibase) auto-detected from `pom.xml`
 - Testcontainers integration tests are mandatory when Testcontainers is detected
 
-### Frontend (Angular)
+### Frontend (React and Next.js)
 
-- Angular 20+ with standalone components
+- Next.js App Router with React Server Components by default
 - TypeScript strict mode
-- Route-level code splitting
+- Small Client Component boundaries for interactive UI
+- File-system routing, layouts, loading UI, and route-level code splitting
 - Accessible components (ARIA, keyboard reachability)
-- Unit tests (Karma/Jest) + e2e tests (Cypress/Playwright)
+- Existing Jest or Vitest unit/component tests plus configured Playwright e2e
 - Typed API clients (no untyped HTTP response handling)
 
 ## License

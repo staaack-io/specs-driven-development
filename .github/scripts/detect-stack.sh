@@ -65,7 +65,11 @@ if [ -d "$ROOT_DIR" ] && [ "$ROOT_DIR" != "$MODULE_DIR" ]; then
     case "$name" in .*|target|node_modules) continue;; esac
     kind=""
     [ -f "$d/package.json" ] && kind="node"
-    [ -f "$d/angular.json" ] && kind="angular"
+    if [ -f "$d/next.config.js" ] || [ -f "$d/next.config.mjs" ] ||
+       [ -f "$d/next.config.ts" ] ||
+       { [ -f "$d/package.json" ] && grep -Eq '"next"[[:space:]]*:' "$d/package.json"; }; then
+      kind="nextjs"
+    fi
     [ -f "$d/pom.xml" ] && kind="maven"
     [ -f "$d/build.gradle" ] || [ -f "$d/build.gradle.kts" ] && kind="${kind:-gradle}"
     [ -n "$kind" ] && siblings+=("{\"name\":\"$name\",\"kind\":\"$kind\"}")

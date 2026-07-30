@@ -1,4 +1,4 @@
-# Spec-driven Spring + Angular
+# Spec-driven Spring + React and Next.js
 
 This repository uses the spec-driven workflow documented in
 `docs/methodology.md`. These instructions apply to Codex in every task.
@@ -75,6 +75,7 @@ Read the relevant document before changing a workflow artifact or its rules:
 
 When changing Spring code, apply the separate skills
 `spring-boot-4-conventions`, `spring-security-baseline`, and the relevant test or
-architecture skills. When changing Angular code, apply `angular-developer` and
-the Angular agent for the active phase. Do not copy guidance from one skill into
-another; load each relevant skill independently.
+architecture skills. When changing React or Next.js code, apply
+`react-nextjs-developer` and the React/Next.js agent for the active phase. Do not
+copy guidance from one skill into another; load each relevant skill
+independently.

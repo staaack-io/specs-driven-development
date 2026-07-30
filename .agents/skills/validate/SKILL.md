@@ -14,10 +14,11 @@ description: "Run the SDD harness and produce validation and traceability report
 | Changed source | Agent |
 |---|---|
 | Java/Kotlin only | `spring-validator` (this agent) |
-| Angular (`.ts`, `.html`, `.scss`) only | `angular-validator` |
+| React/Next.js (`.ts`, `.tsx`, `.js`, `.jsx`, `.css`) only | `react-nextjs-validator` |
 | Both | Run both validators; merge results into a single `07-validation-report.md` |
 
-Determine scope from `04-tasks.md` file lists or `git diff --name-only`. If only frontend files changed, delegate entirely to `angular-validator`.
+Determine scope from `04-tasks.md` file lists or `git diff --name-only`. If only
+frontend files changed, delegate entirely to `react-nextjs-validator`.
 
 ## Purpose
 Run the full 10-layer harness, parse the output, and write `07-validation-report.md` with a single `PASS` / `FAIL` verdict.

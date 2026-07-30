@@ -14,10 +14,15 @@ description: "Create the detailed design and TDD task breakdown for an approved 
 | Feature scope | Agent |
 |---|---|
 | Backend-only or full-stack (Spring) | `spring-architect` (this agent) |
-| Frontend-only (Angular) | `angular-architect` |
-| Full-stack | Run both: `spring-architect` for backend tasks, `angular-architect` for frontend tasks |
+| Frontend-only (React/Next.js) | `react-nextjs-architect` |
+| Full-stack | Run both: `spring-architect` for backend tasks, `react-nextjs-architect` for frontend tasks |
 
-If the feature's `01-spec.md` ACs reference only Angular/UI concerns (components, routes, templates, styles), delegate entirely to `angular-architect`. If ACs span both stacks, produce a unified `03-design.md` but decompose `04-tasks.md` into backend tasks (owned by `spring-architect`) and frontend tasks (owned by `angular-architect`).
+If the feature's `01-spec.md` ACs reference only React/Next.js UI concerns
+(components, App Router routes, layouts, forms, or styles), delegate entirely to
+`react-nextjs-architect` and load `react-nextjs-developer` separately. If ACs
+span both stacks, produce a unified `03-design.md` but decompose `04-tasks.md`
+into backend tasks owned by `spring-architect` and frontend tasks owned by
+`react-nextjs-architect`.
 
 ## Purpose
 Translate a `PASS`-verdict spec into planning artifacts:

@@ -17,7 +17,12 @@ None required. Optional argument: a path to constrain the scan.
 
 - For a **single-project** repo: omit the argument; the script reads `./pom.xml`.
 - For a **multi-module Maven** build: pass the submodule directory.
-- For a **polyglot monorepo** (e.g. Spring Boot backend + Angular/React frontend in sibling top-level dirs): pass the Maven module directory (e.g. `shoply-api`). Sibling non-JVM apps are auto-detected and recorded under `siblings` in `_stack.json` and as context-only notes in `_onboarding.md`. The harness only validates the Maven module; frontend tooling is owned by its own pipeline.
+- For a **polyglot monorepo** (for example, a Spring Boot backend and a Next.js
+  frontend in sibling top-level directories), pass the Maven module directory
+  (for example, `shoply-api`). Sibling non-JVM apps are auto-detected and
+  recorded under `siblings` in `_stack.json` and as context-only notes in
+  `_onboarding.md`. The Maven harness validates only the backend module; the
+  frontend keeps its own pipeline.
 
 ## Reads
 - `pom.xml` (root and any submodules)
