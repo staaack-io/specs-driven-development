@@ -480,6 +480,42 @@ class GuardTest(unittest.TestCase):
             self.assertEqual(original_inode, tasks_path.stat().st_ino)
             self.assertEqual(b"# Existing tasks\n", tasks_path.read_bytes())
 
+    def test_commit_retry_accepts_matching_targets_without_a_journal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-thirteen"
+            feature.mkdir()
+            target_design = b"decision: approve\n"
+            target_tasks = b"# Approved tasks\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            design = feature / "03-design.candidate.md"
+            tasks = feature / "04-tasks.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_bytes(target_design)
+            tasks.write_bytes(target_tasks)
+            candidate.write_bytes(state_data)
+            (feature / "03-design.md").write_bytes(target_design)
+            (feature / "04-tasks.md").write_bytes(target_tasks)
+            (feature / ".tdd-state.json").write_bytes(state_data)
+
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+
+            self.assertTrue(result["committed"])
+            self.assertFalse(design.exists())
+            self.assertFalse(tasks.exists())
+            self.assertFalse(candidate.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
