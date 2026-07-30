@@ -516,6 +516,55 @@ class GuardTest(unittest.TestCase):
             self.assertFalse(tasks.exists())
             self.assertFalse(candidate.exists())
 
+    def test_commit_retry_materializes_matching_symlink_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            feature = root / "feature-fourteen"
+            feature.mkdir()
+            target_design = b"decision: approve\n"
+            target_tasks = b"# Approved tasks\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            source_design = root / "source-design.md"
+            source_tasks = root / "source-tasks.md"
+            source_state = root / "source-state.json"
+            source_design.write_bytes(target_design)
+            source_tasks.write_bytes(target_tasks)
+            source_state.write_bytes(state_data)
+            (feature / "03-design.md").symlink_to(source_design)
+            (feature / "04-tasks.md").symlink_to(source_tasks)
+            (feature / ".tdd-state.json").symlink_to(source_state)
+            design = feature / "03-design.candidate.md"
+            tasks = feature / "04-tasks.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_bytes(target_design)
+            tasks.write_bytes(target_tasks)
+            candidate.write_bytes(state_data)
+
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+
+            self.assertTrue(result["committed"])
+            self.assertFalse((feature / "03-design.md").is_symlink())
+            self.assertFalse((feature / "04-tasks.md").is_symlink())
+            self.assertFalse((feature / ".tdd-state.json").is_symlink())
+            source_design.write_text("changed\n", encoding="utf-8")
+            source_tasks.write_text("changed\n", encoding="utf-8")
+            source_state.write_text("{}", encoding="utf-8")
+            self.assertEqual(target_design, (feature / "03-design.md").read_bytes())
+            self.assertEqual(target_tasks, (feature / "04-tasks.md").read_bytes())
+            self.assertEqual(state_data, (feature / ".tdd-state.json").read_bytes())
+
 
 if __name__ == "__main__":
     unittest.main()

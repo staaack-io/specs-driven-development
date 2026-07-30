@@ -326,6 +326,16 @@ def commit_plan(args: argparse.Namespace) -> None:
                 and read_bytes(tasks_path) == tasks_data
             )
             if committed_without_journal:
+                atomic_replace_with_mode(
+                    design_path, design_data, path_mode(design_path, design_mode)
+                )
+                atomic_replace_with_mode(
+                    tasks_path, tasks_data, path_mode(tasks_path, tasks_mode)
+                )
+                atomic_replace_with_mode(
+                    state_path, candidate_data, path_mode(state_path, state_mode)
+                )
+                fsync_directory(state_path.parent)
                 design_candidate.unlink(missing_ok=True)
                 tasks_candidate.unlink(missing_ok=True)
                 state_candidate.unlink(missing_ok=True)
