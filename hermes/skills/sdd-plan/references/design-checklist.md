@@ -32,6 +32,13 @@
 - Chaque demande corrigée reste consignée avec statut, résolution et date.
 - Aucun retour utilisateur ni identifiant de tâche inchangée n'est perdu.
 
+## État TDD
+
+- L'état TDD a été lu avant délégation et revérifié avant écriture.
+- Un état commencé bloque toute modification du design, des tâches et de l'état.
+- Un état vierge reste inchangé jusqu'à l'approbation du nouveau plan.
+- Une erreur JSON ou une modification concurrente arrête la planification.
+
 ## Tâches
 
 - Chaque AC est couvert.
