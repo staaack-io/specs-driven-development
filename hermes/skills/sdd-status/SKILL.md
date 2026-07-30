@@ -54,7 +54,11 @@ La présence d'un design ou de tâches candidats avec `status: draft` signifie
 toujours « planification en attente d'approbation », même sans question ouverte
 ni verdict négatif. Une question ouverte ou un verdict négatif dans un candidat
 impose le même statut. Dans ces cas, ne pas annoncer une planification terminée
-et recommander `/sdd-plan --continue <feature-id>`.
+et examiner l'état TDD avant de recommander une action. Si l'état est absent ou
+vierge, recommander `/sdd-plan --continue <feature-id>`. Si une tâche est active,
+non `pending`, ou contient une preuve RED/GREEN, signaler le conflit entre le
+brouillon et l'implémentation commencée ; ne pas proposer `--continue` et
+recommander une nouvelle demande distincte via `/sdd-spec <demande>`.
 
 ## Sortie
 
