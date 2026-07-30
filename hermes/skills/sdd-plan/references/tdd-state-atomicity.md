@@ -60,6 +60,9 @@ aux trois candidats fournis ; toute différence impose un diagnostic manuel.
 
 La récupération conserve également les permissions des artefacts. Un
 changement concurrent provoque un refus et aucun état commencé n'est écrasé.
+Pour un journal historique antérieur à l'ajout des tâches dans la transaction,
+la récupération ne touche jamais à `04-tasks.md`, y compris à son identité,
+ses liens ou ses métadonnées étendues.
 
 ## Autres écrivains
 

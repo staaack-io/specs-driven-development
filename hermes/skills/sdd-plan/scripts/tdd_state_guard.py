@@ -200,13 +200,10 @@ def recover_transaction(
             transaction.get("next_tasks"), "next_tasks"
         )
     else:
-        # Journals created before tasks joined the transaction never changed
-        # 04-tasks.md, so preserve its current bytes and permissions.
-        previous_tasks_data = next_tasks_data = read_bytes(tasks_path)
-        current_tasks_mode = (
-            path_mode(tasks_path, 0o644) if next_tasks_data is not None else None
-        )
-        previous_tasks_mode = next_tasks_mode = current_tasks_mode
+        # Journals created before tasks joined the transaction never touched
+        # 04-tasks.md. Leave the path itself untouched, including links and ACLs.
+        previous_tasks_data = next_tasks_data = None
+        previous_tasks_mode = next_tasks_mode = None
     current_token = token_for(read_bytes(state_path))
     if current_token == target_token:
         if (
@@ -227,12 +224,13 @@ def recover_transaction(
             design_path.unlink(missing_ok=True)
         elif previous_mode is not None:
             atomic_replace_with_mode(design_path, previous_data, previous_mode)
-        if previous_tasks_data is None:
-            tasks_path.unlink(missing_ok=True)
-        elif previous_tasks_mode is not None:
-            atomic_replace_with_mode(
-                tasks_path, previous_tasks_data, previous_tasks_mode
-            )
+        if not legacy_tasks:
+            if previous_tasks_data is None:
+                tasks_path.unlink(missing_ok=True)
+            elif previous_tasks_mode is not None:
+                atomic_replace_with_mode(
+                    tasks_path, previous_tasks_data, previous_tasks_mode
+                )
         outcome = "rolled-back"
     else:
         raise GuardError(
