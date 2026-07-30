@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 import base64
+import contextlib
 import hashlib
+import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -9,10 +12,15 @@ import stat
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 
 SCRIPT = Path(__file__).with_name("tdd_state_guard.py")
+MODULE_SPEC = importlib.util.spec_from_file_location("tdd_state_guard", SCRIPT)
+assert MODULE_SPEC is not None and MODULE_SPEC.loader is not None
+GUARD = importlib.util.module_from_spec(MODULE_SPEC)
+MODULE_SPEC.loader.exec_module(GUARD)
 
 
 def token_for(data: bytes | None) -> str:
@@ -301,6 +309,46 @@ class GuardTest(unittest.TestCase):
             self.assertEqual(previous, design_path.read_bytes())
             self.assertEqual(state_data, state_path.read_bytes())
             self.assertTrue(journal_path.exists())
+
+    def test_commit_reports_success_after_roll_forward_recovery(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-ten"
+            feature.mkdir()
+            design = feature / "03-design.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
+            arguments = SimpleNamespace(
+                feature_dir=str(feature),
+                expected_token="absent",
+                design_candidate=str(design),
+                state_candidate=str(candidate),
+            )
+            original_fsync_directory = GUARD.fsync_directory
+            fsync_calls = 0
+
+            def fail_after_state_replace(directory: Path) -> None:
+                nonlocal fsync_calls
+                fsync_calls += 1
+                if fsync_calls == 3:
+                    raise OSError("simulated directory fsync failure")
+                original_fsync_directory(directory)
+
+            output = io.StringIO()
+            GUARD.fsync_directory = fail_after_state_replace
+            try:
+                with contextlib.redirect_stdout(output):
+                    GUARD.commit_plan(arguments)
+            finally:
+                GUARD.fsync_directory = original_fsync_directory
+
+            result = json.loads(output.getvalue())
+            self.assertTrue(result["committed"])
+            self.assertEqual("decision: approve\n", (feature / "03-design.md").read_text())
+            self.assertEqual(state(feature.name), json.loads((feature / ".tdd-state.json").read_text()))
+            self.assertFalse(design.exists())
+            self.assertFalse(candidate.exists())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 
 
 if __name__ == "__main__":
