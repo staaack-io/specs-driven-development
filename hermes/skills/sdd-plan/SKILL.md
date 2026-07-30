@@ -95,7 +95,9 @@ Avec `--continue <feature-id>` :
    appliquant la table d'origine et l'algorithme de reprise de
    `references/task-contract.md` ; ne jamais réattribuer tous les IDs depuis
    zéro ; préserver également le `high_water_mark` et les `retired_ids` du
-   registre des tâches.
+   registre des tâches ;
+8. si `04-tasks.md` n'existe pas encore après un retour `needs-input`, initialiser
+   une table d'origine vide et un registre vierge au lieu de refuser la reprise.
 
 Une reprise ne repart jamais uniquement de `01-spec.md` et
 `02-spec-review.md`. Si le brouillon attendu est absent, refuser `--continue` et
