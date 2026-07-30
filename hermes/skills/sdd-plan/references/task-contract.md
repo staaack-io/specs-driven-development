@@ -107,3 +107,8 @@ besoin de suivre l'ordre numérique des IDs lors d'une reprise. Réécrire ensui
 les dépendances et Test-IDs à partir de la table finale, puis vérifier que toute
 référence historique désigne toujours la même tâche et qu'aucun ID actif
 n'apparaît dans `retired_ids`.
+
+Pour proposer la prochaine commande `/sdd-build`, parcourir ce même ordre
+topologique et choisir la première tâche `pending` dont toutes les dépendances
+sont `green`, ou qui n'a aucune dépendance. Ne jamais coder `T-001` en dur : cet
+ID peut être retiré ou avoir acquis un prédécesseur pendant une reprise.
