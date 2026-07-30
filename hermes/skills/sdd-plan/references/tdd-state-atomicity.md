@@ -53,6 +53,11 @@ Une récupération par roll-forward constitue un commit réussi : `commit-plan`
 retourne alors `committed: true` et consomme les candidats. Une récupération par
 rollback conserve l'erreur initiale et les candidats pour diagnostic.
 
+Après un redémarrage, un nouvel appel `commit-plan` peut lui-même terminer le
+roll-forward avant la comparaison du token. Il retourne alors le succès
+uniquement si l'état, le design et les tâches récupérés correspondent exactement
+aux trois candidats fournis ; toute différence impose un diagnostic manuel.
+
 La récupération conserve également les permissions des artefacts. Un
 changement concurrent provoque un refus et aucun état commencé n'est écrasé.
 

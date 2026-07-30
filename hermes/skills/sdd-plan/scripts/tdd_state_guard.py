@@ -301,7 +301,24 @@ def commit_plan(args: argparse.Namespace) -> None:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        recover_transaction(state_path, design_path, tasks_path, transaction_path)
+        recovery_outcome = recover_transaction(
+            state_path, design_path, tasks_path, transaction_path
+        )
+        if recovery_outcome == "committed":
+            recovered_matches = (
+                token_for(read_bytes(state_path)) == token_for(candidate_data)
+                and read_bytes(design_path) == design_data
+                and read_bytes(tasks_path) == tasks_data
+            )
+            if not recovered_matches:
+                raise GuardError(
+                    "recovered commit does not match the supplied plan candidates"
+                )
+            design_candidate.unlink(missing_ok=True)
+            tasks_candidate.unlink(missing_ok=True)
+            state_candidate.unlink(missing_ok=True)
+            print(json.dumps({"token": token_for(candidate_data), "committed": True}))
+            return
         current_data = read_bytes(state_path)
         current_token = token_for(current_data)
         if current_token != args.expected_token:
