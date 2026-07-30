@@ -120,6 +120,7 @@ plan d'une implémentation commencée doit évoluer.
    `references/delegation-contract.md` et `max_iterations: 30`.
 3. Pour du full-stack, déléguer les deux analyses dans un même lot. Elles
    peuvent être parallèles uniquement parce qu'aucun enfant n'écrit.
+   Considérer leurs Task-IDs et Test-IDs comme locaux à leur rôle.
 4. Après l'envoi, indiquer que l'analyse continue en arrière-plan et s'arrêter.
    Ne pas produire le plan avant le retour de délégation.
 
@@ -131,8 +132,10 @@ revenir dans leur résumé pour être traitée par l'agent principal.
 1. Vérifier que chaque résultat déclare `files_modified: []`. Si un enfant a
    écrit, arrêter, montrer les chemins concernés et demander une décision.
 2. Vérifier que le rôle et la stack correspondent aux preuves du projet.
-3. En full-stack, fusionner les propositions dans un seul design et séparer les
-   tâches par stack. Ne jamais créer deux fichiers concurrents.
+3. En full-stack, fusionner les propositions dans un seul design, puis appliquer
+   la normalisation globale de `references/task-contract.md` avant d'écrire les
+   tâches. Séparer les tâches par stack sans conserver deux IDs identiques. Ne
+   jamais créer deux fichiers concurrents.
 4. Si le résultat vaut `needs-input`, écrire uniquement un brouillon de
    `03-design.md` contenant les faits et questions reçus, puis demander les
    décisions à l'utilisateur. Ne pas créer `04-tasks.md` ni l'état TDD.
@@ -146,7 +149,8 @@ revenir dans leur résumé pour être traitée par l'agent principal.
    que la décision est explicitement prouvée. Une décision manquante devient
    une question, jamais un ADR inventé.
 8. Appliquer la checklist et vérifier que chaque `AC-NNN` est couvert par une
-   tâche.
+   tâche. Vérifier aussi l'unicité globale des Task-IDs et Test-IDs, ainsi que
+   l'existence de chaque dépendance réécrite.
 
 ## Approbation humaine
 

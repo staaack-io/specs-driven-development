@@ -46,6 +46,9 @@
 - Toute tâche de production contient un test.
 - Le graphe de dépendances est acyclique.
 - Deux tâches touchant le même fichier sont séquencées.
+- En full-stack, Task-IDs et Test-IDs sont uniques après normalisation globale.
+- Chaque dépendance réécrite cible une tâche existante et le nombre de tâches est
+  conservé.
 
 ## Sortie
 
