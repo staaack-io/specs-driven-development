@@ -1,0 +1,14 @@
+{
+  "feature_id": "<FEATURE-ID>",
+  "active_task": null,
+  "tasks": {
+    "T-001": {
+      "phase": "pending",
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": []
+    }
+  }
+}

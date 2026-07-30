@@ -1,0 +1,613 @@
+#!/usr/bin/env python3
+
+import base64
+import contextlib
+import hashlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+import tempfile
+from types import SimpleNamespace
+import unittest
+
+
+SCRIPT = Path(__file__).with_name("tdd_state_guard.py")
+MODULE_SPEC = importlib.util.spec_from_file_location("tdd_state_guard", SCRIPT)
+assert MODULE_SPEC is not None and MODULE_SPEC.loader is not None
+GUARD = importlib.util.module_from_spec(MODULE_SPEC)
+MODULE_SPEC.loader.exec_module(GUARD)
+
+
+def token_for(data: bytes | None) -> str:
+    if data is None:
+        return "absent"
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def artifact(data: bytes | None, mode: int = 0o644) -> dict:
+    if data is None:
+        return {"exists": False}
+    return {
+        "exists": True,
+        "data_b64": base64.b64encode(data).decode("ascii"),
+        "mode": mode,
+    }
+
+
+def transaction(
+    previous: bytes | None,
+    target: bytes,
+    state_data: bytes,
+    previous_tasks: bytes | None = None,
+    target_tasks: bytes = b"# Approved tasks\n",
+) -> dict:
+    return {
+        "version": 1,
+        "operation": "commit-plan",
+        "expected_state_token": "absent",
+        "target_state_token": token_for(state_data),
+        "previous_design": artifact(previous),
+        "next_design": artifact(target),
+        "previous_tasks": artifact(previous_tasks),
+        "next_tasks": artifact(target_tasks),
+    }
+
+
+def state(feature_id: str, phase: str = "pending") -> dict:
+    return {
+        "feature_id": feature_id,
+        "active_task": None,
+        "tasks": {
+            "T-001": {
+                "phase": phase,
+                "red_at": None,
+                "red_test_signature": None,
+                "red_failure_excerpt": None,
+                "green_at": None,
+                "files_in_scope": [],
+            }
+        },
+    }
+
+
+class GuardTest(unittest.TestCase):
+    def run_guard(self, *arguments: str, expected: int = 0) -> dict:
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(expected, result.returncode, result.stderr or result.stdout)
+        return json.loads(result.stdout)
+
+    def test_commit_plan_from_absent_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-one"
+            feature.mkdir()
+            design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Approved tasks\n", encoding="utf-8")
+            candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
+
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+            self.assertEqual("absent", snapshot["token"])
+            self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                snapshot["token"],
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+            self.assertEqual("decision: approve\n", (feature / "03-design.md").read_text())
+            self.assertEqual("# Approved tasks\n", (feature / "04-tasks.md").read_text())
+            self.assertEqual(state(feature.name), json.loads((feature / ".tdd-state.json").read_text()))
+            self.assertTrue((feature / ".tdd-state.commit.json").exists())
+
+            tasks.write_text("# Approved tasks\n", encoding="utf-8")
+            retry = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                snapshot["token"],
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+            self.assertTrue(retry["committed"])
+            self.assertFalse(tasks.exists())
+
+            tasks.write_text("# Different tasks\n", encoding="utf-8")
+            rejected = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                snapshot["token"],
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+            self.assertIn("no matching completion receipt", rejected["error"])
+            self.assertEqual("# Different tasks\n", tasks.read_text())
+
+    def test_concurrent_change_rejects_both_plan_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-two"
+            feature.mkdir()
+            original_design = feature / "03-design.md"
+            original_tasks = feature / "04-tasks.md"
+            original_design.write_text("decision: pending\n", encoding="utf-8")
+            original_tasks.write_text("# Previous tasks\n", encoding="utf-8")
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            concurrent = state(feature.name, phase="red")
+            (feature / ".tdd-state.json").write_text(json.dumps(concurrent), encoding="utf-8")
+            design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Replacement tasks\n", encoding="utf-8")
+            candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
+
+            self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                snapshot["token"],
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+            self.assertEqual("decision: pending\n", original_design.read_text())
+            self.assertEqual("# Previous tasks\n", original_tasks.read_text())
+            self.assertEqual(concurrent, json.loads((feature / ".tdd-state.json").read_text()))
+
+    def test_commit_plan_preserves_existing_artifact_modes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-three"
+            feature.mkdir()
+            design_path = feature / "03-design.md"
+            tasks_path = feature / "04-tasks.md"
+            state_path = feature / ".tdd-state.json"
+            design_path.write_text("decision: pending\n", encoding="utf-8")
+            tasks_path.write_text("# Previous tasks\n", encoding="utf-8")
+            state_path.write_text(json.dumps(state(feature.name)), encoding="utf-8")
+            os.chmod(design_path, 0o644)
+            os.chmod(tasks_path, 0o600)
+            os.chmod(state_path, 0o640)
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Replacement tasks\n", encoding="utf-8")
+            revised_state = state(feature.name)
+            revised_state["plan_revision"] = 1
+            candidate.write_text(json.dumps(revised_state), encoding="utf-8")
+            os.chmod(design, 0o600)
+            os.chmod(tasks, 0o644)
+            os.chmod(candidate, 0o600)
+
+            self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                snapshot["token"],
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+            self.assertEqual(0o644, stat.S_IMODE(design_path.stat().st_mode))
+            self.assertEqual(0o600, stat.S_IMODE(tasks_path.stat().st_mode))
+            self.assertEqual(0o640, stat.S_IMODE(state_path.stat().st_mode))
+
+    def test_write_state_rejects_a_different_feature_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-four"
+            feature.mkdir()
+            candidate = feature / ".tdd-state.candidate.json"
+            candidate.write_text(json.dumps(state("another-feature")), encoding="utf-8")
+
+            self.run_guard(
+                "write-state",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+            self.assertFalse((feature / ".tdd-state.json").exists())
+
+    def test_commit_plan_rejects_an_empty_task_map(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-five"
+            feature.mkdir()
+            design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Approved tasks\n", encoding="utf-8")
+            candidate.write_text(
+                json.dumps({"feature_id": feature.name, "active_task": None, "tasks": {}}),
+                encoding="utf-8",
+            )
+
+            self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+            self.assertFalse((feature / "03-design.md").exists())
+            self.assertFalse((feature / ".tdd-state.json").exists())
+
+    def test_snapshot_rolls_back_design_when_state_was_not_committed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-six"
+            feature.mkdir()
+            previous = b"decision: pending\n"
+            target = b"decision: approve\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            (feature / "03-design.md").write_bytes(target)
+            (feature / "04-tasks.md").write_bytes(b"# Approved tasks\n")
+            (feature / ".tdd-state.transaction.json").write_text(
+                json.dumps(transaction(previous, target, state_data)), encoding="utf-8"
+            )
+
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            self.assertTrue(snapshot["recovered"])
+            self.assertEqual("absent", snapshot["token"])
+            self.assertEqual(previous, (feature / "03-design.md").read_bytes())
+            self.assertFalse((feature / "04-tasks.md").exists())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+
+    def test_snapshot_rolls_forward_design_when_state_was_committed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-seven"
+            feature.mkdir()
+            previous = b"decision: pending\n"
+            target = b"decision: approve\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            (feature / "03-design.md").write_bytes(previous)
+            (feature / "04-tasks.md").write_bytes(b"# Previous tasks\n")
+            (feature / ".tdd-state.json").write_bytes(state_data)
+            (feature / ".tdd-state.transaction.json").write_text(
+                json.dumps(
+                    transaction(
+                        previous,
+                        target,
+                        state_data,
+                        previous_tasks=b"# Previous tasks\n",
+                    )
+                ),
+                encoding="utf-8",
+            )
+
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            self.assertTrue(snapshot["recovered"])
+            self.assertEqual(token_for(state_data), snapshot["token"])
+            self.assertEqual(target, (feature / "03-design.md").read_bytes())
+            self.assertEqual(
+                b"# Approved tasks\n", (feature / "04-tasks.md").read_bytes()
+            )
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+
+    def test_commit_plan_rejects_identical_state_tokens(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-eight"
+            feature.mkdir()
+            current_state = json.dumps(state(feature.name)).encode("utf-8")
+            design_path = feature / "03-design.md"
+            state_path = feature / ".tdd-state.json"
+            design_path.write_text("decision: pending\n", encoding="utf-8")
+            state_path.write_bytes(current_state)
+            design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Replacement tasks\n", encoding="utf-8")
+            candidate.write_bytes(current_state)
+
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                token_for(current_state),
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+
+            self.assertIn("identical", result["error"])
+            self.assertEqual("decision: pending\n", design_path.read_text())
+            self.assertEqual(current_state, state_path.read_bytes())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+
+    def test_snapshot_retains_an_ambiguous_legacy_journal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-nine"
+            feature.mkdir()
+            previous = b"decision: pending\n"
+            target = b"decision: approve\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            design_path = feature / "03-design.md"
+            state_path = feature / ".tdd-state.json"
+            journal_path = feature / ".tdd-state.transaction.json"
+            design_path.write_bytes(previous)
+            state_path.write_bytes(state_data)
+            journal = transaction(previous, target, state_data)
+            journal["expected_state_token"] = journal["target_state_token"]
+            journal_path.write_text(json.dumps(journal), encoding="utf-8")
+
+            result = self.run_guard(
+                "snapshot", "--feature-dir", str(feature), expected=2
+            )
+
+            self.assertIn("ambiguous", result["error"])
+            self.assertEqual(previous, design_path.read_bytes())
+            self.assertEqual(state_data, state_path.read_bytes())
+            self.assertTrue(journal_path.exists())
+
+    def test_commit_reports_success_after_roll_forward_recovery(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-ten"
+            feature.mkdir()
+            design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text("# Approved tasks\n", encoding="utf-8")
+            candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
+            arguments = SimpleNamespace(
+                feature_dir=str(feature),
+                expected_token="absent",
+                design_candidate=str(design),
+                tasks_candidate=str(tasks),
+                state_candidate=str(candidate),
+            )
+            original_fsync_directory = GUARD.fsync_directory
+            fsync_calls = 0
+
+            def fail_after_state_replace(directory: Path) -> None:
+                nonlocal fsync_calls
+                fsync_calls += 1
+                if fsync_calls == 4:
+                    raise OSError("simulated directory fsync failure")
+                original_fsync_directory(directory)
+
+            output = io.StringIO()
+            GUARD.fsync_directory = fail_after_state_replace
+            try:
+                with contextlib.redirect_stdout(output):
+                    GUARD.commit_plan(arguments)
+            finally:
+                GUARD.fsync_directory = original_fsync_directory
+
+            result = json.loads(output.getvalue())
+            self.assertTrue(result["committed"])
+            self.assertEqual("decision: approve\n", (feature / "03-design.md").read_text())
+            self.assertEqual("# Approved tasks\n", (feature / "04-tasks.md").read_text())
+            self.assertEqual(state(feature.name), json.loads((feature / ".tdd-state.json").read_text()))
+            self.assertFalse(design.exists())
+            self.assertFalse(tasks.exists())
+            self.assertFalse(candidate.exists())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+
+    def test_commit_retry_accepts_a_matching_recovered_transaction(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            feature = root / "feature-eleven"
+            feature.mkdir()
+            previous_design = b"decision: pending\n"
+            target_design = b"decision: approve\n"
+            previous_tasks = b"# Previous tasks\n"
+            target_tasks = b"# Approved tasks\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            design = feature / "03-design.candidate.md"
+            tasks = feature / "04-tasks.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_bytes(target_design)
+            tasks.write_bytes(target_tasks)
+            candidate.write_bytes(state_data)
+            (feature / "03-design.md").write_bytes(target_design)
+            (feature / "04-tasks.md").write_bytes(target_tasks)
+            state_source = root / "state-source.json"
+            state_source.write_bytes(state_data)
+            state_path = feature / ".tdd-state.json"
+            state_path.symlink_to(state_source)
+            journal = transaction(
+                previous_design,
+                target_design,
+                state_data,
+                previous_tasks=previous_tasks,
+                target_tasks=target_tasks,
+            )
+            (feature / ".tdd-state.transaction.json").write_text(
+                json.dumps(journal), encoding="utf-8"
+            )
+
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+
+            self.assertTrue(result["committed"])
+            self.assertFalse(design.exists())
+            self.assertFalse(tasks.exists())
+            self.assertFalse(candidate.exists())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+            self.assertFalse(state_path.is_symlink())
+            state_source.write_text("{}", encoding="utf-8")
+            self.assertEqual(state_data, state_path.read_bytes())
+
+    def test_legacy_recovery_does_not_replace_the_tasks_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-twelve"
+            feature.mkdir()
+            previous_design = b"decision: pending\n"
+            target_design = b"decision: approve\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            tasks_path = feature / "04-tasks.md"
+            tasks_path.write_bytes(b"# Existing tasks\n")
+            original_inode = tasks_path.stat().st_ino
+            (feature / "03-design.md").write_bytes(previous_design)
+            (feature / ".tdd-state.json").write_bytes(state_data)
+            journal = transaction(previous_design, target_design, state_data)
+            del journal["previous_tasks"]
+            del journal["next_tasks"]
+            (feature / ".tdd-state.transaction.json").write_text(
+                json.dumps(journal), encoding="utf-8"
+            )
+
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            self.assertTrue(snapshot["recovered"])
+            self.assertEqual(original_inode, tasks_path.stat().st_ino)
+            self.assertEqual(b"# Existing tasks\n", tasks_path.read_bytes())
+
+    def test_commit_retry_accepts_matching_targets_without_a_journal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-thirteen"
+            feature.mkdir()
+            target_design = b"decision: approve\n"
+            target_tasks = b"# Approved tasks\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            design = feature / "03-design.candidate.md"
+            tasks = feature / "04-tasks.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_bytes(target_design)
+            tasks.write_bytes(target_tasks)
+            candidate.write_bytes(state_data)
+            (feature / "03-design.md").write_bytes(target_design)
+            (feature / "04-tasks.md").write_bytes(target_tasks)
+            (feature / ".tdd-state.json").write_bytes(state_data)
+
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+
+            self.assertTrue(result["committed"])
+            self.assertFalse(design.exists())
+            self.assertFalse(tasks.exists())
+            self.assertFalse(candidate.exists())
+
+    def test_commit_retry_materializes_matching_symlink_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            feature = root / "feature-fourteen"
+            feature.mkdir()
+            target_design = b"decision: approve\n"
+            target_tasks = b"# Approved tasks\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            source_design = root / "source-design.md"
+            source_tasks = root / "source-tasks.md"
+            source_state = root / "source-state.json"
+            source_design.write_bytes(target_design)
+            source_tasks.write_bytes(target_tasks)
+            source_state.write_bytes(state_data)
+            (feature / "03-design.md").symlink_to(source_design)
+            (feature / "04-tasks.md").symlink_to(source_tasks)
+            (feature / ".tdd-state.json").symlink_to(source_state)
+            design = feature / "03-design.candidate.md"
+            tasks = feature / "04-tasks.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_bytes(target_design)
+            tasks.write_bytes(target_tasks)
+            candidate.write_bytes(state_data)
+
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+
+            self.assertTrue(result["committed"])
+            self.assertFalse((feature / "03-design.md").is_symlink())
+            self.assertFalse((feature / "04-tasks.md").is_symlink())
+            self.assertFalse((feature / ".tdd-state.json").is_symlink())
+            source_design.write_text("changed\n", encoding="utf-8")
+            source_tasks.write_text("changed\n", encoding="utf-8")
+            source_state.write_text("{}", encoding="utf-8")
+            self.assertEqual(target_design, (feature / "03-design.md").read_bytes())
+            self.assertEqual(target_tasks, (feature / "04-tasks.md").read_bytes())
+            self.assertEqual(state_data, (feature / ".tdd-state.json").read_bytes())
+
+
+if __name__ == "__main__":
+    unittest.main()
