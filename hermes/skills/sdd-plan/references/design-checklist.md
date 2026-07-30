@@ -4,7 +4,8 @@
 
 - La revue contient exactement `verdict: approve`.
 - Aucun `Q-NNN` n'est ouvert dans la spécification ou la revue.
-- La stack et le périmètre sont prouvés par des fichiers.
+- La stack et le périmètre sont prouvés par des marqueurs spécifiques au
+  framework, pas seulement par un outil de build ou un nom de dossier générique.
 - Le mode Epic n'est pas requis.
 
 ## Architecture
