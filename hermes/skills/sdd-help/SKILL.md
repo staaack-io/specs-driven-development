@@ -16,18 +16,28 @@ laquelle elle appartient.
 
 Dans le premier lot, les commandes disponibles sont :
 
-| Commande | Rôle |
-| --- | --- |
-| `/sdd-help [commande]` | Afficher cette aide ou le détail d'une commande. |
-| `/sdd-status [feature-id]` | Résumer l'état du workflow sans écrire. |
-| `/sdd-spec <demande ou ticket>` | Créer une spécification EARS-lite. |
+| Étape | Commande | Rôle |
+| --- | --- | --- |
+| Méta | `/sdd-help [commande]` | Afficher cette aide ou le détail d'une commande. |
+| Méta | `/sdd-status [feature-id]` | Résumer l'état du workflow sans écrire. |
+| 1 | `/sdd-spec <demande ou ticket>` | Créer une spécification EARS-lite. |
 
 Signaler séparément que les commandes suivantes font partie de la feuille de
 route et ne doivent pas être présentées comme installées avant leur conversion :
 
-`/sdd-spec-review`, `/sdd-epic-plan`, `/sdd-plan`, `/sdd-build`, `/sdd-test`,
-`/sdd-validate`, `/sdd-review`, `/sdd-code-simplify`, `/sdd-ship`,
-`/sdd-onboard` et `/sdd-wire-harness`.
+| Étape | Commande prévue | Rôle |
+| --- | --- | --- |
+| 0 | `/sdd-onboard` | Analyser un projet existant. |
+| 0 | `/sdd-wire-harness` | Brancher le harness de validation. |
+| 2 | `/sdd-spec-review` | Relire et approuver la spécification. |
+| 3a, Epic uniquement | `/sdd-epic-plan` | Concevoir l'Epic et sa roadmap. |
+| 3 ou 3b | `/sdd-plan` | Concevoir et découper en tâches. |
+| 4 | `/sdd-build <T-NNN>` | Implémenter une tâche en TDD. |
+| 4 | `/sdd-code-simplify` | Simplifier après le passage au vert. |
+| 5 | `/sdd-test` | Ajouter les tests transverses. |
+| 6 | `/sdd-validate` | Exécuter le harness et la traçabilité. |
+| 7 | `/sdd-review` | Relire le code avant commit. |
+| 8, facultative | `/sdd-ship` | Préparer la livraison sans déployer. |
 
 ## Avec un argument
 

@@ -16,6 +16,42 @@ Les skills suivants sont prêts à être copiés dans la distribution
 Les hooks ne font volontairement pas partie de ce lot. Ils seront activés après
 leur conversion au protocole Hermes et la réussite de tests de blocage.
 
+## Étapes du workflow
+
+| Étape | Objectif | Commandes Hermes |
+| --- | --- | --- |
+| 0 | Intégrer un projet existant | `/sdd-onboard`, `/sdd-wire-harness` |
+| 1 | Spécifier | `/sdd-spec` |
+| 2 | Relire la spécification | `/sdd-spec-review` |
+| 3a | Concevoir une Epic, si nécessaire | `/sdd-epic-plan` |
+| 3 ou 3b | Concevoir et découper en tâches | `/sdd-plan` |
+| 4 | Implémenter en TDD | `/sdd-build`, `/sdd-code-simplify` |
+| 5 | Ajouter les tests transverses | `/sdd-test` |
+| 6 | Valider avec le harness | `/sdd-validate` |
+| 7 | Relire le code avant commit | `/sdd-review` |
+| 8 | Préparer la livraison, facultatif | `/sdd-ship` |
+
+`/sdd-help` et `/sdd-status` sont des commandes méta disponibles à tout moment.
+
+## Rôles internes et délégation
+
+Un rôle interne n'est pas une nouvelle étape ni une commande à mémoriser. C'est
+une fiche d'instructions que l'orchestrateur fournit à un sous-agent pour lui
+confier une partie précise du travail.
+
+Exemple pendant l'étape 4 :
+
+1. `/sdd-build T-001` reste l'unique commande saisie par l'utilisateur ;
+2. l'orchestrateur charge le rôle `spring-test-engineer` et délègue l'écriture
+   du test rouge ;
+3. après validation de l'échec, il charge `spring-implementer` et délègue le
+   code minimal ;
+4. les délégations restent séquentielles pour éviter deux écritures concurrentes
+   dans `05-implementation-log.md` ou `.tdd-state.json`.
+
+Le nom de travail `sdd-roles` désigne cette bibliothèque interne. Il ne doit pas
+être présenté comme une commande utilisateur `/sdd-roles`.
+
 ## Publication dans le profil
 
 Le contenu de `hermes/skills/<nom>/` devient
