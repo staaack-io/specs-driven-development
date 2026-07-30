@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import base64
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -11,6 +13,33 @@ import unittest
 
 
 SCRIPT = Path(__file__).with_name("tdd_state_guard.py")
+
+
+def token_for(data: bytes | None) -> str:
+    if data is None:
+        return "absent"
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def artifact(data: bytes | None, mode: int = 0o644) -> dict:
+    if data is None:
+        return {"exists": False}
+    return {
+        "exists": True,
+        "data_b64": base64.b64encode(data).decode("ascii"),
+        "mode": mode,
+    }
+
+
+def transaction(previous: bytes | None, target: bytes, state_data: bytes) -> dict:
+    return {
+        "version": 1,
+        "operation": "commit-plan",
+        "expected_state_token": "absent",
+        "target_state_token": token_for(state_data),
+        "previous_design": artifact(previous),
+        "next_design": artifact(target),
+    }
 
 
 def state(feature_id: str, phase: str = "pending") -> dict:
@@ -174,6 +203,45 @@ class GuardTest(unittest.TestCase):
             )
             self.assertFalse((feature / "03-design.md").exists())
             self.assertFalse((feature / ".tdd-state.json").exists())
+
+    def test_snapshot_rolls_back_design_when_state_was_not_committed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-six"
+            feature.mkdir()
+            previous = b"decision: pending\n"
+            target = b"decision: approve\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            (feature / "03-design.md").write_bytes(target)
+            (feature / ".tdd-state.transaction.json").write_text(
+                json.dumps(transaction(previous, target, state_data)), encoding="utf-8"
+            )
+
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            self.assertTrue(snapshot["recovered"])
+            self.assertEqual("absent", snapshot["token"])
+            self.assertEqual(previous, (feature / "03-design.md").read_bytes())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+
+    def test_snapshot_rolls_forward_design_when_state_was_committed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-seven"
+            feature.mkdir()
+            previous = b"decision: pending\n"
+            target = b"decision: approve\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            (feature / "03-design.md").write_bytes(previous)
+            (feature / ".tdd-state.json").write_bytes(state_data)
+            (feature / ".tdd-state.transaction.json").write_text(
+                json.dumps(transaction(previous, target, state_data)), encoding="utf-8"
+            )
+
+            snapshot = self.run_guard("snapshot", "--feature-dir", str(feature))
+
+            self.assertTrue(snapshot["recovered"])
+            self.assertEqual(token_for(state_data), snapshot["token"])
+            self.assertEqual(target, (feature / "03-design.md").read_bytes())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 
 
 if __name__ == "__main__":
