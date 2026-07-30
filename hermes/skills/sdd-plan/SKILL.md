@@ -147,11 +147,13 @@ revenir dans leur résumé pour être traitée par l'agent principal.
    écrit, arrêter, montrer les chemins concernés et demander une décision.
 2. Vérifier que le rôle et la stack correspondent aux preuves du projet.
 3. En full-stack, fusionner les propositions dans un seul design, puis appliquer
-   la normalisation globale de `references/task-contract.md` avant d'écrire les
-   tâches. Séparer les tâches par stack sans conserver deux IDs identiques. Ne
-   jamais créer deux fichiers concurrents. Dériver les dépendances inter-stack
-   depuis les exigences approuvées et le design proposé courant, sans attendre
-   que ce design porte déjà le statut `approved`.
+   d'abord la validation des IDs locaux, puis la normalisation globale de
+   `references/task-contract.md` avant d'écrire les tâches. Refuser les doublons
+   locaux avant toute qualification ou renumérotation. Séparer les tâches par
+   stack sans conserver deux IDs globaux identiques. Ne jamais créer deux
+   fichiers concurrents. Dériver les dépendances inter-stack depuis les
+   exigences approuvées et le design proposé courant, sans attendre que ce
+   design porte déjà le statut `approved`.
 4. Si le résultat vaut `needs-input`, écrire uniquement un brouillon de
    `03-design.md` contenant les faits et questions reçus, puis demander les
    décisions à l'utilisateur. Ne pas créer `04-tasks.md` ni l'état TDD.
