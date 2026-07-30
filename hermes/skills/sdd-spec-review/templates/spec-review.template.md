@@ -13,7 +13,7 @@
 - verdict: <ready-for-approval | approve | request-changes>
 - acs_total: <nombre>
 - acs_failed: <nombre>
-- open_questions: <nombre>
+- open_questions: <nombre total>
 - reviewer: <utilisateur | en attente>
 - reviewed_at: <ISO-8601 | en attente>
 - next_command: <commande>
@@ -32,7 +32,10 @@
 
 ## New Questions Raised
 
-- (aucune)
+- Q-NNN : <question découverte pendant la revue>
+  - Pourquoi c'est important : <impact>
+  - Options candidates : <options identifiées, sans choix implicite>
+  - Statut : <open | transferred | resolved>
 
 ## User Decision
 
