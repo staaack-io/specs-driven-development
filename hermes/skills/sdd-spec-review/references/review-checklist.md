@@ -41,5 +41,8 @@ Attribuer à chaque contrôle `pass`, `fail` ou `n/a`, avec une preuve courte.
 - Un résultat technique réussi vaut seulement `ready-for-approval`.
 - Le verdict `approve` exige une réponse explicite de l'utilisateur pendant la
   revue.
+- `open_questions` compte les questions ouvertes de la spécification et les
+  nouvelles questions découvertes pendant la revue, sans compter deux fois une
+  question transférée dans la spécification.
 - Toute nouvelle ambiguïté impose `request-changes` et un retour à
   `/sdd-spec --continue`.

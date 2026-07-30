@@ -41,6 +41,9 @@ Lire aussi, lorsqu'ils existent dans le projet utilisateur :
 - `docs/artifact-contract.md` ;
 - `docs/spec-format.md`.
 
+Avec `--continue <feature-id>`, lire d'abord le `01-spec.md` existant puis
+`.specs/<feature-id>/02-spec-review.md` s'il existe.
+
 Les références incluses dans ce skill restent la source de secours lorsque ces
 documents projet n'existent pas.
 
@@ -52,6 +55,26 @@ Produire un identifiant `kebab-case` de 40 caractères au maximum :
 - sans ticket, commencer par la date `YYYY-MM-DD-` puis ajouter un slug court.
 
 Si le dossier existe déjà, refuser sauf si l'utilisateur a fourni `--continue`.
+
+## Reprise après une revue
+
+Lorsque `--continue` trouve `02-spec-review.md` :
+
+1. extraire les constats `F-NNN` encore `open` et les entrées de
+   `## New Questions Raised` au statut `open` ;
+2. présenter à l'utilisateur les décisions métier encore nécessaires ;
+3. modifier `01-spec.md` uniquement avec les preuves déjà disponibles ou les
+   nouvelles réponses de l'utilisateur ;
+4. pour chaque nouvelle question de revue, conserver son identifiant `Q-NNN` :
+   l'ajouter à `## Open Questions` si elle reste ouverte, ou à
+   `## Resolved Questions` avec la réponse et la date si elle est résolue ;
+5. ne jamais marquer soi-même un constat comme résolu dans le rapport de revue ;
+   cette vérification appartient à `/sdd-spec-review --continue` ;
+6. résumer les modifications de la spécification en les reliant aux `F-NNN` et
+   `Q-NNN` concernés.
+
+Ne jamais traiter une correction demandée par la revue comme une nouvelle
+source métier. Une information absente reste une question pour l'utilisateur.
 
 ## Processus
 
@@ -78,7 +101,7 @@ Si le dossier existe déjà, refuser sauf si l'utilisateur a fourni `--continue`
 
 ## Contraintes d'écriture
 
-- N'écrire que le dossier de la fonctionnalité concernée.
+- Écrire uniquement `.specs/<feature-id>/01-spec.md`.
 - Ne pas créer de design, de tâches, de code ou de test pendant cette phase.
 - Ne pas utiliser de valeur par défaut non fournie.
 - Ne pas publier de secret, de session ou de donnée d'authentification.
@@ -89,6 +112,7 @@ Si le dossier existe déjà, refuser sauf si l'utilisateur a fourni `--continue`
 - il contient au moins un `AC-NNN` atomique et testable ;
 - toutes les ambiguïtés sont identifiées comme `Q-NNN` ;
 - l'utilisateur connaît les questions à résoudre ;
-- une fois les questions résolues, la prochaine commande proposée est
-  `/sdd-spec-review` si elle est installée, sinon l'étape est annoncée comme à
+- une fois les questions résolues, proposer `/sdd-spec-review --continue
+  <feature-id>` si un rapport de revue existe déjà, sinon `/sdd-spec-review
+  <feature-id>` ; si la commande n'est pas installée, annoncer l'étape comme à
   venir.
