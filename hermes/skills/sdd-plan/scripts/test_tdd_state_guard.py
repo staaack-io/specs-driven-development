@@ -406,6 +406,55 @@ class GuardTest(unittest.TestCase):
             self.assertFalse(candidate.exists())
             self.assertFalse((feature / ".tdd-state.transaction.json").exists())
 
+    def test_commit_retry_accepts_a_matching_recovered_transaction(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-eleven"
+            feature.mkdir()
+            previous_design = b"decision: pending\n"
+            target_design = b"decision: approve\n"
+            previous_tasks = b"# Previous tasks\n"
+            target_tasks = b"# Approved tasks\n"
+            state_data = json.dumps(state(feature.name)).encode("utf-8")
+            design = feature / "03-design.candidate.md"
+            tasks = feature / "04-tasks.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_bytes(target_design)
+            tasks.write_bytes(target_tasks)
+            candidate.write_bytes(state_data)
+            (feature / "03-design.md").write_bytes(target_design)
+            (feature / "04-tasks.md").write_bytes(target_tasks)
+            (feature / ".tdd-state.json").write_bytes(state_data)
+            journal = transaction(
+                previous_design,
+                target_design,
+                state_data,
+                previous_tasks=previous_tasks,
+                target_tasks=target_tasks,
+            )
+            (feature / ".tdd-state.transaction.json").write_text(
+                json.dumps(journal), encoding="utf-8"
+            )
+
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+
+            self.assertTrue(result["committed"])
+            self.assertFalse(design.exists())
+            self.assertFalse(tasks.exists())
+            self.assertFalse(candidate.exists())
+            self.assertFalse((feature / ".tdd-state.transaction.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
