@@ -1,250 +1,294 @@
-# Spec-Driven Development for Spring Boot 4 + Angular
+# Développement piloté par les spécifications avec Spring Boot 4, React et Next.js
 
-A tri-platform toolkit (Claude Code · GitHub Copilot · Windsurf) that drives **Spring Framework 7 / Spring Boot 4** and **Angular** full-stack development through a documented, self-validating workflow:
+Une boîte à outils Codex pour piloter le développement full-stack avec
+**Spring Framework 7 / Spring Boot 4** et **React avec l’App Router de Next.js**
+au moyen d’un workflow documenté et auto-validé :
 
-> **specify → review → plan → implement (TDD) → test → validate → review → commit**
+> **spécifier → relire → planifier → implémenter (TDD) → tester → valider → relire → committer**
 
-The agent validates its own work via a layered harness (build, static analysis, architecture, tests, coverage, mutation, contract, security) instead of relying on a human to inspect every line.
+L’agent valide son propre travail avec un harness à plusieurs couches
+(compilation, analyse statique, architecture, tests, couverture, mutation,
+contrat et sécurité), au lieu de demander à un humain d’inspecter chaque ligne.
 
 ```mermaid
 flowchart LR
-    A["/spec"] --> B["/spec-review"]
-    B --> C["/plan"]
-    C --> D["/build T-NNN"]
-    D --> E["/test"]
-    E --> F["/validate"]
-    F --> G["/review"]
+    A["$spec"] --> B["$spec-review"]
+    B --> C["$plan"]
+    C --> D["$build T-NNN"]
+    D --> E["$test"]
+    E --> F["$validate"]
+    F --> G["$review"]
     G --> H["git commit"]
-    H --> I["/ship"]
+    H --> I["$ship"]
 ```
 
-## Why
+## Pourquoi
 
-- **No invention.** During specify/review/plan/tasks, the agent never guesses; every uncertainty becomes a tracked open question that you answer before progress continues.
-- **TDD by construction.** Production code can only be written *after* a failing test exists. Hooks enforce it.
-- **Traceable.** Every acceptance criterion (`AC-NNN`) maps to tests, code, and the harness gates that exercised it.
-- **Self-validating.** A single `.github/scripts/harness.sh` runs locally and in CI; the agent reads its reports and writes a structured validation report.
-- **Pre-commit code review** by an agent that uses a Spring-specific rubric.
-- **Tri-platform** with a platform-neutral core; thin wrappers for each tool.
+- **Aucune invention.** Pendant la spécification, la revue et la planification,
+  chaque incertitude devient une question ouverte suivie, à laquelle vous devez
+  répondre avant de poursuivre.
+- **TDD par construction.** Le code de production ne peut être écrit qu’après
+  l’existence d’un test en échec. Les hooks font respecter cette règle.
+- **Traçabilité.** Chaque critère d’acceptation (`AC-NNN`) est relié aux tests,
+  au code et aux portes du harness qui l’ont vérifié.
+- **Auto-validation.** Un unique `.github/scripts/harness.sh` s’exécute en
+  local et en CI ; l’agent lit ses rapports et produit un rapport de validation
+  structuré.
+- **Revue avant commit.** Un agent applique une grille de revue propre à Spring
+  ou à React/Next.js.
+- **Natif Codex.** Les instructions, skills, agents et hooks suivent les
+  conventions de projet Codex sans copies propres à d’autres plateformes.
 
-## Install
+## Installation
 
-This toolkit is a **set of files you drop into your repo**, not a package you `npm install` or `mvn install`. Pick the path that matches your situation.
+Cette boîte à outils est un **ensemble de fichiers à déposer dans votre dépôt**,
+pas un paquet à installer avec `npm install` ou `mvn install`. Choisissez le
+parcours adapté à votre situation.
 
-### Prerequisites
+### Prérequis
 
-- **Backend:** Java 25 + Maven 3.9+ (for the Spring harness to run).
-- **Frontend:** Node.js 22+ and Angular CLI 20+ (for the Angular harness — lint, typecheck, unit tests, build, e2e).
-- At least one supported agent surface installed:
-  - [Claude Code](https://docs.claude.com/en/docs/claude-code) (uses `.claude/`)
-  - [GitHub Copilot in VS Code](https://code.visualstudio.com/docs/copilot/overview) with chat enabled (uses `.github/`)
-  - [Windsurf](https://windsurf.com/) (uses `.windsurf/`)
-- `bash`, `git`, `jq` on your `PATH` (the harness scripts use them).
+- **Backend :** Java 25 et Maven 3.9+ pour exécuter le harness Spring.
+- **Frontend :** Node.js 22+ et le gestionnaire de paquets choisi par le projet
+  Next.js, pour le lint, le typage, les tests, la compilation et l’e2e.
+- [Codex](https://developers.openai.com/codex/) installé et authentifié.
+- `bash`, `git` et `jq` disponibles dans le `PATH`.
 
-You only need the directories for the agent(s) you actually use; the others can be deleted. For backend-only projects, Angular tooling is not required (and vice versa).
+Un projet uniquement backend n’a pas besoin des outils Next.js, et inversement.
 
-### Option A — Start a new project from this toolkit
+### Option A — Démarrer un nouveau projet depuis cette boîte à outils
 
 ```bash
-# 1. Clone (or use as a template)
-git clone https://github.com/loiane/specs-driven-development-spring-angular.git my-service
-cd my-service
+# 1. Cloner le dépôt ou l’utiliser comme modèle
+git clone https://github.com/staaack-io/specs-driven-development.git mon-service
+cd mon-service
 rm -rf .git && git init
 
-# 2. Drop in your own Spring Boot 4 application code under src/
-#    Merge .github/maven/parent-pom-fragment.xml into your pom.xml
-#    (it pins the 10-layer harness: Surefire, Failsafe, JaCoCo, PIT, Checkstyle,
-#    SpotBugs, ArchUnit deps, OWASP dep-check, OpenAPI generator).
+# 2. Ajouter le code de l’application Spring Boot 4 sous src/
+#    Fusionner .codex/maven/parent-pom-fragment.xml dans pom.xml
+#    (ce fragment configure les dix couches : Surefire, Failsafe, JaCoCo, PIT,
+#    Checkstyle, SpotBugs, ArchUnit, OWASP Dependency Check et OpenAPI).
 
-# 3. Make the scripts and hooks executable
-chmod +x .github/scripts/*.sh .claude/hooks/*.sh
+# 3. Rendre les scripts et hooks exécutables
+chmod +x .github/scripts/*.sh .codex/hooks/*.sh
 
-# 4. Verify the harness wires up
-./.github/scripts/harness.sh --report     # runs the harness and emits a JSON summary
+# 4. Vérifier le branchement du harness
+./.github/scripts/harness.sh --report     # exécute le harness et produit un résumé JSON
 ```
 
-### Option B — Add the toolkit to an existing Spring repo
+### Option B — Ajouter la boîte à outils à un dépôt Spring existant
 
 ```bash
-# From the root of your existing repo:
-git clone --depth=1 https://github.com/loiane/specs-driven-development-spring-angular.git /tmp/sdd
+# Depuis la racine du dépôt existant
+git clone --depth=1 https://github.com/staaack-io/specs-driven-development.git /tmp/sdd
 
-# Copy only what you need (skip the agent dirs you won't use):
-cp -r /tmp/sdd/docs /tmp/sdd/examples .
-cp -r /tmp/sdd/.claude   .   # if you use Claude Code
-cp -r /tmp/sdd/.github   .   # if you use Copilot   (merges with existing .github/)
-cp -r /tmp/sdd/.windsurf .   # if you use Windsurf
+# Copier le workflow Codex et sa documentation
+cp /tmp/sdd/AGENTS.md .
+cp -r /tmp/sdd/.agents /tmp/sdd/.codex /tmp/sdd/docs /tmp/sdd/examples .
+mkdir -p .github
+cp -r /tmp/sdd/.github/scripts .github/
 
-chmod +x .github/scripts/*.sh .claude/hooks/*.sh
+chmod +x .github/scripts/*.sh .codex/hooks/*.sh
 
-# Then merge .github/maven/parent-pom-fragment.xml into your pom.xml.
-# Then run the brownfield onboarding command from your agent (see Use below).
+# Fusionner ensuite .codex/maven/parent-pom-fragment.xml dans pom.xml.
+# Puis lancer le skill d’intégration brownfield depuis Codex.
 ```
 
-> **Note on `.github/`** — if you already have `.github/workflows/`, review
-> `.github/workflows/ci.yml` before copying so it doesn't clobber yours.
-> The shipped `ci.yml` validates **the toolkit itself** (shellcheck, markdown
-> lint, broken links, tri-platform parity). In a Spring consumer project you
-> should **delete it** and add your own workflow that calls
-> `./.github/scripts/harness.sh` to run the 10-layer Spring harness.
+> **À propos de `.github/`** — seul `.github/scripts/` appartient au harness
+> d’exécution du framework. Fusionnez ce dossier avec votre configuration GitHub
+> existante. Le framework n’installe ni workflow GitHub Actions ni configuration
+> Copilot.
 
-### Verify per-platform wiring
+### Vérifier l’intégration Codex
 
-| Platform | Smoke test |
-| --- | --- |
-| Claude Code | Open the repo, run `/help` — you should see the command catalog. |
-| Copilot | Open Copilot Chat, type `/spec` — you should see the chat-mode prompt from `.github/chatmodes/`. |
-| Windsurf | Open Cascade, type `/spec` — Windsurf loads the workflow from `.windsurf/workflows/`. |
+1. Ouvrir le dépôt comme projet Codex approuvé.
+2. Exécuter `/skills` et confirmer que les skills du dépôt sont listés
+   séparément.
+3. Exécuter `/hooks`, examiner les commandes des hooks du projet et les
+   approuver.
+4. Invoquer `$help` pour afficher le workflow du framework.
 
-## Use
+## Utilisation
 
-Once installed, you drive everything from your agent's chat using slash commands. The same commands work on all three platforms.
+Une fois l’installation terminée, piloter le workflow depuis Codex avec les
+skills du dépôt. Une invocation explicite utilise `$nom-du-skill` ; Codex peut
+également sélectionner un skill à partir d’une demande claire en langage
+naturel.
 
-### Day-zero (brownfield only)
+### Phase zéro, uniquement pour un projet brownfield
 
 ```text
-/onboard
+$onboard
+$wire-harness
 ```
 
-Classifies the repo, captures a baseline harness run, writes
-`.specs/_onboarding.md` and `docs/known-debt.md`, and adds any missing harness
-layers as ratchets (so existing failures don't block you, but no new ones can
-land). See [examples/brownfield/README.md](examples/brownfield/README.md).
+Ces commandes classent le dépôt, capturent une exécution de référence du
+harness, écrivent `.specs/_onboarding.md` et `.specs/_known-debt.md`, puis
+ajoutent les couches manquantes sous forme de cliquets : les échecs existants ne
+bloquent pas le démarrage, mais aucune nouvelle régression n’est acceptée. Voir
+[examples/brownfield/README.md](examples/brownfield/README.md).
 
-### Per-feature loop
+### Boucle d’une fonctionnalité
 
 ```text
-/spec "Add gift-card checkout"      # or: /spec JIRA-123
-/spec-review                        # gate exit from Phase 1
-/epic-plan                          # for Epics: high-level design + slice roadmap
-/plan                               # design + tasks + .tdd-state.json
-/build T-001                        # red → green → refactor → simplify (one task at a time)
-/test --gap                         # close coverage / mutation gaps
-/validate                           # full 10-layer harness + traceability
-/review                             # pre-commit code review against the Spring rubric
-git commit                          # YOU run this — the agent never commits
-/ship                               # post-commit ship plan + release notes (never deploys)
+$spec "Ajouter le paiement par carte cadeau" # ou : $spec JIRA-123
+$spec-review                                  # porte de sortie de la phase 1
+$epic-plan                                    # Epic : conception globale et roadmap
+$plan                                         # conception, tâches et .tdd-state.json
+$build T-001                                  # rouge → vert → refactorisation → simplification
+$test --gap                                   # combler les écarts de couverture ou de mutation
+$validate                                     # harness complet et traçabilité
+$review                                       # revue du code avant commit
+git commit                                    # exécuté par VOUS, jamais par l’agent
+$ship                                         # plan post-commit, sans déploiement
 ```
 
-Repeat `/build T-NNN` for each task in `04-tasks.md`. The agent refuses to edit
-`src/main/**` unless `.specs/<feature-id>/.tdd-state.json` shows a failing test
-for the active task.
+Répéter `$build T-NNN` pour chaque tâche de `04-tasks.md`. L’agent refuse de
+modifier `src/main/**` tant que
+`.specs/<feature-id>/.tdd-state.json` ne contient pas un test en échec pour la
+tâche active.
 
-For Epic-sized initiatives, run `/epic-plan` after `/spec-review`, then run `/plan`
-to produce slice-level detailed design and tasks from the approved roadmap.
+Pour une Epic, exécuter `$epic-plan` après `$spec-review`, puis `$plan`
+afin de produire la conception détaillée et les tâches de chaque tranche depuis
+la roadmap approuvée.
 
-### Read-only helpers
+### Outils en lecture seule
 
-- `/status` — see where each feature sits in the pipeline.
-- `/help [command]` — print the command catalog or a single command spec.
+- `$status` — afficher la position de chaque fonctionnalité dans le cycle.
+- `$help [workflow]` — afficher le catalogue ou le détail d’un workflow.
 
-### Natural-language aliases
+### Formulations en langage naturel
 
-You don't have to remember the slash names. These phrases are routed to the
-right command by [.claude/hooks/route-natural-language-aliases.sh](.claude/hooks/route-natural-language-aliases.sh)
-and the equivalent Copilot ([.github/instructions/always-on.instructions.md](.github/instructions/always-on.instructions.md))
-and Windsurf ([.windsurf/rules/always-on.md](.windsurf/rules/always-on.md)) instructions:
+Il n’est pas nécessaire de mémoriser tous les noms. Les descriptions permettent
+à Codex de router une demande française claire vers le bon workflow :
 
-| You type | Runs |
+| Vous écrivez | Skill exécuté |
 | --- | --- |
-| "spec this" / "turn this ticket into requirements" | `/spec` |
-| "review the spec" | `/spec-review` |
-| "plan this epic" / "design this epic" / "slice this epic" | `/epic-plan` |
-| "plan this" / "design this" | `/plan` |
-| "implement T-003" / "build T-003" | `/build T-003` |
-| "validate" / "run the harness" | `/validate` |
-| "review the code" / "pre-commit review" | `/review` |
-| "simplify the code" / "remove the cleverness" | `/code-simplify` |
-| "ship it" / "release this" / "prepare release" | `/ship` |
-| "onboard this repo" | `/onboard` |
+| « spécifie ceci » / « transforme ce ticket en exigences » | `$spec` |
+| « relis la spécification » | `$spec-review` |
+| « planifie cette Epic » / « découpe cette Epic » | `$epic-plan` |
+| « planifie ceci » / « conçois ceci » | `$plan` |
+| « implémente T-003 » / « construis T-003 » | `$build T-003` |
+| « valide » / « lance le harness » | `$validate` |
+| « relis le code » / « fais la revue avant commit » | `$review` |
+| « simplifie le code » | `$code-simplify` |
+| « prépare la livraison » | `$ship` |
+| « intègre ce dépôt existant » | `$onboard` |
 
-Full list: [.github/prompts/](.github/prompts/) (Copilot), [.claude/commands/](.claude/commands/) (Claude Code), [.windsurf/workflows/](.windsurf/workflows/) (Windsurf).
+Liste complète : [.agents/skills/](.agents/skills/).
 
-### Running the harness directly
+### Exécuter directement le harness
 
-The same gates the agent runs are reachable from a normal terminal:
+Les mêmes portes de contrôle sont accessibles depuis un terminal :
 
 ```bash
-./.github/scripts/harness.sh                 # all 10 layers
-./.github/scripts/harness.sh --report        # emit harness-summary.json
-./.github/scripts/check-new-code-coverage.sh # diff-coverage gate against main
+./.github/scripts/harness.sh                 # les dix couches
+./.github/scripts/harness.sh --report        # produit harness-summary.json
+./.github/scripts/check-new-code-coverage.sh # couverture du diff par rapport à main
 ./.github/scripts/traceability.sh <feature-id>
 ```
 
-## Repository layout
+### Hooks et harness : quelle différence ?
+
+Les **hooks** sont de petits garde-fous réactifs. Codex les déclenche
+automatiquement avant ou après une action ciblée : écrire un fichier, exécuter
+une commande ou terminer une transition TDD. Ils peuvent refuser immédiatement
+une action interdite, par exemple modifier du code de production sans test rouge.
+
+Le **harness** est une campagne de vérification globale et reproductible. Il
+compile le projet, exécute les tests et analyse la qualité, la couverture, les
+mutations, les contrats et la sécurité. Il est lancé explicitement par
+`$validate`, depuis un terminal ou par la CI.
+
+En résumé : **un hook protège l’action en cours ; le harness prouve l’état global
+du projet**.
+
+## Organisation du dépôt
 
 ```text
-docs/             methodology · harness-principles · spec-format · platform-mapping · artifact-contract
-.claude/          agents · skills · commands · hooks · templates · checklists · maven · settings.json   (Claude Code)
-.github/          chatmodes · prompts · instructions · skills · templates · checklists · maven · scripts · workflows/   (Copilot + CI)
-.windsurf/        rules · workflows · skills · templates · checklists · maven   (Windsurf)
-examples/         greenfield (worked end-to-end specs) · brownfield (onboarding report)
+AGENTS.md         instructions persistantes du projet Codex
+.agents/skills/   un dossier par skill métier ou de workflow
+.codex/           agents · hooks · modèles · checklists · configuration Maven
+.github/scripts/  scripts déterministes du harness, sans configuration Copilot
+docs/             méthode · harness · format des specs · migration · contrats
+examples/         exemples greenfield et brownfield
 ```
 
-Each platform directory currently carries its own copy of the skills,
-templates, checklists, and Maven parent-pom fragment. The CI workflow
-(`.github/workflows/ci.yml`) enforces that these copies stay in lockstep via
-`diff -rq` parity checks. A future `shared/` directory will become the single
-source of truth — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Chaque skill possède une seule source de vérité. Les skills de workflow
+référencent les skills métier par leur nom et ne fusionnent jamais leurs
+instructions.
 
-## Workflow artifacts
+## Artefacts du workflow
 
-Each feature lives under `.specs/<feature-id>/`:
+Chaque fonctionnalité vit sous `.specs/<feature-id>/` :
 
-| File | Phase | Owner |
+| Fichier | Phase | Responsable |
 | --- | --- | --- |
-| `01-spec.md` | Specify | `spec-author` |
-| `02-spec-review.md` | Review specs | `spec-author` |
-| `03-epic-design.md` | Plan (Epic mode) | `spring-architect` / `angular-architect` |
-| `03a-epic-roadmap.md` | Plan (Epic mode) | `spring-architect` / `angular-architect` |
-| `03-design.md` | Plan | `spring-architect` / `angular-architect` |
-| `04-tasks.md` | Plan | `spring-architect` / `angular-architect` |
-| `05-implementation-log.md` | Implement (TDD) | `spring-implementer` + `spring-test-engineer` / `angular-implementer` + `angular-test-engineer` |
-| `06-test-plan.md` | Test | `spring-test-engineer` / `angular-test-engineer` |
-| `07-validation-report.md` | Validate | `spring-validator` / `angular-validator` |
-| `07a-traceability.md` | Validate | `spring-validator` / `angular-validator` |
-| `08-code-review.md` | Code review | `spring-code-reviewer` / `angular-code-reviewer` |
+| `01-spec.md` | Spécification | `spec-author` |
+| `02-spec-review.md` | Revue de la spec | `spec-author` |
+| `03-epic-design.md` | Planification, mode Epic | `spring-architect` / `react-nextjs-architect` |
+| `03a-epic-roadmap.md` | Planification, mode Epic | `spring-architect` / `react-nextjs-architect` |
+| `03-design.md` | Planification | `spring-architect` / `react-nextjs-architect` |
+| `04-tasks.md` | Planification | `spring-architect` / `react-nextjs-architect` |
+| `05-implementation-log.md` | Implémentation TDD | agents d’implémentation et de test |
+| `06-test-plan.md` | Tests | agents de test |
+| `07-validation-report.md` | Validation | agents de validation |
+| `07a-traceability.md` | Validation | agents de validation |
+| `08-code-review.md` | Revue du code | agents de revue |
 
-### Stack routing
+### Routage selon la stack
 
-Each command defaults to the Spring agent but **automatically delegates to the Angular counterpart** based on feature scope:
+Chaque skill de workflow utilise par défaut l’agent Spring, puis délègue à son
+équivalent React/Next.js selon le périmètre de la fonctionnalité :
 
-- **Backend-only** → Spring agents
-- **Frontend-only** → Angular agents
-- **Full-stack** → both agents collaborate, splitting tasks by stack
+- **backend uniquement** → agents Spring ;
+- **frontend uniquement** → agents React/Next.js ;
+- **full-stack** → collaboration des deux familles d’agents, avec des tâches
+  séparées par stack.
 
-The routing contract is documented in each command's `## Stack routing` section. See [.claude/commands/plan.md](.claude/commands/plan.md) for an example.
+Le contrat de routage est documenté dans la section `## Stack routing` de
+chaque skill concerné. Voir
+[.agents/skills/plan/SKILL.md](.agents/skills/plan/SKILL.md) pour un exemple.
 
 ## Documentation
 
-- [docs/methodology.md](docs/methodology.md) — the 7-phase workflow in detail
-- [docs/harness-principles.md](docs/harness-principles.md) — self-validation philosophy and gate layers
-- [docs/spec-format.md](docs/spec-format.md) — EARS-lite spec format with examples
-- [docs/platform-mapping.md](docs/platform-mapping.md) — how Claude/Copilot/Windsurf artifacts map
-- [docs/artifact-contract.md](docs/artifact-contract.md) — `.specs/<id>/` file layout and `.tdd-state.json` schema
-- [examples/greenfield/README.md](examples/greenfield/README.md) — full worked feature
-- [examples/brownfield/README.md](examples/brownfield/README.md) — onboarding-only walkthrough
+- [docs/README.md](docs/README.md) — présentation française et premier parcours ;
+- [docs/methodology.md](docs/methodology.md) — détail des sept phases ;
+- [docs/harness-principles.md](docs/harness-principles.md) — principes
+  d’auto-validation et couches de contrôle ;
+- [docs/spec-format.md](docs/spec-format.md) — format EARS-lite avec exemples ;
+- [docs/codex-migration.md](docs/codex-migration.md) — migration vérifiée vers
+  Codex ;
+- [docs/artifact-contract.md](docs/artifact-contract.md) — structure de
+  `.specs/<id>/` et schéma de l’état TDD ;
+- [examples/greenfield/README.md](examples/greenfield/README.md) — exemple
+  complet ;
+- [examples/brownfield/README.md](examples/brownfield/README.md) — parcours
+  d’intégration d’un projet existant.
 
-## Stack assumptions
+## Hypothèses de stack
 
-### Backend (Spring)
+### Backend Spring
 
-- Java 25, Spring Framework 7, Spring Boot 4
-- Maven (Gradle support deferred)
-- REST APIs with OpenAPI
-- Module boundaries enforced via ArchUnit rules (no extra runtime dependency)
-- DB engine + migration tool (Flyway/Liquibase) auto-detected from `pom.xml`
-- Testcontainers integration tests are mandatory when Testcontainers is detected
+- Java 25, Spring Framework 7 et Spring Boot 4 ;
+- Maven, le support Gradle étant différé ;
+- API REST décrites avec OpenAPI ;
+- frontières de modules imposées par ArchUnit, sans dépendance d’exécution
+  supplémentaire ;
+- moteur de base de données et outil de migration Flyway ou Liquibase détectés
+  automatiquement dans `pom.xml` ;
+- tests d’intégration Testcontainers obligatoires lorsqu’il est détecté.
 
-### Frontend (Angular)
+### Frontend React et Next.js
 
-- Angular 20+ with standalone components
-- TypeScript strict mode
-- Route-level code splitting
-- Accessible components (ARIA, keyboard reachability)
-- Unit tests (Karma/Jest) + e2e tests (Cypress/Playwright)
-- Typed API clients (no untyped HTTP response handling)
+- App Router de Next.js avec React Server Components par défaut ;
+- mode strict TypeScript ;
+- petites frontières de Client Components pour l’interface interactive ;
+- routage par fichiers, layouts, interfaces de chargement et découpage par route ;
+- composants accessibles, notamment au clavier et via ARIA ;
+- tests unitaires ou de composants Jest/Vitest existants et e2e Playwright
+  configuré ;
+- clients d’API typés, sans réponses HTTP non typées.
 
-## License
+## Licence
 
-MIT — see [LICENSE](LICENSE).
+MIT — voir [LICENSE](LICENSE).

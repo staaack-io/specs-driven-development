@@ -1,54 +1,59 @@
-# ADR-001: Use ArchUnit (alone) for module boundaries
+# ADR-001 : utiliser ArchUnit seul pour les frontières des modules
 
-- **Status:** accepted
-- **Date:** 2025-01-15
-- **Deciders:** spring-architect, tech lead
+- **Statut :** accepté
+- **Date :** 2025-01-15
+- **Décideurs :** spring-architect, responsable technique
 
 ## Context
 
-The `checkout` service is being structured around top-level packages
-(`giftcard`, `order`, `shared`) that act as bounded contexts. We need a way
-to enforce that:
+Le service `checkout` est structuré autour de packages de premier niveau
+(`giftcard`, `order`, `shared`) qui représentent des contextes délimités. Il
+faut garantir que :
 
-1. One module never imports from another module's `internal` sub-package.
-2. There are no cyclic dependencies between top-level packages.
-3. Allowed dependencies (e.g. `order` → `giftcard.api`) are documented and
-   verified at build time.
+1. Un module n'importe jamais le sous-package `internal` d'un autre module.
+2. Il n'existe aucune dépendance cyclique entre les packages de premier niveau.
+3. Les dépendances autorisées (par exemple `order` → `giftcard.api`) sont
+   documentées et vérifiées lors de la construction.
 
 ## Options considered
 
-1. **No enforcement** — rely on code review only. Rejected: violations leak
-   in over time, especially under deadline pressure.
-2. **Custom build script** — write a Groovy/Bash check that scans imports.
-   Rejected: yet another DSL to maintain.
-3. **Spring Modulith** — annotation + verifier; pleasant developer experience
-   but adds a runtime dependency, ties module declaration to package-info
-   files, and overlaps with what ArchUnit already does.
-4. **ArchUnit alone** — pure-test dependency, expressive enough to encode
-   "internal sub-packages are private", "no cycles", and explicit allowed
-   dependency arrows.
+1. **Aucun contrôle** — s'appuyer uniquement sur la revue de code. Rejeté :
+   les violations s'accumulent avec le temps, surtout sous la pression des
+   délais.
+2. **Script de construction personnalisé** — écrire un contrôle Groovy/Bash
+   qui analyse les imports. Rejeté : cela introduirait encore un DSL à maintenir.
+3. **Spring Modulith** — annotations et vérificateur, avec une expérience de
+   développement agréable, mais qui ajoute une dépendance d'exécution, lie la
+   déclaration des modules aux fichiers package-info et recouvre les capacités
+   déjà fournies par ArchUnit.
+4. **ArchUnit seul** — une dépendance de test uniquement, suffisamment
+   expressive pour encoder « les sous-packages internal sont privés »,
+   « aucun cycle » et les dépendances explicitement autorisées.
 
 ## Decision
 
-Adopt **option 4: ArchUnit only**. Each bounded context is a top-level
-package under `com.example.checkout`. Within each module, an `internal`
-sub-package holds package-private implementation; an `api` sub-package holds
-the published surface. The harness's architecture gate (layer 4) runs the
-following rules in `ArchitectureTests`:
+Adopter **l'option 4 : ArchUnit seul**. Chaque contexte délimité est un package
+de premier niveau sous `com.example.checkout`. Dans chaque module, un
+sous-package `internal` contient l'implémentation privée au package, tandis
+qu'un sous-package `api` contient la surface publiée. La porte d'architecture
+du harness (couche 4) exécute les règles suivantes dans `ArchitectureTests` :
 
-- `giftcardInternalIsHidden` — no class outside `..giftcard.internal..`
-  may depend on classes inside it.
-- `giftcardDoesNotDependOnOrder` — directional dependency only.
-- `noCyclesBetweenTopLevelPackages` — `slices().matching("com.example.checkout.(*)..").should().beFreeOfCycles()`.
+- `giftcardInternalIsHidden` — aucune classe extérieure à
+  `..giftcard.internal..` ne peut dépendre de classes qui s'y trouvent.
+- `giftcardDoesNotDependOnOrder` — dépendance directionnelle uniquement.
+- `noCyclesBetweenTopLevelPackages` —
+  `slices().matching("com.example.checkout.(*)..").should().beFreeOfCycles()`.
 
-These rules ship with the existing ArchUnit dependency (already in the
-parent POM). No new runtime dependency.
+Ces règles utilisent la dépendance ArchUnit déjà présente dans le POM parent.
+Aucune nouvelle dépendance d'exécution n'est ajoutée.
 
 ## Consequences
 
-- **Positive**: zero runtime cost; a single source for architecture rules;
-  freezing baseline is supported for brownfield; rules read like English.
-- **Negative**: module boundaries are expressed in test code rather than in
-  package-info files; new modules require explicit ArchUnit additions.
-- **Follow-up**: encode the rule set in the `archunit-rules` skill so future
-  features get the same defaults.
+- **Positif :** aucun coût à l'exécution ; une source unique pour les règles
+  d'architecture ; gel d'une référence initiale possible pour l'existant ;
+  règles lisibles comme de la prose.
+- **Négatif :** les frontières des modules sont exprimées dans le code de test
+  plutôt que dans des fichiers package-info ; chaque nouveau module exige des
+  ajouts ArchUnit explicites.
+- **Suivi :** encoder cet ensemble de règles dans la skill `archunit-rules`
+  afin que les futures fonctionnalités utilisent les mêmes valeurs par défaut.

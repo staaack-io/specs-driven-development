@@ -1,38 +1,42 @@
-# `.specs/<feature-id>/` Artifact Contract
+# Contrat des artefacts `.specs/<feature-id>/`
 
-Every feature produces these files, in order. Phase advance is gated on the prior file existing and its checklist passing.
+Chaque fonctionnalité produit les fichiers suivants dans cet ordre. Le passage à
+une phase exige que le fichier précédent existe et que sa checklist soit verte.
 
 ```text
 .specs/
-├── _baseline.json                  # repo-wide; brownfield pre-existing failures
+├── _baseline.json                  # référence des échecs brownfield du dépôt
 └── <feature-id>/
-    ├── 01-spec.md                  # phase 1 — owner: spec-author
-    ├── 02-spec-review.md           # phase 2 — owner: spec-author
-    ├── 03-epic-design.md           # phase 3a (optional, Epic mode) — owner: spring-architect
-    ├── 03a-epic-roadmap.md         # phase 3a (optional, Epic mode) — owner: spring-architect
-    ├── 03-design.md                # phase 3 — owner: spring-architect
-    ├── 04-tasks.md                 # phase 3 — owner: spring-architect
-    ├── 05-implementation-log.md    # phase 4 — owners: spring-test-engineer + spring-implementer
-    ├── 06-test-plan.md             # phase 5 — owner: spring-test-engineer
-    ├── 07-validation-report.md     # phase 6 — owner: spring-validator
-    ├── 07a-traceability.md         # phase 6 — owner: spring-validator
-    ├── 08-code-review.md           # phase 7 — owner: spring-code-reviewer
-    ├── 09-ship-plan.md             # phase 8 (optional) — owner: spring-code-reviewer
-    ├── .tdd-state.json             # phase 4 — runtime state for block-impl-without-failing-test
+    ├── 01-spec.md                  # phase 1 — responsable : spec-author
+    ├── 02-spec-review.md           # phase 2 — responsable : spec-author
+    ├── 03-epic-design.md           # phase 3a facultative — spring-architect
+    ├── 03a-epic-roadmap.md         # phase 3a facultative — spring-architect
+    ├── 03-design.md                # phase 3 — spring-architect
+    ├── 04-tasks.md                 # phase 3 — spring-architect
+    ├── 05-implementation-log.md    # phase 4 — agents de test et d’implémentation
+    ├── 06-test-plan.md             # phase 5 — spring-test-engineer
+    ├── 07-validation-report.md     # phase 6 — spring-validator
+    ├── 07a-traceability.md         # phase 6 — spring-validator
+    ├── 08-code-review.md           # phase 7 — spring-code-reviewer
+    ├── 09-ship-plan.md             # phase 8 facultative — spring-code-reviewer
+    ├── .tdd-state.json             # état utilisé par le hook TDD
     └── adr/
-        └── NNN-<slug>.md           # MADR ADRs referenced from 03-design.md
+        └── NNN-<slug>.md           # ADR MADR référencé depuis 03-design.md
 ```
 
-## Naming rules
+## Règles de nommage
 
-- `<feature-id>` is `kebab-case`, ≤ 40 chars, prefixed with the source tracker key when one exists (e.g. `shop-1422-gift-card-checkout`).
-- All numbered files use the leading two-digit prefix (`01-…`, `02-…`); insertions get an `a/b/c` suffix (`07a-…`).
+- `<feature-id>` utilise le `kebab-case`, ne dépasse pas 40 caractères et
+  commence par la clé du ticket lorsqu’elle existe, par exemple
+  `shop-1422-gift-card-checkout`.
+- Chaque fichier numéroté conserve son préfixe à deux chiffres. Une insertion
+  utilise un suffixe `a`, `b` ou `c`, comme `07a-…`.
 
-## Templates
+## Modèles
 
-Each artifact starts from the matching template under `templates/`:
+Chaque artefact part du modèle correspondant sous `.codex/templates/` :
 
-| Artifact | Template |
+| Artefact | Modèle |
 | --- | --- |
 | `01-spec.md` | `spec.template.md` |
 | `02-spec-review.md` | `spec-review.template.md` |
@@ -48,9 +52,10 @@ Each artifact starts from the matching template under `templates/`:
 | `09-ship-plan.md` | `ship-plan.template.md` |
 | `adr/NNN-<slug>.md` | `adr.template.md` |
 
-## `.tdd-state.json`
+## Fichier `.tdd-state.json`
 
-Runtime file maintained by `/build` and read by the `block-impl-without-failing-test` hook.
+`$build` maintient ce fichier d’exécution. Le hook
+`block-impl-without-failing-test` le lit avant une édition de production.
 
 ```json
 {
@@ -69,28 +74,40 @@ Runtime file maintained by `/build` and read by the `block-impl-without-failing-
 }
 ```
 
-A new `src/main/**` edit is allowed only when the active task's `phase` is `red` AND `red_at` is set AND `red_failure_excerpt` is non-empty.
+Les valeurs des clés JSON restent en anglais car les hooks les consomment
+directement.
 
-## Forbidden
+Une nouvelle modification de `src/main/**` n’est autorisée que si la phase de
+la tâche active vaut `red`, que `red_at` est renseigné et que
+`red_failure_excerpt` n’est pas vide.
 
-- Editing artifact files out of phase order.
-- Skipping `02-spec-review.md` (sign-off required).
-- In Epic mode, writing `04-tasks.md` before both `03-epic-design.md` and `03a-epic-roadmap.md` are approved.
-- Beginning `04-tasks.md` while `03-design.md` has unresolved `Q-NNN`.
-- Editing `08-code-review.md` by anyone other than `spring-code-reviewer`.
+## Interdictions
 
-## Epic mode trigger
+- Modifier les artefacts dans le désordre.
+- Sauter `02-spec-review.md`, dont l’approbation est obligatoire.
+- En mode Epic, écrire `04-tasks.md` avant l’approbation de
+  `03-epic-design.md` et `03a-epic-roadmap.md`.
+- Commencer `04-tasks.md` tant que `03-design.md` contient un `Q-NNN`
+  ouvert.
+- Faire modifier `08-code-review.md` par un autre agent que
+  `spring-code-reviewer`.
 
-Epic mode is required when the feature has two or more planned vertical slices, shared cross-cutting architectural decisions, or multi-milestone delivery requirements. In Epic mode:
+## Déclenchement du mode Epic
 
-1. `03-epic-design.md` and `03a-epic-roadmap.md` must exist before detailed task decomposition.
-2. Epic-level open questions (`Q-NNN`) must be resolved (or deferred with rationale) before `04-tasks.md` is finalized.
-3. Slice-level detailed tasks are generated incrementally from the Epic roadmap.
+Le mode Epic est obligatoire si la fonctionnalité comporte au moins deux
+tranches verticales prévues, des décisions architecturales transverses partagées
+ou plusieurs jalons de livraison.
 
-## Cross-references
+1. `03-epic-design.md` et `03a-epic-roadmap.md` doivent exister avant le
+   découpage détaillé.
+2. Les `Q-NNN` globaux doivent être résolus ou différés avec justification
+   avant de finaliser `04-tasks.md`.
+3. Les tâches détaillées sont produites progressivement depuis la roadmap.
 
-- Source ticket → `01-spec.md` `## Source`
-- AC → tests via `@DisplayName("AC-NNN: …")` or `@Tag("AC-NNN")`
-- AC → tasks via `04-tasks.md` task entry's `AC-IDs`
-- Tasks → tests via `04-tasks.md` task entry's `Test-IDs`
-- Findings → ADRs via the `Waivers` section of `08-code-review.md`
+## Références croisées
+
+- ticket source → section `## Source` de `01-spec.md` ;
+- critère → tests via `@DisplayName("AC-NNN: …")` ou `@Tag("AC-NNN")` ;
+- critère → tâches via `AC-IDs` dans `04-tasks.md` ;
+- tâche → tests via `Test-IDs` dans `04-tasks.md` ;
+- constat → ADR via la section `Waivers` de `08-code-review.md`.

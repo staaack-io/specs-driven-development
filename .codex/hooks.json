@@ -1,0 +1,54 @@
+{
+  "description": "Garde-fous du développement piloté par les spécifications pour Codex.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/block-impl-without-failing-test.sh\"",
+            "statusMessage": "Vérification de l'état TDD"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-files-in-scope.sh\"",
+            "statusMessage": "Vérification du périmètre de la tâche"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/block-progress-on-open-questions.sh\"",
+            "statusMessage": "Vérification des questions ouvertes"
+          }
+        ]
+      },
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/forbid-skip-flags.sh\"",
+            "statusMessage": "Vérification des options interdites"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/auto-format-touched.sh\"",
+            "statusMessage": "Formatage des fichiers Java modifiés"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/log-tdd-state-transition.sh\"",
+            "statusMessage": "Enregistrement de la transition TDD"
+          }
+        ]
+      }
+    ]
+  }
+}

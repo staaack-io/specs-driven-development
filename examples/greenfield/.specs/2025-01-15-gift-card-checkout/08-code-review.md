@@ -1,66 +1,68 @@
-# Code review: gift-card-checkout
+# Revue de code : gift-card-checkout
 
-| Field        | Value                                            |
+| Champ        | Valeur                                           |
 |--------------|--------------------------------------------------|
-| Reviewer     | spring-code-reviewer                             |
-| Base ref     | `origin/main`                                    |
-| Validation   | PASS (see `07-validation-report.md`)             |
+| Relecteur    | spring-code-reviewer                             |
+| Référence    | `origin/main`                                    |
+| Validation   | PASS (voir `07-validation-report.md`)            |
 | Verdict      | **APPROVE** (0 must-fix, 2 should-fix, 3 nits)   |
 
 ## Findings
 
 ### must-fix (0)
 
-*(none)*
+*(aucun)*
 
 ### should-fix (2)
 
-1. **`GiftCardController.redeem()`** — the `@RequestBody` DTO is missing
-   `jakarta.validation.constraints.@NotBlank` on `cardCode`. Today the service
-   handles a null code but the controller should reject it at the boundary
-   with a 400 instead of letting it reach the domain. *Suggested change:* add
-   `@NotBlank @Pattern(regexp="[A-Z0-9-]{16,19}") String cardCode` and a
-   `@Valid` on the parameter.
-2. **`IdempotencyStore.save()`** — the surviving PIT mutant (#3 in the
-   validation report) was justified, but a sharper test would distinguish
-   "we returned the existing redemption" from "we silently swallowed an
-   error and pretended success". *Suggested change:* add an assertion in
-   `IdempotentRedeemIT` that the response on the second call carries the
-   *same* `redemptionId` as the first.
+1. **`GiftCardController.redeem()`** — il manque
+   `jakarta.validation.constraints.@NotBlank` sur `cardCode` dans le DTO
+   `@RequestBody`. Le service gère actuellement un code nul, mais le contrôleur
+   devrait le refuser à la frontière avec une réponse 400 au lieu de le laisser
+   atteindre le domaine. *Modification suggérée :* ajouter
+   `@NotBlank @Pattern(regexp="[A-Z0-9-]{16,19}") String cardCode` et `@Valid`
+   sur le paramètre.
+2. **`IdempotencyStore.save()`** — le mutant PIT survivant (n° 3 dans le
+   rapport de validation) a été justifié, mais un test plus précis permettrait
+   de distinguer « nous avons renvoyé l'utilisation existante » de « nous avons
+   silencieusement absorbé une erreur et simulé un succès ». *Modification
+   suggérée :* ajouter dans `IdempotentRedeemIT` une assertion vérifiant que la
+   réponse du deuxième appel contient le même `redemptionId` que le premier.
 
 ### nits (3)
 
-- `DefaultGiftCardRedemptionService` line 44: imports `java.util.Optional` but
-  only uses it once and the value is always present. Could become a plain
-  variable.
-- `V1__gift_cards.sql`: the `idx_gcr_order` index is not used by any current
-  query. Either add the order-history endpoint that motivates it or drop it
-  to avoid write-time cost.
-- `RedeemCommand.cardCode` Javadoc says "16 chars" but the should-fix #1
-  pattern allows `[A-Z0-9-]{16,19}`. Tighten the doc once the validation
-  is added.
+- À la ligne 44, `DefaultGiftCardRedemptionService` importe
+  `java.util.Optional`, mais ne l'utilise qu'une fois et la valeur est toujours
+  présente. Une variable simple suffirait.
+- Dans `V1__gift_cards.sql`, l'index `idx_gcr_order` n'est utilisé par aucune
+  requête actuelle. Ajouter le point de terminaison d'historique des commandes
+  qui le justifie, ou le supprimer afin d'éviter son coût à l'écriture.
+- La Javadoc de `RedeemCommand.cardCode` indique « 16 caractères », mais le
+  motif de should-fix n° 1 autorise `[A-Z0-9-]{16,19}`. Préciser la documentation
+  une fois la validation ajoutée.
 
 ### praise (2)
 
-- TDD log shows a clean partial-redemption test added at `green` for AC-005
-  that passed without further code — a good sign the design generalized
-  correctly.
-- The service uses an `Optional<String> reasonToReject(...)` helper that
-  makes the rejection paths read like prose.
+- Le journal TDD montre qu'un test d'utilisation partielle a été ajouté à
+  l'étape `green` pour AC-005 et qu'il est passé sans autre modification du
+  code : c'est un bon signe que la conception se généralise correctement.
+- Le service utilise une méthode auxiliaire
+  `Optional<String> reasonToReject(...)` qui rend les chemins de refus lisibles
+  comme de la prose.
 
-## Suggested commit message
+## Message de commit suggéré
 
 ```
-feat(giftcard): apply gift cards at checkout (AC-001..AC-006)
+feat(giftcard): appliquer les cartes cadeaux au paiement (AC-001..AC-006)
 
-Adds the giftcard module (top-level package with `api`/`internal` split) with redemption service, controller, and
-Postgres-backed persistence. Idempotent on (card_id, idempotency_key).
-OpenAPI updated with POST /orders/{orderId}/gift-card.
+Ajoute le module giftcard (package de premier niveau séparé en `api`/`internal`) avec le service d'utilisation,
+le contrôleur et la persistance PostgreSQL. Idempotent sur (card_id, idempotency_key).
+OpenAPI mis à jour avec POST /orders/{orderId}/gift-card.
 
-Validation: PASS (10/10 gates, 100% new-code coverage, PIT 86%).
+Validation : PASS (10/10 portes, couverture du nouveau code à 100 %, PIT à 86 %).
 ```
 
-## Recommended next action
+## Prochaine action recommandée
 
-Apply the two should-fix items and the three nits, then run `/validate` once
-more before committing.
+Appliquer les deux éléments should-fix et les trois nits, puis relancer
+`$validate` avant le commit.

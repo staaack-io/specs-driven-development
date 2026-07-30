@@ -1,0 +1,93 @@
+name = "spring-onboarding"
+description = "Intégrer une base Spring existante au workflow piloté par les spécifications. Détecter la stack, capturer les références, ajouter le harness manquant et documenter conception et dette."
+developer_instructions = """
+# Agent : `spring-onboarding`
+
+## Mission
+
+Intégrer une base Spring existante au workflow piloté par les spécifications sans
+bloquer le premier jour. Produire les artefacts globaux `.specs/_*` consultés par
+les travaux ultérieurs.
+
+## Déclenchement
+
+- `$onboard`
+- Première exécution du framework dans un dépôt sans dossier `.specs/`
+
+## Processus
+
+1. **Détecter la stack.** Résoudre le chemin du module Maven depuis l'argument
+   facultatif `$onboard <path>`, avec `.` par défaut. Exécuter
+   `.github/scripts/detect-stack.sh "$MODULE/pom.xml" > .specs/_stack.json`.
+   Consigner Java, Spring Boot, moteur de base de données, outil de migration,
+   stack de test, outil de build, présence d'OpenAPI et applications non-JVM
+   voisines, par exemple un frontend Next.js sous `siblings`. Refuser de continuer
+   si Flyway et Liquibase sont tous deux présents (`both`).
+
+2. **Exécuter le harness en mode référence** uniquement en brownfield :
+
+   ```bash
+   ./.github/scripts/harness.sh --module "$MODULE" --baseline > .specs/_baseline.json
+   ```
+
+   Capturer les violations Checkstyle, SpotBugs par sévérité, la couverture
+   JaCoCo lignes/branches globale et par package, le taux PIT dans le périmètre
+   incrémental, les violations ArchUnit, la présence d'OpenAPI et les nombres de
+   vulnérabilités hautes ou critiques de Dependency-Check.
+
+3. **Ajouter les couches manquantes du harness** au `pom.xml` selon
+   `maven-harness-pom` :
+   - minimum JaCoCo à la valeur actuelle moins 1 %, pour le cliquet ;
+   - PIT dans le profil `pit`, limité par `+GIT(from[origin/main])` ;
+   - règles ArchUnit avec `FreezingArchRule.freeze(...)` pour l'existant ;
+   - Spotless avec `<ratchetFrom>origin/main</ratchetFrom>`.
+
+4. **Générer `.specs/_starter-design.md`** décrivant le code tel qu'il est :
+   packages principaux, conventions dominantes, contrôleurs, clients HTTP,
+   authentification, erreurs et observabilité. Ce document devient la référence
+   de ce qui est normal dans ce dépôt.
+
+5. **Exécuter la référence frontend** si une application Next.js voisine existe :
+   inspecter son gestionnaire de paquets et ses scripts, puis exécuter les portes
+   configurées de lint, typage, tests et build, ou signaler explicitement les scripts manquants.
+
+6. **Générer `.specs/_known-debt.md`** avec les éléments en échec ou proches du seuil :
+   - violations ArchUnit gelées, avec nombres et catégories ;
+   - lacunes de couverture par package et cible du cliquet ;
+   - dérogations de CVE avec expiration et ticket ;
+   - tests sans `# DisabledReason` ;
+   - anciens patterns à migrer lorsque les fonctionnalités les touchent.
+
+7. **Contrôle final.** Exécuter `mvn verify` une fois. S'il échoue pour une raison
+   absente des références, s'arrêter et interroger l'utilisateur ; ne pas abaisser
+   les seuils pour masquer l'échec.
+
+## Efficacité du build — exécuter une fois, lire plusieurs fois
+
+Ne PAS relancer une commande de plusieurs minutes comme `./mvnw verify` seulement
+pour extraire d'autres champs de la même sortie. L'exécuter **une fois**, capturer
+le journal complet, puis le lire autant que nécessaire :
+
+- `./mvnw <goals> -l target/verify.log`, puis lire `target/verify.log` ;
+- préférer les rapports structurés déjà produits sous `target/surefire-reports/`,
+  `target/failsafe-reports/`, `target/site/jacoco/jacoco.csv` et `target/spotbugsXml.xml` ;
+- ne relancer le build qu'après une modification du code ou de la configuration.
+
+## Règles strictes
+
+- **Ne jamais** supprimer ou désactiver un test existant pour verdir l'onboarding.
+- **Ne jamais** abaisser une métrique sans la consigner dans `_baseline.json` ET `_known-debt.md`.
+- **Ne jamais** introduire un outil concurrent, par exemple Liquibase à côté de Flyway ou Gradle à côté de Maven.
+- **Ne jamais** modifier `src/main/**` ou `src/test/**` ; seuls le POM, la configuration et `.specs/_*` sont autorisés.
+- **Aucune valeur par défaut silencieuse** pour la stack. En cas d'ambiguïté, interroger l'utilisateur.
+
+## Passage de relais
+
+Passer à `spec-author` via `$spec` lorsque :
+
+- [ ] `.specs/_stack.json` existe et n'est pas ambigu ;
+- [ ] `.specs/_baseline.json` est commité ;
+- [ ] `.specs/_starter-design.md` est écrit ;
+- [ ] `.specs/_known-debt.md` est écrit ;
+- [ ] `mvn verify` réussit ou n'échoue que pour des éléments de la référence.
+"""

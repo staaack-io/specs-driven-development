@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Specs-Driven Development + Harness</title>
-    <meta name="description" content="A delivery model where every feature moves through explicit phases, every assumption becomes a tracked question, and every change is verified by a deterministic quality harness before code review." />
+    <title>Développement piloté par les spécifications + harness</title>
+    <meta name="description" content="Un modèle de livraison dans lequel chaque fonctionnalité passe par des phases explicites, chaque hypothèse devient une question suivie et chaque modification est vérifiée par un harness qualité déterministe avant la revue de code." />
     <style>
       :root {
         --bg: #f7f4ef;
@@ -211,103 +211,104 @@
   <body>
     <main class="wrap">
       <section class="hero">
-        <h1>Specs-Driven Development + Harness</h1>
+        <h1>Développement piloté par les spécifications + harness</h1>
         <p class="sub">
-          A delivery model where every feature moves through explicit phases, every assumption becomes a tracked
-          question, and every change is verified by a deterministic quality harness before code review.
+          Un modèle de livraison dans lequel chaque fonctionnalité passe par des phases explicites, chaque hypothèse
+          devient une question suivie et chaque modification est vérifiée par un harness qualité déterministe avant la revue de code.
         </p>
-        <div class="chips" aria-label="Key concepts">
-          <span class="chip">No invention in phases 1-3</span>
-          <span class="chip">Epic mode: 3a -> 3b planning</span>
+        <div class="chips" aria-label="Concepts clés">
+          <span class="chip">Aucune invention pendant les phases 1 à 3</span>
+          <span class="chip">Mode Epic : planification 3a -> 3b</span>
           <span class="chip">TDD red -> green -> refactor</span>
-          <span class="chip">10-layer validation harness</span>
-          <span class="chip">Full AC to test traceability</span>
+          <span class="chip">Harness de validation en 10 couches</span>
+          <span class="chip">Traçabilité complète des AC aux tests</span>
         </div>
       </section>
 
       <section class="grid" aria-labelledby="what-it-is">
         <article class="card span-7">
-          <h2 id="what-it-is">What is specs-driven development?</h2>
+          <h2 id="what-it-is">Qu'est-ce que le développement piloté par les spécifications ?</h2>
           <p>
-            Specs-driven development treats written artifacts as the execution contract between humans and agents.
-            Instead of jumping directly to code, a feature goes through seven phases with clear entry and exit gates.
+            Le développement piloté par les spécifications considère les artefacts écrits comme le contrat d'exécution
+            entre les humains et les agents. Au lieu de passer directement au code, une fonctionnalité traverse sept
+            phases dotées de portes d'entrée et de sortie claires.
           </p>
           <ol class="phase-list">
-            <li><strong>Specify:</strong> write <code>01-spec.md</code> with ACs and open questions.</li>
-            <li><strong>Spec review:</strong> verify clarity and testability in <code>02-spec-review.md</code>.</li>
-            <li><strong>Plan:</strong> normal work → <code>03-design.md</code> + <code>04-tasks.md</code>; large epic work → <code>03-epic-design.md</code> + <code>03a-epic-roadmap.md</code> first, then slice-level design and tasks.</li>
-            <li><strong>Implement:</strong> execute strict TDD with <code>05-implementation-log.md</code>.</li>
-            <li><strong>Test:</strong> add cross-cutting tests in <code>06-test-plan.md</code>.</li>
-            <li><strong>Validate:</strong> run the harness and publish reports in <code>07-validation-report.md</code>.</li>
-            <li><strong>Code review:</strong> publish findings in <code>08-code-review.md</code>.</li>
+            <li><strong>Spécifier :</strong> rédiger <code>01-spec.md</code> avec les AC et les questions ouvertes.</li>
+            <li><strong>Relire la spécification :</strong> vérifier sa clarté et sa testabilité dans <code>02-spec-review.md</code>.</li>
+            <li><strong>Planifier :</strong> travail normal → <code>03-design.md</code> + <code>04-tasks.md</code> ; grande Epic → d'abord <code>03-epic-design.md</code> + <code>03a-epic-roadmap.md</code>, puis la conception et les tâches de chaque tranche.</li>
+            <li><strong>Implémenter :</strong> appliquer un TDD strict avec <code>05-implementation-log.md</code>.</li>
+            <li><strong>Tester :</strong> ajouter les tests transversaux dans <code>06-test-plan.md</code>.</li>
+            <li><strong>Valider :</strong> exécuter le harness et publier les rapports dans <code>07-validation-report.md</code>.</li>
+            <li><strong>Relire le code :</strong> publier les constats dans <code>08-code-review.md</code>.</li>
           </ol>
         </article>
 
         <aside class="card span-5" aria-labelledby="what-is-harness">
-          <h2 id="what-is-harness">What is the harness?</h2>
+          <h2 id="what-is-harness">Qu'est-ce que le harness ?</h2>
           <p>
-            The harness is a deterministic pipeline that validates the work the same way in local runs and CI.
-            It prevents "looks good" decisions and replaces them with measurable gate outcomes.
+            Le harness est un pipeline déterministe qui valide le travail de la même façon en local et dans la CI.
+            Il remplace les décisions fondées sur une simple impression par des résultats de portes mesurables.
           </p>
           <ul>
-            <li>Same script for every environment: <code>harness.sh</code></li>
-            <li>Layered checks from formatting to security</li>
-            <li>Machine-readable outputs for automated report parsing</li>
-            <li>Baseline-aware for brownfield adoption</li>
+            <li>Le même script dans chaque environnement : <code>harness.sh</code></li>
+            <li>Des contrôles en couches, du formatage à la sécurité</li>
+            <li>Des sorties lisibles par machine pour analyser automatiquement les rapports</li>
+            <li>La prise en compte d'une référence initiale pour l'adoption sur un projet existant</li>
           </ul>
         </aside>
 
         <article class="card span-12">
-          <h2>How Epic planning works</h2>
+          <h2>Fonctionnement de la planification d'une Epic</h2>
           <p>
-            For large initiatives, planning is split into two levels so teams avoid committing to detailed tasks too early.
+            Pour les grandes initiatives, la planification est divisée en deux niveaux afin d'éviter de détailler les tâches trop tôt.
           </p>
           <ol>
-            <li><strong>Phase 3a (Epic level):</strong> write <code>03-epic-design.md</code> for boundaries and shared decisions, and <code>03a-epic-roadmap.md</code> for vertical slice sequencing.</li>
-            <li><strong>Phase 3b (Slice level):</strong> run detailed slice design and task breakdown in <code>03-design.md</code> and <code>04-tasks.md</code>.</li>
-            <li><strong>Gate:</strong> do not finalize detailed tasks until Epic-level open questions are resolved (or explicitly deferred with rationale).</li>
+            <li><strong>Phase 3a (niveau Epic) :</strong> rédiger <code>03-epic-design.md</code> pour les frontières et les décisions partagées, puis <code>03a-epic-roadmap.md</code> pour l'ordre des tranches verticales.</li>
+            <li><strong>Phase 3b (niveau tranche) :</strong> détailler la conception et les tâches de la tranche dans <code>03-design.md</code> et <code>04-tasks.md</code>.</li>
+            <li><strong>Porte :</strong> ne pas finaliser les tâches détaillées tant que les questions ouvertes au niveau Epic ne sont pas résolues ou explicitement reportées avec une justification.</li>
           </ol>
           <p>
-            Operationally, this maps to <code>/epic-plan</code> first, then <code>/plan</code> for slice-level decomposition.
+            En pratique, cela correspond d'abord à <code>$epic-plan</code>, puis à <code>$plan</code> pour décomposer chaque tranche.
           </p>
         </article>
 
         <article class="card span-12">
-          <h2>Why document every step?</h2>
+          <h2>Pourquoi documenter chaque étape ?</h2>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Without documentation</th>
-                  <th scope="col">With documentation artifacts</th>
-                  <th scope="col">Outcome</th>
+                  <th scope="col">Sans documentation</th>
+                  <th scope="col">Avec les artefacts documentaires</th>
+                  <th scope="col">Résultat</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Hidden assumptions and silent defaults</td>
-                  <td>Open questions tracked as <code>Q-NNN</code> and resolved explicitly</td>
-                  <td class="yes">Fewer requirement surprises</td>
+                  <td>Hypothèses cachées et valeurs par défaut silencieuses</td>
+                  <td>Questions ouvertes suivies par des <code>Q-NNN</code> et résolues explicitement</td>
+                  <td class="yes">Moins de surprises sur les exigences</td>
                 </tr>
                 <tr>
-                  <td>Tasks become broad and ambiguous</td>
-                  <td>Task-level scope, AC links, test IDs, and file boundaries</td>
-                  <td class="yes">Smaller, safer delivery units</td>
+                  <td>Les tâches deviennent larges et ambiguës</td>
+                  <td>Périmètre par tâche, liens vers les AC, identifiants des tests et fichiers autorisés</td>
+                  <td class="yes">Unités de livraison plus petites et plus sûres</td>
                 </tr>
                 <tr>
-                  <td>"Tested" means different things to different people</td>
-                  <td>Shared harness layers and deterministic gate reports</td>
-                  <td class="yes">Consistent quality bar</td>
+                  <td>« Testé » signifie différentes choses selon les personnes</td>
+                  <td>Couches de harness partagées et rapports de portes déterministes</td>
+                  <td class="yes">Niveau de qualité cohérent</td>
                 </tr>
                 <tr>
-                  <td>Hard to explain why a change exists</td>
-                  <td>AC -> task -> test -> code traceability matrix</td>
-                  <td class="yes">Fast audits and easier maintenance</td>
+                  <td>Difficile d'expliquer la raison d'une modification</td>
+                  <td>Matrice de traçabilité AC -> tâche -> test -> code</td>
+                  <td class="yes">Audits rapides et maintenance facilitée</td>
                 </tr>
                 <tr>
-                  <td>Review relies on memory and intuition</td>
-                  <td>Structured review artifact with blocker/major/minor findings</td>
-                  <td class="yes">Higher signal in PR discussions</td>
+                  <td>La revue repose sur la mémoire et l'intuition</td>
+                  <td>Artefact de revue structuré avec constats bloquants, majeurs et mineurs</td>
+                  <td class="yes">Discussions de PR plus pertinentes</td>
                 </tr>
               </tbody>
             </table>
@@ -315,114 +316,118 @@
         </article>
 
         <article class="card span-12">
-          <h2>10 harness layers (quick view)</h2>
+          <h2>Les 10 couches du harness en bref</h2>
           <ol>
-            <li>Format and lint</li>
-            <li>Compile</li>
-            <li>Static analysis</li>
-            <li>Architecture rules</li>
-            <li>Unit and slice tests</li>
-            <li>Integration tests</li>
-            <li>Coverage policy</li>
-            <li>Mutation testing</li>
-            <li>API contract diff</li>
-            <li>Dependency security scan</li>
+            <li>Formatage et lint</li>
+            <li>Compilation</li>
+            <li>Analyse statique</li>
+            <li>Règles d'architecture</li>
+            <li>Tests unitaires et de tranche</li>
+            <li>Tests d'intégration</li>
+            <li>Politique de couverture</li>
+            <li>Tests de mutation</li>
+            <li>Différence du contrat d'API</li>
+            <li>Analyse de sécurité des dépendances</li>
           </ol>
           <p>
-            If one layer fails, the feature is not "done" yet. The harness is the feedback loop, not an optional checklist.
+            Si une couche échoue, la fonctionnalité n'est pas encore terminée. Le harness constitue la boucle de retour,
+            et non une checklist facultative.
           </p>
         </article>
 
         <article class="card span-12">
-          <h2>Examples</h2>
+          <h2>Exemples</h2>
           <div class="example">
-            <h3>Example 1: Missing pagination rule</h3>
+            <h3>Exemple 1 : règle de pagination manquante</h3>
             <p>
-              During specification, no pagination limit is defined for a list endpoint. Instead of inventing one, the author
-              adds <code>Q-003</code>: "What is the default and max page size?".
+              Pendant la spécification, aucune limite de pagination n'est définie pour un point de terminaison de liste.
+              Au lieu d'en inventer une, l'auteur ajoute <code>Q-003</code> : « Quelles sont les tailles de page par défaut et maximale ? ».
             </p>
             <p>
-              Result: the decision is explicit before implementation, and tests can assert exact behavior.
+              Résultat : la décision est explicite avant l'implémentation et les tests peuvent vérifier le comportement exact.
             </p>
           </div>
           <div class="example">
-            <h3>Example 2: Red before green</h3>
+            <h3>Exemple 2 : red avant green</h3>
             <p>
-              For task <code>T-002</code>, a failing test is first captured in <code>.tdd-state.json</code> with a failure excerpt.
-              Only then does production code editing proceed.
+              Pour la tâche <code>T-002</code>, un test en échec est d'abord consigné dans <code>.tdd-state.json</code>
+              avec un extrait de l'échec. Le code de production ne peut être modifié qu'ensuite.
             </p>
             <p>
-              Result: no accidental code-first drift; every behavior change has a proving test.
-            </p>
-          </div>
-          <div class="example">
-            <h3>Example 3: Validation catches regression</h3>
-            <p>
-              Integration tests pass, but OpenAPI diff reports a breaking response change. The harness blocks the phase until
-              contract compatibility is restored or formally approved.
-            </p>
-            <p>
-              Result: downstream clients do not get surprised in production.
+              Résultat : aucune dérive accidentelle vers une approche code-first ; chaque changement de comportement est prouvé par un test.
             </p>
           </div>
           <div class="example">
-            <h3>Example 4: Epic sliced before task breakdown</h3>
+            <h3>Exemple 3 : la validation détecte une régression</h3>
             <p>
-              A feature spans checkout, billing, and receipt flows. Instead of writing all tasks at once, the team creates
-              <code>03-epic-design.md</code> and <code>03a-epic-roadmap.md</code>, then plans and implements one vertical slice at a time.
+              Les tests d'intégration passent, mais la comparaison OpenAPI signale une modification incompatible de la réponse.
+              Le harness bloque la phase jusqu'au rétablissement ou à l'approbation formelle de la compatibilité du contrat.
             </p>
             <p>
-              Result: lower rework, clearer dependencies, and faster feedback per slice.
+              Résultat : les clients en aval ne découvrent pas la rupture en production.
+            </p>
+          </div>
+          <div class="example">
+            <h3>Exemple 4 : l'Epic est découpée avant le détail des tâches</h3>
+            <p>
+              Une fonctionnalité couvre le paiement, la facturation et la production du reçu. Au lieu d'écrire toutes les
+              tâches d'un coup, l'équipe crée <code>03-epic-design.md</code> et <code>03a-epic-roadmap.md</code>, puis planifie
+              et implémente une tranche verticale à la fois.
+            </p>
+            <p>
+              Résultat : moins de reprises, des dépendances plus claires et un retour plus rapide pour chaque tranche.
             </p>
           </div>
         </article>
 
         <article class="card span-12">
-          <h2>When this approach applies (and when it does not)</h2>
+          <h2>Quand appliquer cette approche, et quand ne pas l'appliquer</h2>
           <div class="grid" style="margin-top: 0;">
             <section class="span-6">
-              <h3>Use specs-driven + harness for</h3>
+              <h3>Utiliser les spécifications et le harness pour</h3>
               <ul>
-                <li>New features with multiple business rules and edge cases</li>
-                <li>API changes where compatibility and contract safety matter</li>
-                <li>Schema and migration work that can impact production data</li>
-                <li>Security-sensitive flows (auth, permissions, secrets, PII)</li>
-                <li>Cross-service integrations and reliability-critical behavior</li>
-                <li>Changes that require auditability and explicit decision history</li>
+                <li>Les nouvelles fonctionnalités avec plusieurs règles métier et cas limites</li>
+                <li>Les modifications d'API où la compatibilité et la sûreté du contrat sont importantes</li>
+                <li>Les schémas et migrations susceptibles d'affecter les données de production</li>
+                <li>Les flux sensibles à la sécurité : authentification, permissions, secrets ou données personnelles</li>
+                <li>Les intégrations entre services et les comportements critiques pour la fiabilité</li>
+                <li>Les modifications qui exigent une auditabilité et un historique explicite des décisions</li>
               </ul>
             </section>
             <section class="span-6">
-              <h3>Do not use the full process for</h3>
+              <h3>Ne pas utiliser le processus complet pour</h3>
               <ul>
-                <li>Typos, copy updates, and tiny cosmetic edits</li>
-                <li>Formatting-only or file-rename housekeeping work</li>
-                <li>Throwaway prototypes that will not be shipped</li>
-                <li>Very small internal refactors with no behavior change</li>
-                <li>Immediate incident mitigation where speed is the first objective</li>
+                <li>Les fautes de frappe, ajustements de texte et petites retouches visuelles</li>
+                <li>Les opérations limitées au formatage ou au renommage de fichiers</li>
+                <li>Les prototypes jetables qui ne seront pas livrés</li>
+                <li>Les très petites refactorisations internes sans changement de comportement</li>
+                <li>La résolution immédiate d'un incident lorsque la rapidité est l'objectif prioritaire</li>
               </ul>
             </section>
           </div>
           <p>
-            <strong>Rule of thumb:</strong> if the change can break user behavior, contracts, security, or data, run the full workflow.
-            If the change is low-risk and easily reversible, use a lighter path with focused tests and validation.
+            <strong>Règle pratique :</strong> si la modification peut casser le comportement utilisateur, les contrats,
+            la sécurité ou les données, exécuter le workflow complet. Si elle est peu risquée et facilement réversible,
+            utiliser un parcours allégé avec des tests et une validation ciblés.
           </p>
         </article>
 
         <article class="card span-12">
-          <h2>Bottom line</h2>
+          <h2>En résumé</h2>
           <p>
-            Specs-driven development is not "more documents" for the sake of process. It is a risk-control system:
-            decide explicitly, implement incrementally, validate mechanically, and review with evidence.
+            Le développement piloté par les spécifications ne consiste pas à produire davantage de documents pour le
+            simple respect du processus. C'est un système de maîtrise des risques : décider explicitement, implémenter
+            progressivement, valider mécaniquement et relire à partir de preuves.
           </p>
           <p>
-            When teams document each step, they trade hidden complexity for visible decisions. That is what makes velocity
-            sustainable.
+            En documentant chaque étape, les équipes remplacent la complexité cachée par des décisions visibles. C'est ce
+            qui rend leur rythme soutenable.
           </p>
         </article>
       </section>
 
       <footer>
-        Intended for onboarding, team education, and architecture docs. Works as a standalone page on desktop and mobile.
+        Destiné à l'intégration, à la formation des équipes et à la documentation d'architecture. Fonctionne comme une page autonome sur ordinateur et mobile.
       </footer>
     </main>
   </body>

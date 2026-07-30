@@ -1,41 +1,35 @@
-# Test plan: gift-card-checkout
+# Plan de test : gift-card-checkout
 
-## Coverage matrix
+## Matrice de couverture
 
-| AC      | Unit                                                    | Slice / WebMvc                  | Integration (Testcontainers)      | Contract (OpenAPI)            |
+| AC      | Unitaire                                                | Tranche / WebMvc                | Intégration (Testcontainers)      | Contrat (OpenAPI)            |
 |---------|---------------------------------------------------------|---------------------------------|-----------------------------------|-------------------------------|
 | AC-001  | `appliesFullBalanceWhenCardCoversSubtotal`              | `controller_returns_200`        | `GiftCardRedemptionIT.fullCover`  | request/response 200 schema   |
 | AC-002  | `rejectsUnknownCode`                                    | `controller_returns_422_unknown`| —                                 | 422 unknown error envelope    |
 | AC-003  | `rejectsExpiredCard`                                    | `controller_returns_422_expired`| —                                 | 422 expired error envelope    |
 | AC-004  | `rejectsDepletedCard`                                   | `controller_returns_422_depleted`| —                                | 422 depleted error envelope   |
-| AC-005  | `appliesFullBalanceWhenCardDoesNotCover`                | —                               | `GiftCardRedemptionIT.partial`    | (covered transitively)        |
-| AC-006  | —                                                       | —                               | `IdempotentRedeemIT.sameKeyTwice` | header presence in spec       |
+| AC-005  | `appliesFullBalanceWhenCardDoesNotCover`                | —                               | `GiftCardRedemptionIT.partial`    | couvert transitivement        |
+| AC-006  | —                                                       | —                               | `IdempotentRedeemIT.sameKeyTwice` | présence de l'en-tête         |
 
-## Test types in use
+## Types de tests utilisés
 
-- **Unit**: pure JUnit 5 with a stub repository; runs in <50ms each.
-- **Slice**: `@WebMvcTest(GiftCardController.class)` with `@MockBean` service.
-- **Integration**: `@SpringBootTest` + `@Testcontainers` Postgres 16; Flyway
-  applies migrations on container start.
-- **Contract**: swagger-request-validator wired into MockMvc to fail any
-  divergence between live response and `openapi.yaml`.
-- **Architecture**: `ArchitectureTests` (always-on) verifies module boundaries
-  and the hidden-internal rule.
+- **Unitaire :** JUnit 5 avec dépôt simulé, moins de 50 ms chacun.
+- **Tranche :** `@WebMvcTest(GiftCardController.class)` avec service `@MockBean`.
+- **Intégration :** `@SpringBootTest`, Testcontainers Postgres 16 et migrations Flyway au démarrage.
+- **Contrat :** swagger-request-validator dans MockMvc détecte tout écart avec `openapi.yaml`.
+- **Architecture :** `ArchitectureTests` vérifie en permanence les frontières et packages internes.
 
-## Mutation testing
+## Tests de mutation
 
-PIT runs under `mvn -Ppit`. Targets `com.example.checkout.giftcard.*`. Mutation
-threshold 80%. Surviving mutants beyond that are listed in the validation
-report and either killed or justified.
+PIT s'exécute avec `mvn -Ppit`, cible `com.example.checkout.giftcard.*` et impose
+80 %. Les mutants survivants figurent dans le rapport puis sont tués ou justifiés.
 
 ## Gap-NNN entries
 
-*(empty — `/test --gap` after `/build T-004` produced no remaining gaps;
-new-code coverage is 100% on this feature's lines.)*
+*(vide — `$test --gap` ne trouve aucun écart et le nouveau code est couvert à 100 %.)*
 
-## What is intentionally NOT tested
+## Éléments volontairement non testés ici
 
-- The shared `ProblemDetail` mapper (covered by the platform's existing tests).
-- Spring Security configuration (covered by the always-on
-  `SecurityConfigurationTest` in `shared`).
-- Liquibase paths (this project uses Flyway exclusively per `_stack.json`).
+- Mapper `ProblemDetail` partagé, couvert par les tests de plateforme.
+- Configuration Spring Security, couverte par `SecurityConfigurationTest`.
+- Chemins Liquibase, car `_stack.json` indique Flyway exclusivement.

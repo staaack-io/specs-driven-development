@@ -1,48 +1,48 @@
-name: Bug report
-description: Something in the toolkit (skill, prompt, hook, harness, template) is broken or wrong.
+name: Rapport de bug
+description: Un élément du framework (skill, prompt, hook, harness ou modèle) est cassé ou incorrect.
 labels: [bug]
 body:
   - type: input
     id: platform
     attributes:
-      label: Platform
-      description: Which agent surface are you using?
-      placeholder: Claude Code | GitHub Copilot | Windsurf | N/A (docs)
+      label: Plateforme
+      description: Quelle interface Codex utilisez-vous ?
+      placeholder: Application Codex | CLI | extension IDE | cloud | N/A (documentation)
     validations:
       required: true
   - type: input
     id: asset
     attributes:
-      label: Affected file(s)
-      description: Path(s) inside the repo (e.g. `.claude/hooks/block-impl-without-failing-test.sh`).
+      label: Fichiers concernés
+      description: Chemins dans le dépôt, par exemple `.codex/hooks/block-impl-without-failing-test.sh`.
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: Expected behavior
+      label: Comportement attendu
     validations:
       required: true
   - type: textarea
     id: actual
     attributes:
-      label: Actual behavior
+      label: Comportement observé
     validations:
       required: true
   - type: textarea
     id: repro
     attributes:
-      label: Steps to reproduce
+      label: Étapes de reproduction
       placeholder: |
-        1. Run `/spec ...`
+        1. Exécuter `$spec ...`
         2. ...
     validations:
       required: true
   - type: textarea
     id: env
     attributes:
-      label: Environment
+      label: Environnement
       placeholder: |
         - OS:
-        - Agent + version:
-        - jq / bash / Java / Maven versions (if relevant):
+        - Interface Codex et version :
+        - Versions de jq / bash / Java / Maven, si pertinent :

@@ -1,13 +1,11 @@
-# Tasks: gift-card-checkout
+# Tâches : gift-card-checkout
 
-Tasks are executed one at a time via `/build T-NNN`. Each task collapses
-red → green → refactor → simplify into a single command. Files outside the
-declared `files_in_scope` are blocked by `.claude/hooks/enforce-files-in-scope.sh`
-and the equivalent rules on Copilot/Windsurf.
+Les tâches s'exécutent une à une via `$build T-NNN`. Chaque commande suit red →
+green → refactor → simplify. Le hook bloque les fichiers hors de `files_in_scope`.
 
-## T-001: Persistence + hashing primitives
+## T-001 : primitives de persistance et hachage
 
-- **acs_covered**: `[]` (foundation; no AC fully closed yet)
+- **acs_covered**: `[]` (fondation ; aucun AC entièrement clos)
 - **depends_on**: none
 - **files_in_scope**:
   - `src/main/resources/db/migration/V1__gift_cards.sql`
@@ -19,10 +17,9 @@ and the equivalent rules on Copilot/Windsurf.
   - `src/test/java/com/example/checkout/giftcard/internal/GiftCardCodeHasherTest.java`
   - `src/test/java/com/example/checkout/giftcard/internal/GiftCardRepositoryIT.java`
 - **estimated_phases**: `[red, green, refactor, simplify]`
-- **notes**: Repository test uses Testcontainers Postgres (mandatory per stack
-  detection — H2 is not allowed for IT here).
+- **notes**: le test du dépôt utilise Testcontainers Postgres ; H2 n'est pas autorisé ici.
 
-## T-002: Apply a valid card (AC-001, AC-005)
+## T-002 : appliquer une carte valide (AC-001, AC-005)
 
 - **acs_covered**: `[AC-001, AC-005]`
 - **depends_on**: `[T-001]`
@@ -35,31 +32,31 @@ and the equivalent rules on Copilot/Windsurf.
   - `src/test/java/com/example/checkout/giftcard/internal/GiftCardRedemptionIT.java`
 - **estimated_phases**: `[red, green, refactor, simplify]`
 
-## T-003: Reject paths + idempotency (AC-002, AC-003, AC-004, AC-006)
+## T-003 : refus et idempotence (AC-002, AC-003, AC-004, AC-006)
 
 - **acs_covered**: `[AC-002, AC-003, AC-004, AC-006]`
 - **depends_on**: `[T-002]`
 - **files_in_scope**:
-  - `src/main/java/com/example/checkout/giftcard/internal/DefaultGiftCardRedemptionService.java` (extend)
+  - `src/main/java/com/example/checkout/giftcard/internal/DefaultGiftCardRedemptionService.java` (étendre)
   - `src/main/java/com/example/checkout/giftcard/internal/IdempotencyStore.java`
   - `src/test/java/com/example/checkout/giftcard/internal/DefaultGiftCardRedemptionServiceRejectionTest.java`
   - `src/test/java/com/example/checkout/giftcard/internal/IdempotentRedeemIT.java`
 - **estimated_phases**: `[red, green, refactor, simplify]`
 
-## T-004: REST controller + OpenAPI
+## T-004 : contrôleur REST et OpenAPI
 
-- **acs_covered**: `[AC-001, AC-002, AC-003, AC-004, AC-006]` (verified via WebMvc slice + contract test)
+- **acs_covered**: `[AC-001, AC-002, AC-003, AC-004, AC-006]` (vérifié par tranche WebMvc et contrat)
 - **depends_on**: `[T-002, T-003]`
 - **files_in_scope**:
   - `src/main/java/com/example/checkout/giftcard/internal/GiftCardController.java`
-  - `src/main/resources/openapi/openapi.yaml` (add path)
+  - `src/main/resources/openapi/openapi.yaml` (ajouter le chemin)
   - `src/test/java/com/example/checkout/giftcard/internal/GiftCardControllerTest.java`
   - `src/test/java/com/example/checkout/giftcard/internal/GiftCardContractTest.java`
 - **estimated_phases**: `[red, green, refactor, simplify]`
 
-## AC coverage check
+## Contrôle de couverture des AC
 
-| AC      | Closing tasks      |
+| AC      | Tâches de clôture  |
 |---------|--------------------|
 | AC-001  | T-002, T-004       |
 | AC-002  | T-003, T-004       |
@@ -68,4 +65,4 @@ and the equivalent rules on Copilot/Windsurf.
 | AC-005  | T-002              |
 | AC-006  | T-003, T-004       |
 
-Every AC has at least one task. Plan is valid.
+Chaque AC possède au moins une tâche. Le plan est valide.

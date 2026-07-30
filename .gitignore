@@ -18,10 +18,10 @@ target/
 *.war
 hs_err_pid*
 
-# Node (Angular tooling)
+# Node (outillage React et Next.js)
 node_modules/
 dist/
-.angular/
+.next/
 npm-debug.log*
 
 # Harness artifacts

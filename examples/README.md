@@ -1,34 +1,32 @@
-# Examples
+# Exemples
 
-This folder contains two end-to-end walkthroughs of the methodology. They are
-**documentation, not runnable projects** — every artifact (spec, design, tasks,
-implementation log, validation report) is a real file produced as if a human had
-driven the agent through every command. Use these as a reference when you're
-unsure what a given phase's output should look like.
+Ce dossier contient deux parcours complets de la méthodologie. Il s’agit de
+**documentation, pas de projets exécutables**. Chaque artefact — spécification,
+conception, tâches, journal d’implémentation et rapport — est un vrai fichier,
+produit comme si un humain avait piloté l’agent à travers toutes les commandes.
+Utilisez-les pour comprendre le résultat attendu de chaque phase.
 
 ## [`greenfield/`](./greenfield/README.md)
 
-A fresh Spring Boot 4 / Spring Framework 7 service. Demonstrates a single
-feature — `gift-card-checkout` — taken from a one-sentence intent through
-`/spec` → `/spec-review` → `/plan` → `/build` → `/test` → `/validate` →
-`/review`. Includes a `pom.xml` skeleton wired to the harness, a representative
-Modulith-free module layout (top-level packages with `internal` sub-packages enforced by ArchUnit), and a complete `.specs/2025-01-15-gift-card-checkout/`
-directory.
+Un nouveau service Spring Boot 4 / Spring Framework 7. L’exemple suit la
+fonctionnalité `gift-card-checkout` depuis une intention en une phrase jusqu’à
+`$spec` → `$spec-review` → `$plan` → `$build` → `$test` →
+`$validate` → `$review`. Il contient un squelette `pom.xml` raccordé au
+harness, une organisation représentative des modules et un dossier
+`.specs/2025-01-15-gift-card-checkout/` complet.
 
 ## [`brownfield/`](./brownfield/README.md)
 
-A pre-existing legacy-ish Spring service with no harness, a missing
-migration tool, and partial tests. Demonstrates `/onboard` discovering the
-gaps, capturing a baseline, and producing `.specs/_onboarding.md` with the
-recommended retrofit sequence (add Flyway, add Testcontainers, raise
-coverage to floor before adding new features).
+Un service Spring existant sans harness, avec un outil de migration manquant et
+des tests partiels. L’exemple montre comment `$onboard` découvre les écarts,
+capture une référence et produit `.specs/_onboarding.md` avec un ordre de
+modernisation progressif.
 
-## What these examples do **not** include
+## Ce que ces exemples ne contiennent pas
 
-- Runnable Java code in every file (they would bit-rot). Where Java appears
-  it's illustrative; the structure and the .specs artifacts are the point.
-- Full test suites. The implementation log shows representative test bodies
-  and the failing-then-passing transcripts; full source is omitted to keep
-  the toolkit small.
-- Generated reports (`target/**`). The validation report quotes the gate
-  results inline.
+- Du code Java exécutable dans chaque fichier, car il vieillirait rapidement.
+  Les extraits illustrent la structure et les artefacts `.specs/`.
+- Des suites de tests complètes. Le journal montre des tests représentatifs et
+  les passages rouge puis vert.
+- Les rapports générés sous `target/**`. Le rapport de validation cite
+  directement les résultats des portes.
