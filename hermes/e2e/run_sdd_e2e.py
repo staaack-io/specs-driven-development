@@ -30,6 +30,13 @@ SENTINEL = ".sdd-hermes-e2e-run.json"
 AUTOMATED_ACTOR = "automated-e2e"
 FEATURE_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$")
 SESSION_RE = re.compile(r"(?m)^session_id:\s*([A-Za-z0-9_.:-]+)\s*$")
+TASK_HEADING_RE = re.compile(r"(?m)^###\s+(T-\d{3})\b[^\n]*$")
+TEST_ID_RE = re.compile(r"\bT-\d{3}-T\d+\b")
+TEST_ID_FIELD_RE = re.compile(
+    r"^\s*[-*]\s+(?:\*\*)?Test-IDs\s*:(?:\*\*)?\s*(.*?)\s*$",
+    re.IGNORECASE,
+)
+TEST_ID_DEFINITION_RE = re.compile(r"^\s{2,}[-*]\s+(T-\d{3}-T\d+)\b")
 
 
 class E2EError(RuntimeError):
@@ -96,24 +103,31 @@ def create_run_dir(temp_root: Path) -> Path:
 
 def validate_cleanup_target(run_dir: Path, temp_root: Path) -> Path:
     resolved_root = temp_root.resolve(strict=True)
-    resolved_run = run_dir.resolve(strict=True)
+    resolved_run = validate_run_sentinel(run_dir)
     if resolved_run.parent != resolved_root:
         raise E2EError(f"Nettoyage refusé hors de la racine temporaire: {resolved_run}")
+    return resolved_run
+
+
+def validate_run_sentinel(run_dir: Path) -> Path:
+    resolved_run = run_dir.expanduser().resolve(strict=True)
+    if not resolved_run.is_dir() or run_dir.is_symlink():
+        raise E2EError(f"Run refusé: dossier réel attendu ({run_dir})")
     if not resolved_run.name.startswith(RUN_PREFIX):
-        raise E2EError(f"Nettoyage refusé pour un nom inattendu: {resolved_run.name}")
+        raise E2EError(f"Run refusé pour un nom inattendu: {resolved_run.name}")
     sentinel_path = resolved_run / SENTINEL
     if not sentinel_path.is_file() or sentinel_path.is_symlink():
-        raise E2EError(f"Nettoyage refusé: sentinelle absente dans {resolved_run}")
+        raise E2EError(f"Run refusé: sentinelle absente dans {resolved_run}")
     try:
         sentinel = json.loads(sentinel_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise E2EError(f"Nettoyage refusé: sentinelle illisible ({exc})") from exc
+        raise E2EError(f"Run refusé: sentinelle illisible ({exc})") from exc
     if sentinel.get("schema") != 1 or sentinel.get("realpath") != str(resolved_run):
-        raise E2EError("Nettoyage refusé: sentinelle incohérente")
+        raise E2EError("Run refusé: sentinelle incohérente")
     try:
         uuid.UUID(str(sentinel["run_id"]))
     except (KeyError, ValueError) as exc:
-        raise E2EError("Nettoyage refusé: identifiant de sentinelle invalide") from exc
+        raise E2EError("Run refusé: identifiant de sentinelle invalide") from exc
     return resolved_run
 
 
@@ -406,6 +420,51 @@ def export_transcript(
     return output
 
 
+def parse_test_id_definitions(tasks_text: str) -> tuple[list[str], list[str]]:
+    headings = list(TASK_HEADING_RE.finditer(tasks_text))
+    if not headings:
+        raise E2EError("Aucune section de tâche structurée trouvée")
+
+    task_ids: list[str] = []
+    test_ids: list[str] = []
+    for index, heading in enumerate(headings):
+        task_id = heading.group(1)
+        task_ids.append(task_id)
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(tasks_text)
+        section_lines = tasks_text[heading.end():end].splitlines()
+        definitions: list[str] = []
+
+        for line_index, line in enumerate(section_lines):
+            field_match = TEST_ID_FIELD_RE.match(line)
+            if not field_match:
+                continue
+            definitions.extend(TEST_ID_RE.findall(field_match.group(1)))
+            for continuation in section_lines[line_index + 1:]:
+                definition_match = TEST_ID_DEFINITION_RE.match(continuation)
+                if definition_match:
+                    definitions.append(definition_match.group(1))
+                    continue
+                if continuation.strip() and not continuation.startswith((" ", "\t")):
+                    break
+                if re.match(r"^\s+[-*]\s+", continuation):
+                    break
+
+        if not definitions:
+            raise E2EError(f"Aucune définition Test-ID structurée pour {task_id}")
+        expected_prefix = f"{task_id}-T"
+        mismatched = [test_id for test_id in definitions if not test_id.startswith(expected_prefix)]
+        if mismatched:
+            raise E2EError(
+                f"Préfixe Test-ID incohérent pour {task_id}: " + ", ".join(mismatched)
+            )
+        test_ids.extend(definitions)
+
+    duplicates = sorted({test_id for test_id in test_ids if test_ids.count(test_id) > 1})
+    if duplicates:
+        raise E2EError("Définitions Test-ID dupliquées: " + ", ".join(duplicates))
+    return task_ids, test_ids
+
+
 def validate_plan(project: Path, feature_id: str, plan_transcript: Path) -> dict[str, int]:
     feature = project / ".specs" / feature_id
     design = feature / "03-design.candidate.md"
@@ -427,12 +486,9 @@ def validate_plan(project: Path, feature_id: str, plan_transcript: Path) -> dict
         if f"{role}:" not in tasks_text:
             raise E2EError(f"Origine de tâche absente: {role}")
 
-    task_ids = re.findall(r"(?m)^###\s+(T-\d{3})\b", tasks_text)
+    task_ids, test_ids = parse_test_id_definitions(tasks_text)
     if len(task_ids) < 2 or len(task_ids) != len(set(task_ids)):
         raise E2EError("Les Task-IDs full-stack sont absents ou non uniques")
-    test_ids = re.findall(r"\bT-\d{3}-T\d+\b", tasks_text)
-    if not test_ids or len(test_ids) != len(set(test_ids)):
-        raise E2EError("Les Test-IDs sont absents ou non uniques")
 
     spec_text = (feature / "01-spec.md").read_text(encoding="utf-8")
     ac_ids = sorted(set(re.findall(r"\bAC-\d{3}\b", spec_text)))
@@ -447,6 +503,46 @@ def validate_plan(project: Path, feature_id: str, plan_transcript: Path) -> dict
         if role not in transcript_text and role not in design_text:
             raise E2EError(f"Aucune preuve de délégation pour {role}")
     return {"acceptance_criteria": len(ac_ids), "tasks": len(task_ids), "tests": len(test_ids)}
+
+
+def validate_preserved_run(args: argparse.Namespace) -> int:
+    if args.dry_run or args.cleanup_on_success:
+        raise E2EError("--validate-run est incompatible avec --dry-run et --cleanup-on-success")
+    if not args.feature_id:
+        raise E2EError("--feature-id est obligatoire avec --validate-run")
+    if len(args.feature_id) > 40 or not FEATURE_RE.fullmatch(args.feature_id):
+        raise E2EError(f"feature-id invalide: {args.feature_id!r}")
+    if not args.plan_transcript:
+        raise E2EError("--plan-transcript est obligatoire avec --validate-run")
+
+    run_dir = validate_run_sentinel(Path(args.validate_run))
+    project = run_dir / "project"
+    logs_dir = run_dir / "logs"
+    for label, directory in (("project", project), ("logs", logs_dir)):
+        if not directory.is_dir() or directory.is_symlink():
+            raise E2EError(f"Run refusé: dossier {label} absent ou symbolique")
+
+    supplied_transcript = Path(args.plan_transcript).expanduser()
+    if supplied_transcript.is_symlink():
+        raise E2EError("Transcript de plan symbolique refusé")
+    transcript = supplied_transcript.resolve(strict=True)
+    logs_real = logs_dir.resolve(strict=True)
+    if transcript.parent != logs_real:
+        raise E2EError("Le transcript de plan doit être un fichier direct de logs/")
+    if not transcript.is_file() or not transcript.name.startswith("session-") or transcript.suffix != ".jsonl":
+        raise E2EError("Transcript de plan inattendu; choisir explicitement un fichier session-*.jsonl")
+
+    counts = validate_plan(project, args.feature_id, transcript)
+    result = {
+        "status": "revalidated",
+        "run_dir": str(run_dir),
+        "feature_id": args.feature_id,
+        "plan_transcript": str(transcript),
+        "llm_calls": 0,
+        "checks": counts,
+    }
+    print(json.dumps(result, indent=2))
+    return 0
 
 
 def dry_run_plan(args: argparse.Namespace) -> None:
@@ -466,6 +562,8 @@ def dry_run_plan(args: argparse.Namespace) -> None:
 
 
 def execute(args: argparse.Namespace) -> int:
+    if args.validate_run:
+        return validate_preserved_run(args)
     if args.dry_run:
         dry_run_plan(args)
         return 0
@@ -604,6 +702,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=float, default=900.0, help="Délai maximal par commande en secondes")
     parser.add_argument("--temp-root", help="Racine autorisée pour mktemp (défaut: TMPDIR système)")
     parser.add_argument("--feature-id", help="Feature-id déterministe; défaut basé sur la date locale")
+    parser.add_argument("--validate-run", help="Revalider hors LLM un run E2E préservé et marqué")
+    parser.add_argument("--plan-transcript", help="Transcript session-*.jsonl exact du plan pour --validate-run")
     parser.add_argument("--cleanup-on-success", action="store_true", help="Supprimer le bac à sable uniquement après succès complet")
     parser.add_argument("--dry-run", action="store_true", help="Afficher les appels sans exécuter Hermes ni créer de bac à sable")
     return parser

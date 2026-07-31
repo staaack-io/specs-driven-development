@@ -229,6 +229,103 @@ class RunnerTest(unittest.TestCase):
         self.assertIsInstance(keywords.get("start_new_session"), ast.Constant)
         self.assertTrue(keywords["start_new_session"].value)
 
+    def test_test_id_references_outside_definitions_may_repeat(self):
+        text = """# Tasks
+
+### T-001: Backend
+- Test-IDs:
+  - T-001-T1 — first
+  - T-001-T2 — second
+- Notes: commencer avec T-001-T1 et T-001-T2.
+
+### T-002: Frontend
+- Test-IDs: T-002-T1
+| T-002-T1 | referenced in a table |
+"""
+        task_ids, test_ids = RUNNER.parse_test_id_definitions(text)
+        self.assertEqual(["T-001", "T-002"], task_ids)
+        self.assertEqual(["T-001-T1", "T-001-T2", "T-002-T1"], test_ids)
+
+    def test_duplicate_test_id_definition_is_rejected(self):
+        text = """### T-001: Backend
+- Test-IDs:
+  - T-001-T1 — first
+  - T-001-T1 — duplicate definition
+"""
+        with self.assertRaisesRegex(RUNNER.E2EError, "dupliquées"):
+            RUNNER.parse_test_id_definitions(text)
+
+    def test_test_id_with_wrong_task_prefix_is_rejected(self):
+        text = """### T-001: Backend
+- Test-IDs: T-002-T1
+"""
+        with self.assertRaisesRegex(RUNNER.E2EError, "Préfixe"):
+            RUNNER.parse_test_id_definitions(text)
+
+    def test_each_task_requires_a_test_id_definition(self):
+        text = """### T-001: Backend
+- Test-IDs: T-001-T1
+
+### T-002: Frontend
+- Notes: T-002-T1 is only a reference.
+"""
+        with self.assertRaisesRegex(RUNNER.E2EError, "pour T-002"):
+            RUNNER.parse_test_id_definitions(text)
+
+    def test_validate_run_requires_explicit_plan_transcript(self):
+        run_dir = RUNNER.create_run_dir(self.root.resolve())
+        code, _stdout, stderr = self.invoke(
+            "--validate-run", str(run_dir),
+            "--feature-id", FEATURE_ID,
+        )
+        self.assertEqual(1, code)
+        self.assertIn("--plan-transcript est obligatoire", stderr)
+
+    def test_validate_run_reuses_artifacts_without_invoking_hermes(self):
+        run_dir = RUNNER.create_run_dir(self.root.resolve())
+        project = run_dir / "project"
+        feature = project / ".specs" / FEATURE_ID
+        feature.mkdir(parents=True)
+        (feature / "01-spec.md").write_text(
+            "- AC-001: backend\n- AC-002: frontend\n", encoding="utf-8"
+        )
+        (feature / "03-design.candidate.md").write_text(
+            "- status: draft\n- stacks: full-stack\n"
+            "spring-architect\nreact-nextjs-architect\n",
+            encoding="utf-8",
+        )
+        (feature / "04-tasks.candidate.md").write_text(
+            """### T-001: Backend
+- Origine: spring-architect:T-001
+- AC-IDs: AC-001
+- Test-IDs: T-001-T1
+- Notes: T-001-T1 may be referenced again.
+
+### T-002: Frontend
+- Origine: react-nextjs-architect:T-001
+- AC-IDs: AC-002
+- Test-IDs: T-002-T1
+""",
+            encoding="utf-8",
+        )
+        transcript = run_dir / "logs/session-01-plan.jsonl"
+        transcript.write_text(
+            '{"tool":"delegate_task","roles":["spring-architect","react-nextjs-architect"]}\n',
+            encoding="utf-8",
+        )
+
+        code, stdout, stderr = self.invoke(
+            "--validate-run", str(run_dir),
+            "--feature-id", FEATURE_ID,
+            "--plan-transcript", str(transcript),
+        )
+
+        self.assertEqual(0, code, stderr)
+        result = json.loads(stdout)
+        self.assertEqual("revalidated", result["status"])
+        self.assertEqual(0, result["llm_calls"])
+        self.assertFalse((self.state / "calls.jsonl").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

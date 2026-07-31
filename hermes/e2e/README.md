@@ -114,3 +114,21 @@ python3 -m unittest discover -s hermes/e2e -p 'test_*.py' -v
 Ils couvrent le flux complet, le tour d'approbation séparé, la reprise par ID,
 le dry-run, la version minimale, la détection d'une écriture applicative, la
 conservation en échec, le timeout de groupe et le nettoyage opt-in.
+
+## Revalider un run préservé sans appel LLM
+
+Après une mise à jour du runner, un run conservé peut être revalidé sans
+réexécuter Hermes. Le chemin du run, le feature-id et le transcript exact de la
+session `/sdd-plan` doivent être fournis explicitement :
+
+```bash
+python3 hermes/e2e/run_sdd_e2e.py \
+  --validate-run /tmp/sdd-hermes-e2e-xxxxxxxx \
+  --feature-id YYYY-MM-DD-service-state-e2e \
+  --plan-transcript /tmp/sdd-hermes-e2e-xxxxxxxx/logs/session-NN-SESSION_ID.jsonl
+```
+
+Ce mode refuse un run sans sentinelle valide, un chemin réel incohérent, un
+transcript symbolique ou extérieur au dossier `logs/`, et tout transcript dont
+le nom ne correspond pas à `session-*.jsonl`. Il n'écrit rien dans le run et
+n'appelle ni Hermes ni un LLM.
