@@ -14,6 +14,7 @@ import tempfile
 import time
 import unittest
 
+import run_python_test_file as worker
 import run_python_tests as runner
 
 
@@ -404,6 +405,25 @@ class RunPythonTestsTest(unittest.TestCase):
             self.assertEqual(0, status, output)
             time.sleep(1.2)
             self.assertFalse(sentinel.exists(), "detached descendant survived cleanup")
+
+    def test_missing_proc_children_visibility_fails_safe(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            missing_proc = Path(temporary) / "unmounted-proc"
+
+            with self.assertRaisesRegex(RuntimeError, "cannot inspect Linux descendant"):
+                worker.linux_direct_children(
+                    12345,
+                    require_visibility=True,
+                    proc_root=missing_proc,
+                )
+
+    def test_existing_proc_process_without_children_file_fails_safe(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            proc_root = Path(temporary)
+            (proc_root / "12345/task/12345").mkdir(parents=True)
+
+            with self.assertRaisesRegex(RuntimeError, "children files"):
+                worker.linux_direct_children(12345, proc_root=proc_root)
 
 
 if __name__ == "__main__":

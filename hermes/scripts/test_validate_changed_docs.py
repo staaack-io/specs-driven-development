@@ -59,13 +59,15 @@ class ValidateChangedDocsTest(unittest.TestCase):
     def test_pull_request_uses_merge_base_range(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))
-            base = self.commit(root, "README.txt", "base\n", "base")
-            head = self.commit(root, "code.py", "value = 1  \n", "bad branch")
+            common = self.commit(root, "code.py", "value = 1  \n", "common")
+            subprocess.run(["git", "branch", "feature", common], cwd=root, check=True)
+            base = self.commit(root, "code.py", "value = 1\n", "base fixes whitespace")
+            subprocess.run(["git", "checkout", "-q", "feature"], cwd=root, check=True)
+            head = self.commit(root, "feature.py", "enabled = True\n", "feature")
 
             result = self.run_script(root, "pull_request", base, "", head)
 
-            self.assertNotEqual(0, result.returncode)
-            self.assertIn("trailing whitespace", result.stdout + result.stderr)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
     def test_push_uses_before_to_head_range(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

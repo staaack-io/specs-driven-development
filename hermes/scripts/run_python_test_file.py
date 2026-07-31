@@ -118,24 +118,48 @@ def enable_child_subreaper() -> None:
         raise OSError(error_number, os.strerror(error_number))
 
 
-def linux_direct_children(process_id: int) -> set[int]:
+def linux_direct_children(
+    process_id: int,
+    *,
+    require_visibility: bool = False,
+    proc_root: Path = Path("/proc"),
+) -> set[int]:
     """Read children created by every thread of one Linux process."""
 
     children: set[int] = set()
-    task_root = Path(f"/proc/{process_id}/task")
+    process_root = proc_root / str(process_id)
+    task_root = process_root / "task"
     try:
         task_directories = list(task_root.iterdir())
-    except (FileNotFoundError, PermissionError):
+    except PermissionError as error:
+        raise RuntimeError(
+            f"cannot inspect Linux descendant tree at {task_root}"
+        ) from error
+    except FileNotFoundError as error:
+        if require_visibility or process_root.exists():
+            raise RuntimeError(
+                f"cannot inspect Linux descendant tree at {task_root}"
+            ) from error
         return children
+    visible_children_files = 0
     for task_directory in task_directories:
         try:
             content = (task_directory / "children").read_text(
                 encoding="ascii"
             ).strip()
-        except (FileNotFoundError, PermissionError, ProcessLookupError):
+        except PermissionError as error:
+            raise RuntimeError(
+                f"cannot inspect Linux descendant children at {task_directory}"
+            ) from error
+        except (FileNotFoundError, ProcessLookupError):
             continue
+        visible_children_files += 1
         if content:
             children.update(int(value) for value in content.split())
+    if visible_children_files == 0 and (require_visibility or process_root.exists()):
+        raise RuntimeError(
+            f"cannot inspect Linux descendant children files at {task_root}"
+        )
     return children
 
 
@@ -143,7 +167,9 @@ def linux_descendants(process_id: int) -> set[int]:
     """Resolve the current descendant tree through /proc with a hard bound."""
 
     descendants: set[int] = set()
-    pending = list(linux_direct_children(process_id))
+    pending = list(
+        linux_direct_children(process_id, require_visibility=True)
+    )
     while pending:
         child = pending.pop()
         if child in descendants:
