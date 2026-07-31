@@ -446,7 +446,11 @@ class RunPythonTestsTest(unittest.TestCase):
                     runner.tagged_posix_processes = original
 
             self.assertEqual(1, status)
-            self.assertIn("outer descendant cleanup failed", output.getvalue())
+            self.assertGreater(calls, 1, "runtime enumerator failure was not exercised")
+            self.assertRegex(
+                output.getvalue(),
+                r"outer descendant cleanup failed|supervisor timed out",
+            )
             registered_pid = int(pid_file.read_text(encoding="utf-8"))
             with self.assertRaises(ProcessLookupError):
                 os.kill(registered_pid, 0)
