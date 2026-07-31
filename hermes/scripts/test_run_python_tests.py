@@ -606,6 +606,71 @@ class RunPythonTestsTest(unittest.TestCase):
         finally:
             runner.test_file_worker.process_start_token = original_start_token
 
+    @unittest.skipUnless(
+        sys.platform.startswith("linux"),
+        "Linux pidfd descendant cleanup is required",
+    )
+    def test_reused_enumerated_linux_descendant_is_never_signaled(self) -> None:
+        snapshots = iter(
+            [
+                {4242: "linux:original-start"},
+                {4242: "linux:replacement-start"},
+            ]
+        )
+        read_fd, write_fd = os.pipe()
+        signals: list[tuple[int, int]] = []
+        original_identities = worker.linux_descendant_identities
+        original_pidfd_open = worker.os.pidfd_open
+        original_pidfd_signal = worker.signal.pidfd_send_signal
+        worker.linux_descendant_identities = lambda _process_id: next(snapshots)
+        worker.os.pidfd_open = lambda _process_id, _flags: read_fd
+        worker.signal.pidfd_send_signal = (
+            lambda process_fd, signal_number: signals.append(
+                (process_fd, signal_number)
+            )
+        )
+        try:
+            self.assertEqual(set(), worker.signal_linux_descendants(signal.SIGKILL))
+            self.assertEqual([], signals)
+            with self.assertRaises(OSError):
+                os.fstat(read_fd)
+        finally:
+            worker.linux_descendant_identities = original_identities
+            worker.os.pidfd_open = original_pidfd_open
+            worker.signal.pidfd_send_signal = original_pidfd_signal
+            os.close(write_fd)
+
+    @unittest.skipUnless(
+        os.name == "posix" and not sys.platform.startswith("linux"),
+        "non-Linux POSIX descendant tagging is required",
+    )
+    def test_reused_tagged_descendant_is_not_killed(self) -> None:
+        snapshots = iter(
+            [
+                {4242: "darwin:original"},
+                {4242: "darwin:original"},
+                {4242: "darwin:replacement"},
+                {4242: "darwin:replacement"},
+            ]
+        )
+        signals: list[tuple[int, int]] = []
+        original_tagged = runner.tagged_posix_processes
+        original_identity_matches = runner.identity_matches
+        original_kill = runner.os.kill
+        runner.tagged_posix_processes = lambda _run_token: next(snapshots)
+        runner.identity_matches = lambda _identity: True
+        runner.os.kill = lambda process_id, signal_number: signals.append(
+            (process_id, signal_number)
+        )
+        try:
+            runner.terminate_tagged_posix_processes("run-token", 1.0)
+        finally:
+            runner.tagged_posix_processes = original_tagged
+            runner.identity_matches = original_identity_matches
+            runner.os.kill = original_kill
+
+        self.assertEqual([(4242, signal.SIGSTOP)], signals)
+
     def test_cleanup_protocol_requires_pid_and_birth_token(self) -> None:
         encoded = (
             runner.CLEANUP_MARKER

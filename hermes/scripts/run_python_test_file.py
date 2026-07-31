@@ -338,6 +338,72 @@ def linux_descendants(process_id: int) -> set[int]:
     return descendants
 
 
+def linux_descendant_identities(process_id: int) -> dict[int, str]:
+    """Snapshot descendants with their kernel process start times."""
+
+    identities: dict[int, str] = {}
+    for descendant in linux_descendants(process_id):
+        try:
+            identities[descendant] = process_start_token(descendant)
+        except ProcessLookupError:
+            continue
+    return identities
+
+
+def open_linux_descendant_pidfds(process_id: int) -> dict[int, int]:
+    """Pin descendants and reject PIDs reused since the first snapshot."""
+
+    if not sys.platform.startswith("linux"):
+        return {}
+    if not hasattr(os, "pidfd_open") or not hasattr(signal, "pidfd_send_signal"):
+        raise RuntimeError("Linux pidfd support is unavailable")
+
+    initial = linux_descendant_identities(process_id)
+    candidates: dict[int, int] = {}
+    try:
+        for descendant in initial:
+            try:
+                candidates[descendant] = os.pidfd_open(descendant, 0)
+            except ProcessLookupError:
+                continue
+
+        # A PID can disappear and be reused between /proc enumeration and
+        # pidfd_open. Re-enumerating both ancestry and start time after opening
+        # the handle rejects that replacement; the surviving pidfd then closes
+        # the remaining race between validation and signal delivery.
+        current = linux_descendant_identities(process_id)
+        verified: dict[int, int] = {}
+        for descendant, process_fd in candidates.items():
+            if current.get(descendant) == initial[descendant]:
+                verified[descendant] = process_fd
+            else:
+                os.close(process_fd)
+        return verified
+    except BaseException:
+        for process_fd in candidates.values():
+            try:
+                os.close(process_fd)
+            except OSError:
+                pass
+        raise
+
+
+def signal_linux_descendants(signal_number: int) -> set[int]:
+    """Signal verified descendant handles and close every pidfd."""
+
+    handles = open_linux_descendant_pidfds(os.getpid())
+    try:
+        for process_fd in handles.values():
+            try:
+                signal.pidfd_send_signal(process_fd, signal_number)
+            except ProcessLookupError:
+                pass
+        return set(handles)
+    finally:
+        for process_fd in handles.values():
+            os.close(process_fd)
+
+
 def reap_children_nonblocking() -> None:
     while True:
         try:
@@ -374,30 +440,25 @@ def kill_and_reap_linux_descendants() -> None:
     if not sys.platform.startswith("linux"):
         return
 
-    descendants = linux_descendants(os.getpid())
-    for process_id in descendants:
-        try:
-            os.kill(process_id, signal.SIGTERM)
-        except (PermissionError, ProcessLookupError):
-            pass
+    descendants = signal_linux_descendants(signal.SIGTERM)
     term_deadline = time.monotonic() + CHILD_TERM_GRACE_SECONDS
     while descendants and time.monotonic() < term_deadline:
         reap_children_nonblocking()
         time.sleep(0.01)
-        descendants = linux_descendants(os.getpid())
+        descendants = signal_linux_descendants(signal.SIGTERM)
 
     kill_deadline = time.monotonic() + CHILD_KILL_GRACE_SECONDS
     while descendants and time.monotonic() < kill_deadline:
-        for process_id in descendants:
-            try:
-                os.kill(process_id, FORCE_KILL_SIGNAL)
-            except (PermissionError, ProcessLookupError):
-                pass
+        descendants = signal_linux_descendants(FORCE_KILL_SIGNAL)
         reap_children_nonblocking()
         time.sleep(0.01)
-        descendants = linux_descendants(os.getpid())
     reap_children_nonblocking()
-    descendants = linux_descendants(os.getpid())
+    # The final snapshot is verification-only; close its pinned handles before
+    # reporting the failure.
+    final_handles = open_linux_descendant_pidfds(os.getpid())
+    descendants = set(final_handles)
+    for process_fd in final_handles.values():
+        os.close(process_fd)
     if descendants:
         raise RuntimeError(
             "detached test descendants could not be reaped: "

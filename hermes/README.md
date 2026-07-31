@@ -128,3 +128,8 @@ ouvre en plus un `pidfd` et signale ce handle stable. Si l'identité ne correspo
 plus, le PID a disparu ou a été réutilisé et aucun signal ne lui est envoyé.
 Ce nettoyage est appliqué aux timeouts comme à toute sortie worker non nulle ou
 à tout protocole de résultat incomplet.
+
+La même règle s'applique aux descendants énumérés. Linux recoupe deux snapshots
+d'ascendance et de temps de naissance autour de l'ouverture du `pidfd`, puis ne
+signale que ce handle. Les descendants POSIX marqués sont revalidés par token et
+temps de naissance immédiatement avant chaque `SIGSTOP` ou `SIGKILL`.
