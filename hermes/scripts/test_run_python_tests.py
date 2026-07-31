@@ -1,55 +1,163 @@
 #!/usr/bin/env python3
-"""Tests for portable Hermes Python test discovery."""
+"""Tests for deterministic Hermes unittest discovery and execution."""
 
 from __future__ import annotations
 
+from contextlib import redirect_stderr, redirect_stdout
+import io
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
-from unittest import mock
 
 import run_python_tests as runner
 
 
 class RunPythonTestsTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.temporary = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
+    def repository(self, destination: Path) -> Path:
+        root = destination / "repository"
+        (root / "hermes/scripts").mkdir(parents=True)
+        (root / ".gitignore").write_text("ignored/\n__pycache__/\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(["git", "add", ".gitignore"], cwd=root, check=True)
+        return root
 
-    def test_discovery_is_recursive_sorted_and_restricted_to_test_files(self) -> None:
-        nested = self.root / "nested"
-        nested.mkdir()
-        (self.root / "test_z.py").write_text("", encoding="utf-8")
-        (nested / "test_a.py").write_text("", encoding="utf-8")
-        (nested / "helper.py").write_text("", encoding="utf-8")
+    def add(self, root: Path, relative: str, content: str) -> Path:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        subprocess.run(["git", "add", relative], cwd=root, check=True)
+        return path
 
-        discovered = runner.discover_tests(self.root)
+    def run_runner(self, root: Path) -> tuple[int, str]:
+        output = io.StringIO()
+        with redirect_stdout(output), redirect_stderr(output):
+            status = runner.main(root)
+        return status, output.getvalue()
 
-        self.assertEqual(
-            [nested / "test_a.py", self.root / "test_z.py"],
-            discovered,
-        )
+    def test_inventory_includes_tracked_and_untracked_nonignored_tests(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            tracked = self.add(root, "hermes/a/test_tracked.py", "import unittest\n")
+            untracked = root / "hermes/b/test_untracked.py"
+            untracked.parent.mkdir(parents=True)
+            untracked.write_text("import unittest\n", encoding="utf-8")
+            outside = self.add(root, "tests/test_outside.py", "raise RuntimeError()\n")
 
-    def test_empty_discovery_fails_closed(self) -> None:
-        self.assertEqual(2, runner.run_tests([], self.root))
+            self.assertEqual(
+                [tracked, untracked],
+                runner.discover_test_files(root),
+            )
+            self.assertNotIn(outside, runner.discover_test_files(root))
 
-    @mock.patch.object(runner.subprocess, "run")
-    def test_each_file_runs_without_a_shell_and_any_failure_fails(self, run: mock.Mock) -> None:
-        first = self.root / "test_first.py"
-        second = self.root / "test_second.py"
-        run.side_effect = [
-            mock.Mock(returncode=0),
-            mock.Mock(returncode=1),
-        ]
+    def test_ignored_test_file_is_not_discovered(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            kept = self.add(root, "hermes/test_kept.py", "import unittest\n")
+            ignored = root / "hermes/ignored/test_ignored.py"
+            ignored.parent.mkdir(parents=True)
+            ignored.write_text("raise RuntimeError('must not run')\n", encoding="utf-8")
+            (root / ".gitignore").write_text("hermes/ignored/\n", encoding="utf-8")
 
-        result = runner.run_tests([first, second], self.root)
+            self.assertEqual([kept], runner.discover_test_files(root))
 
-        self.assertEqual(1, result)
-        self.assertEqual(2, run.call_count)
-        for call in run.call_args_list:
-            self.assertIsInstance(call.args[0], list)
-            self.assertNotIn("shell", call.kwargs)
+    def test_unittest_without_main_block_is_executed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_sample.py",
+                "import unittest\n"
+                "class SampleTest(unittest.TestCase):\n"
+                "    def test_passes(self): self.assertTrue(True)\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(0, status, output)
+            self.assertIn("All 1 Hermes test cases executed", output)
+
+    def test_module_is_registered_for_postponed_dataclass_annotations(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_dataclass.py",
+                "from __future__ import annotations\n"
+                "from dataclasses import dataclass\n"
+                "import unittest\n"
+                "@dataclass\n"
+                "class Payload: value: str\n"
+                "class DataclassTest(unittest.TestCase):\n"
+                "    def test_value(self): self.assertEqual('ok', Payload('ok').value)\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(0, status, output)
+
+    def test_system_exit_during_import_is_a_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(root, "hermes/test_exit.py", "raise SystemExit(0)\n")
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(1, status)
+            self.assertIn("cannot load", output)
+
+    def test_pytest_only_file_fails_explicitly(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(root, "hermes/test_pytest.py", "def test_pytest_style(): pass\n")
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(1, status)
+            self.assertIn("pytest-only files are unsupported", output)
+
+    def test_file_with_only_skipped_cases_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_skipped.py",
+                "import unittest\n"
+                "@unittest.skip('not runnable')\n"
+                "class SkippedTest(unittest.TestCase):\n"
+                "    def test_skipped(self): pass\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(1, status)
+            self.assertIn("executed no non-skipped unittest cases", output)
+
+    def test_symbolic_test_link_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            target = root / "outside.py"
+            target.write_text("import unittest\n", encoding="utf-8")
+            link = root / "hermes/test_link.py"
+            try:
+                link.symlink_to(target)
+            except (NotImplementedError, OSError) as error:
+                self.skipTest(f"symbolic links unavailable: {error}")
+            subprocess.run(["git", "add", "hermes/test_link.py"], cwd=root, check=True)
+
+            with self.assertRaisesRegex(RuntimeError, "unsafe Hermes test path"):
+                runner.discover_test_files(root)
+
+    def test_inventory_failure_is_not_a_silent_empty_success(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "hermes").mkdir()
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(1, status)
+            self.assertIn("cannot enumerate repository tests", output)
 
 
 if __name__ == "__main__":
