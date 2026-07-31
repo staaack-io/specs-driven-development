@@ -9,6 +9,8 @@ migration progressive et des comparaisons fiables.
 Les skills suivants sont prêts à être copiés dans la distribution
 `staaack-io/hermes-agent-profile-staaack` :
 
+- `sdd-onboard` — inspection statique, délégation en lecture seule et
+  publication transactionnelle des cinq artefacts globaux ;
 - `sdd-help` — aide en lecture seule ;
 - `sdd-status` — état des fonctionnalités en lecture seule ;
 - `sdd-spec` — création guidée de `01-spec.md` ;
@@ -61,6 +63,13 @@ dans les références du skill. Les sous-agents analysent en lecture seule ;
 l'agent principal reste l'unique auteur de `03-design.md`, `04-tasks.md` et
 `.tdd-state.json`.
 
+Pour `/sdd-onboard`, les rôles `spring-onboarding` et
+`react-nextjs-onboarding` décrivent chacun leur stack en lecture seule. Ils
+retournent `files_modified: []`. L'agent principal consolide les résultats puis
+un garde atomique publie ensemble `_onboarding.md`, `_stack.json`,
+`_baseline.json`, `_starter-design.md` et `_known-debt.md`. Le câblage du
+harness reste une étape séparée.
+
 ## Publication dans le profil
 
 Le contenu de `hermes/skills/<nom>/` devient
@@ -86,11 +95,14 @@ version Codex et ses chemins ne sont pas tous portables vers Hermes.
 Depuis la racine du dépôt :
 
 ```bash
+python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-onboard
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-help
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-status
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-spec
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-spec-review
 python3 -m unittest -v \
+  hermes/skills/sdd-onboard/scripts/test_onboarding_guard.py \
+  hermes/skills/sdd-onboard/scripts/test_skill_contract.py \
   hermes/skills/sdd-spec-review/scripts/test_review_decision_guard.py
 ```
 
