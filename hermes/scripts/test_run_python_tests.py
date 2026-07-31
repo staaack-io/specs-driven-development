@@ -460,8 +460,11 @@ class RunPythonTestsTest(unittest.TestCase):
                 output.getvalue(),
             )
 
-    @unittest.skipUnless(os.name == "posix", "POSIX process signals are required")
-    def test_nonzero_worker_exit_reaps_registered_detached_test(self) -> None:
+    def assert_nonzero_worker_exit_reaps_registered_detached_test(
+        self,
+        *,
+        emit_failure_payload: bool,
+    ) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))
             identity_file = root / "unexpected-exit-child.identity"
@@ -480,6 +483,13 @@ class RunPythonTestsTest(unittest.TestCase):
                 "while True: time.sleep(0.05)\n"
             )
             fake_worker = root / "unexpected_exit_worker.py"
+            result_protocol = ""
+            if emit_failure_payload:
+                result_protocol = (
+                    "failure = helper.failure('synthetic worker failure')\n"
+                    "result = helper.RESULT_MARKER + json.dumps(failure, sort_keys=True) + '\\n'\n"
+                    "os.write(args.result_fd, result.encode('utf-8'))\n"
+                )
             fake_worker.write_text(
                 "import argparse\n"
                 "import json\n"
@@ -502,6 +512,7 @@ class RunPythonTestsTest(unittest.TestCase):
                 "message = helper.CLEANUP_MARKER + json.dumps(payload, sort_keys=True) + '\\n'\n"
                 "os.write(args.cleanup_fd, message.encode('ascii'))\n"
                 "os.close(args.cleanup_fd)\n"
+                f"{result_protocol}"
                 "os.close(args.result_fd)\n"
                 "raise SystemExit(7)\n",
                 encoding="utf-8",
@@ -525,7 +536,12 @@ class RunPythonTestsTest(unittest.TestCase):
                 )
 
             self.assertEqual(1, status)
-            self.assertIn("worker protocol error", output.getvalue())
+            self.assertIn(
+                "synthetic worker failure"
+                if emit_failure_payload
+                else "worker protocol error",
+                output.getvalue(),
+            )
             raw_pid, start_token = identity_file.read_text(encoding="utf-8").split(
                 "|", 1
             )
@@ -533,6 +549,18 @@ class RunPythonTestsTest(unittest.TestCase):
                 runner.identity_matches((int(raw_pid), start_token)),
                 output.getvalue(),
             )
+
+    @unittest.skipUnless(os.name == "posix", "POSIX process signals are required")
+    def test_nonzero_worker_without_control_reaps_registered_test(self) -> None:
+        self.assert_nonzero_worker_exit_reaps_registered_detached_test(
+            emit_failure_payload=False
+        )
+
+    @unittest.skipUnless(os.name == "posix", "POSIX process signals are required")
+    def test_nonzero_worker_failure_payload_reaps_registered_test(self) -> None:
+        self.assert_nonzero_worker_exit_reaps_registered_detached_test(
+            emit_failure_payload=True
+        )
 
     @unittest.skipUnless(os.name == "posix", "POSIX process identity is required")
     def test_reused_registered_pid_is_never_signaled(self) -> None:
