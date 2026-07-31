@@ -7,10 +7,11 @@ import fnmatch
 import json
 import os
 from pathlib import Path
+import select
 import signal
 import subprocess
 import sys
-import tempfile
+import time
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -20,6 +21,9 @@ PROTOCOL_VERSION = 1
 DEFAULT_TIMEOUT_SECONDS = 120.0
 WORKER_GRACE_SECONDS = 5.0
 MAX_LOG_BYTES = 64 * 1024
+LOG_READ_BYTES = 64 * 1024
+LOG_DRAIN_BUDGET_BYTES = 1024 * 1024
+LOG_POLL_SECONDS = 0.05
 MAX_PROTOCOL_BYTES = 16 * 1024
 FORCE_KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 
@@ -102,12 +106,65 @@ def worker_result(protocol_output: str) -> dict[str, object]:
     return payload
 
 
-def bounded_worker_log(log_file: object) -> tuple[str, bool]:
-    log_file.flush()
-    log_file.seek(0)
-    content = log_file.read(MAX_LOG_BYTES + 1)
-    truncated = len(content) > MAX_LOG_BYTES
-    return content[:MAX_LOG_BYTES].decode("utf-8", errors="replace"), truncated
+class BoundedWorkerLog:
+    """Keep one bounded prefix while continuously draining a worker pipe."""
+
+    def __init__(self, limit: int = MAX_LOG_BYTES) -> None:
+        if limit < 0:
+            raise ValueError("worker log limit must be non-negative")
+        self.limit = limit
+        self.content = bytearray()
+        self.truncated = False
+
+    def append(self, chunk: bytes) -> None:
+        remaining = self.limit - len(self.content)
+        if remaining > 0:
+            self.content.extend(chunk[:remaining])
+        if len(chunk) > remaining:
+            self.truncated = True
+
+    def render(self) -> tuple[str, bool]:
+        return self.content.decode("utf-8", errors="replace"), self.truncated
+
+
+def drain_worker_log(log_fd: int, capture: BoundedWorkerLog) -> bool:
+    """Drain one bounded batch; return true after pipe EOF."""
+
+    drained = 0
+    while drained < LOG_DRAIN_BUDGET_BYTES:
+        try:
+            chunk = os.read(
+                log_fd,
+                min(LOG_READ_BYTES, LOG_DRAIN_BUDGET_BYTES - drained),
+            )
+        except BlockingIOError:
+            return False
+        if not chunk:
+            return True
+        capture.append(chunk)
+        drained += len(chunk)
+    return False
+
+
+def wait_worker_with_bounded_log(
+    process: subprocess.Popen[bytes],
+    log_fd: int,
+    capture: BoundedWorkerLog,
+    timeout_seconds: float,
+) -> int:
+    """Wait for a worker while preventing its combined log pipe from filling."""
+
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        drain_worker_log(log_fd, capture)
+        returncode = process.poll()
+        if returncode is not None:
+            drain_worker_log(log_fd, capture)
+            return returncode
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise subprocess.TimeoutExpired(process.args, timeout_seconds)
+        select.select([log_fd], [], [], min(LOG_POLL_SECONDS, remaining))
 
 
 def stop_worker_tree(
@@ -174,15 +231,17 @@ def run_tests(
         print(f"\n==> {display}", flush=True)
 
         read_fd, write_fd = os.pipe()
+        log_read_fd, log_write_fd = os.pipe()
         os.set_inheritable(read_fd, False)
         os.set_inheritable(write_fd, False)
+        os.set_inheritable(log_read_fd, False)
+        os.set_inheritable(log_write_fd, False)
+        os.set_blocking(log_read_fd, False)
         process: subprocess.Popen[bytes] | None = None
         returncode: int | None = None
         timed_out = False
-        with (
-            tempfile.TemporaryFile(mode="w+b") as worker_log,
-            os.fdopen(read_fd, "rb", closefd=True) as control_stream,
-        ):
+        worker_log = BoundedWorkerLog()
+        with os.fdopen(read_fd, "rb", closefd=True) as control_stream:
             try:
                 process = subprocess.Popen(
                     [
@@ -196,22 +255,31 @@ def run_tests(
                     ],
                     cwd=repository_root,
                     pass_fds=(write_fd,),
-                    stdout=worker_log,
+                    stdout=log_write_fd,
                     stderr=subprocess.STDOUT,
                     start_new_session=os.name == "posix",
                 )
+                os.close(log_write_fd)
+                log_write_fd = -1
                 try:
-                    returncode = process.wait(
-                        timeout_seconds + worker_grace_seconds
+                    returncode = wait_worker_with_bounded_log(
+                        process,
+                        log_read_fd,
+                        worker_log,
+                        timeout_seconds + worker_grace_seconds,
                     )
                 except subprocess.TimeoutExpired:
                     timed_out = True
                     stop_worker_tree(process, worker_grace_seconds)
             finally:
                 os.close(write_fd)
+                if log_write_fd >= 0:
+                    os.close(log_write_fd)
+                drain_worker_log(log_read_fd, worker_log)
+                os.close(log_read_fd)
 
             protocol_output = read_protocol(control_stream)
-            log_output, truncated = bounded_worker_log(worker_log)
+            log_output, truncated = worker_log.render()
 
         if log_output:
             print(log_output, end="" if log_output.endswith("\n") else "\n")
