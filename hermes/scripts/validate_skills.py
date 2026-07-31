@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from html.parser import HTMLParser
 import os
 from pathlib import Path
 import re
@@ -12,6 +13,8 @@ import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
 
+import markdown_it
+from markdown_it import MarkdownIt
 import yaml
 from yaml.constructor import ConstructorError
 from yaml.nodes import MappingNode
@@ -20,13 +23,10 @@ from yaml.nodes import MappingNode
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SKILLS_ROOT = REPOSITORY_ROOT / "hermes/skills"
 PINNED_PYYAML = "6.0.3"
+PINNED_MARKDOWN_IT_PY = "4.2.0"
 MAX_MARKDOWN_FILES = 256
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-HTML_DESTINATION_RE = re.compile(
-    r'''\b(?:href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))''',
-    re.IGNORECASE,
-)
-INLINE_PATH_RE = re.compile(r"`((?:\.\./|references/|templates/|scripts/)[^`\s,;:]+)`")
+INLINE_PATH_RE = re.compile(r"^((?:\.\./|references/|templates/|scripts/)[^\s,;:]+)")
 MARKDOWN_ESCAPE_RE = re.compile(r"\\([!\"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~])")
 TEXT_SUFFIXES = {".json", ".md", ".py", ".sh", ".toml", ".yaml", ".yml"}
 FORBIDDEN_PATHS = (
@@ -129,109 +129,52 @@ def parse_skill(skill_file: Path) -> tuple[dict[str, str], str]:
     return values, "\n".join(lines[closing + 1 :]).strip()
 
 
-def is_escaped(text: str, position: int) -> bool:
-    backslashes = 0
-    position -= 1
-    while position >= 0 and text[position] == "\\":
-        backslashes += 1
-        position -= 1
-    return backslashes % 2 == 1
+class HTMLReferenceParser(HTMLParser):
+    """Collect href/src attributes from actual CommonMark HTML tokens."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.destinations: list[str] = []
+
+    def handle_starttag(
+        self,
+        _tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        for name, value in attrs:
+            if name.casefold() in {"href", "src"} and value is not None:
+                self.destinations.append(value)
+
+    def handle_startendtag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        self.handle_starttag(tag, attrs)
 
 
-def destination_token(text: str, start: int, inline: bool) -> tuple[str, int] | None:
-    while start < len(text) and text[start] in " \t\r\n":
-        start += 1
-    if start >= len(text):
-        return None
-    if text[start] == "<":
-        cursor = start + 1
-        while cursor < len(text):
-            if text[cursor] == ">" and not is_escaped(text, cursor):
-                return text[start + 1 : cursor], cursor + 1
-            if text[cursor] in "\r\n":
-                return None
-            cursor += 1
-        return None
-
-    cursor = start
-    depth = 0
-    while cursor < len(text):
-        character = text[cursor]
-        if character == "\\" and cursor + 1 < len(text):
-            cursor += 2
-            continue
-        if character == "(":
-            depth += 1
-        elif character == ")":
-            if depth == 0:
-                if inline:
-                    return text[start:cursor], cursor + 1
-                break
-            depth -= 1
-        elif character.isspace() and depth == 0:
-            break
-        cursor += 1
-    if inline and cursor == len(text):
-        return None
-    if depth != 0 or cursor == start:
-        return None
-    return text[start:cursor], cursor
-
-
-def inline_destinations(text: str) -> list[str]:
-    destinations: list[str] = []
-    cursor = 0
-    while cursor < len(text) - 1:
-        marker = text.find("](", cursor)
-        if marker < 0:
-            break
-        if is_escaped(text, marker):
-            cursor = marker + 2
-            continue
-        parsed = destination_token(text, marker + 2, inline=True)
-        if parsed is None:
-            cursor = marker + 2
-            continue
-        destination, cursor = parsed
-        destinations.append(destination)
-    return destinations
-
-
-def reference_definition_destination(
-    line: str,
-    continuation: str | None,
-) -> str | None:
-    cursor = 0
-    while cursor < len(line) and line[cursor] == " " and cursor < 4:
-        cursor += 1
-    if cursor > 3 or cursor >= len(line) or line[cursor] != "[":
-        return None
-    cursor += 1
-    while cursor < len(line):
-        if line[cursor] == "\\" and cursor + 1 < len(line):
-            cursor += 2
-            continue
-        if line[cursor] == "]":
-            break
-        cursor += 1
-    if cursor >= len(line) or cursor + 1 >= len(line) or line[cursor + 1] != ":":
-        return None
-    parsed = destination_token(line, cursor + 2, inline=False)
-    if parsed is None and not line[cursor + 2 :].strip() and continuation is not None:
-        indentation = len(continuation) - len(continuation.lstrip(" "))
-        if indentation <= 3:
-            parsed = destination_token(continuation, indentation, inline=False)
-    return parsed[0] if parsed is not None else None
+def markdown_tokens(text: str) -> list[object]:
+    parser = MarkdownIt("commonmark", {"html": True})
+    tokens = parser.parse(text)
+    flattened: list[object] = []
+    pending = list(reversed(tokens))
+    while pending:
+        token = pending.pop()
+        flattened.append(token)
+        children = getattr(token, "children", None)
+        if children:
+            pending.extend(reversed(children))
+    return flattened
 
 
 def local_reference_targets(
     markdown_file: Path,
     include_inline_paths: bool,
-) -> set[str]:
+) -> set[tuple[str, bool]]:
     text = markdown_file.read_text(encoding="utf-8")
-    targets: set[str] = set()
+    targets: set[tuple[str, bool]] = set()
 
-    def add_target(raw: str) -> None:
+    def add_target(raw: str, allow_skill_sibling: bool = False) -> None:
         raw = MARKDOWN_ESCAPE_RE.sub(r"\1", raw.strip())
         try:
             split = urlsplit(raw)
@@ -239,20 +182,32 @@ def local_reference_targets(
             raise ContractError(f"invalid link destination {raw!r}: {error}") from error
         if split.scheme or split.netloc or not split.path:
             return
-        targets.add(unquote(split.path))
+        targets.add((unquote(split.path), allow_skill_sibling))
 
-    for destination in inline_destinations(text):
-        add_target(destination)
-    lines = text.splitlines()
-    for index, line in enumerate(lines):
-        continuation = lines[index + 1] if index + 1 < len(lines) else None
-        destination = reference_definition_destination(line, continuation)
-        if destination is not None:
-            add_target(destination)
-    for match in HTML_DESTINATION_RE.finditer(text):
-        add_target(next(value for value in match.groups() if value is not None))
-    if include_inline_paths:
-        targets.update(INLINE_PATH_RE.findall(text))
+    try:
+        tokens = markdown_tokens(text)
+    except Exception as error:
+        raise ContractError(f"CommonMark parser failed: {error}") from error
+    for token in tokens:
+        token_type = getattr(token, "type", "")
+        if token_type == "link_open":
+            destination = token.attrGet("href")
+            if destination is not None:
+                add_target(destination)
+        elif token_type == "image":
+            destination = token.attrGet("src")
+            if destination is not None:
+                add_target(destination)
+        elif token_type in {"html_block", "html_inline"}:
+            html_parser = HTMLReferenceParser()
+            html_parser.feed(token.content)
+            html_parser.close()
+            for destination in html_parser.destinations:
+                add_target(destination)
+        elif include_inline_paths and token_type == "code_inline":
+            match = INLINE_PATH_RE.match(token.content.strip())
+            if match is not None:
+                add_target(match.group(1), allow_skill_sibling=True)
     return targets
 
 
@@ -260,6 +215,7 @@ def validate_reference(
     skill_root: Path,
     source_file: Path,
     reference: str,
+    allow_skill_sibling: bool,
     distributed_files: set[Path],
     errors: list[ValidationError],
 ) -> Path | None:
@@ -269,10 +225,14 @@ def validate_reference(
     except (OSError, RuntimeError):
         errors.append(ValidationError(source_file, f"missing local reference: {reference}"))
         return None
+    allowed_root = skill_root.parent if allow_skill_sibling else skill_root
     try:
-        resolved.relative_to(skill_root.resolve(strict=True))
+        resolved.relative_to(allowed_root.resolve(strict=True))
     except ValueError:
-        errors.append(ValidationError(source_file, f"local reference escapes the skill: {reference}"))
+        scope = "skills distribution" if allow_skill_sibling else "skill"
+        errors.append(
+            ValidationError(source_file, f"local reference escapes the {scope}: {reference}")
+        )
         return None
     if not resolved.is_file():
         errors.append(ValidationError(source_file, f"local reference is not a file: {reference}"))
@@ -310,11 +270,12 @@ def validate_markdown_graph(
         except (OSError, UnicodeError, ContractError) as error:
             errors.append(ValidationError(markdown_file, f"cannot parse Markdown: {error}"))
             continue
-        for reference in sorted(references):
+        for reference, allow_skill_sibling in sorted(references):
             target = validate_reference(
                 skill_root,
                 markdown_file,
                 reference,
+                allow_skill_sibling,
                 distributed_files,
                 errors,
             )
@@ -489,6 +450,13 @@ def main(argv: list[str] | None = None) -> int:
     if yaml.__version__ != PINNED_PYYAML:
         print(
             f"error: PyYAML {PINNED_PYYAML} is required; found {yaml.__version__}",
+            file=sys.stderr,
+        )
+        return 1
+    if markdown_it.__version__ != PINNED_MARKDOWN_IT_PY:
+        print(
+            f"error: markdown-it-py {PINNED_MARKDOWN_IT_PY} is required; "
+            f"found {markdown_it.__version__}",
             file=sys.stderr,
         )
         return 1

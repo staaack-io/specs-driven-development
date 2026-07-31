@@ -3,18 +3,19 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 import fnmatch
-import importlib.util
+import json
 import os
 from pathlib import Path
 import subprocess
 import sys
-from typing import Iterator
-import unittest
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+WORKER = Path(__file__).with_name("run_python_test_file.py")
+RESULT_MARKER = "HERMES_TEST_RESULT="
+PROTOCOL_VERSION = 1
+DEFAULT_TIMEOUT_SECONDS = 120.0
 
 
 def repository_inventory(root: Path) -> list[Path]:
@@ -55,29 +56,52 @@ def discover_test_files(root: Path) -> list[Path]:
     return sorted(tests)
 
 
-@contextmanager
-def loaded_test_suite(test: Path, index: int) -> Iterator[unittest.TestSuite]:
-    module_name = f"_hermes_repository_test_{index}"
-    module_spec = importlib.util.spec_from_file_location(module_name, test)
-    if module_spec is None or module_spec.loader is None:
-        raise RuntimeError(f"cannot import {test}")
-    module = importlib.util.module_from_spec(module_spec)
-    previous_module = sys.modules.get(module_name)
-    previous_path = list(sys.path)
-    sys.modules[module_name] = module
-    sys.path.insert(0, str(test.parent))
+def worker_result(completed: subprocess.CompletedProcess[str]) -> dict[str, object]:
+    marker_lines = [
+        line.removeprefix(RESULT_MARKER)
+        for line in completed.stdout.splitlines()
+        if line.startswith(RESULT_MARKER)
+    ]
+    if len(marker_lines) != 1:
+        raise RuntimeError(
+            f"worker protocol error: expected one {RESULT_MARKER!r} marker, "
+            f"received {len(marker_lines)}"
+        )
     try:
-        module_spec.loader.exec_module(module)
-        yield unittest.defaultTestLoader.loadTestsFromModule(module)
-    finally:
-        sys.path[:] = previous_path
-        if previous_module is None:
-            sys.modules.pop(module_name, None)
-        else:
-            sys.modules[module_name] = previous_module
+        payload = json.loads(marker_lines[0])
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"worker protocol error: invalid JSON: {error}") from error
+    required = {"version", "ok", "discovered", "executed", "skipped", "detail", "output"}
+    if not isinstance(payload, dict) or set(payload) != required:
+        raise RuntimeError("worker protocol error: invalid result fields")
+    if payload["version"] != PROTOCOL_VERSION:
+        raise RuntimeError("worker protocol error: unsupported version")
+    if not isinstance(payload["ok"], bool):
+        raise RuntimeError("worker protocol error: ok must be boolean")
+    if any(
+        not isinstance(payload[name], int) or isinstance(payload[name], bool) or payload[name] < 0
+        for name in ("discovered", "executed", "skipped")
+    ):
+        raise RuntimeError("worker protocol error: invalid test counts")
+    if payload["executed"] + payload["skipped"] > payload["discovered"]:
+        raise RuntimeError("worker protocol error: inconsistent test counts")
+    if not isinstance(payload["detail"], str) or not isinstance(payload["output"], str):
+        raise RuntimeError("worker protocol error: invalid text fields")
+    if payload["ok"] and (
+        payload["discovered"] == 0
+        or payload["executed"] == 0
+        or payload["detail"]
+    ):
+        raise RuntimeError("worker protocol error: invalid successful result")
+    return payload
 
 
-def run_tests(test_files: list[Path], repository_root: Path = REPOSITORY_ROOT) -> int:
+def run_tests(
+    test_files: list[Path],
+    repository_root: Path = REPOSITORY_ROOT,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    worker: Path = WORKER,
+) -> int:
     if not test_files:
         print("error: no Hermes Python tests were discovered", file=sys.stderr)
         return 1
@@ -86,39 +110,50 @@ def run_tests(test_files: list[Path], repository_root: Path = REPOSITORY_ROOT) -
     total_cases = 0
     total_executed = 0
     total_skipped = 0
-    for index, test_file in enumerate(test_files):
+    for test_file in test_files:
         try:
             display = test_file.relative_to(repository_root)
         except ValueError:
             display = test_file
         print(f"\n==> {display}", flush=True)
         try:
-            with loaded_test_suite(test_file, index) as suite:
-                case_count = suite.countTestCases()
-                if case_count == 0:
-                    print(
-                        f"error: {display} contains no unittest cases; "
-                        "pytest-only files are unsupported",
-                        file=sys.stderr,
-                    )
-                    return 1
-                total_cases += case_count
-                result = unittest.TextTestRunner(verbosity=1).run(suite)
-        except BaseException as error:  # Imports must never terminate CI cleanly.
-            print(f"error: cannot load {display}: {error}", file=sys.stderr)
-            return 1
-        if not result.wasSuccessful():
-            print(f"error: {display} failed", file=sys.stderr)
-            return 1
-        executed = result.testsRun - len(result.skipped)
-        if executed == 0:
+            completed = subprocess.run(
+                [sys.executable, str(worker), str(test_file)],
+                cwd=repository_root,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
             print(
-                f"error: {display} executed no non-skipped unittest cases",
+                f"error: {display} timed out after {timeout_seconds:g} seconds",
                 file=sys.stderr,
             )
             return 1
-        total_executed += executed
-        total_skipped += len(result.skipped)
+        try:
+            payload = worker_result(completed)
+        except RuntimeError as error:
+            print(f"error: {display}: {error}", file=sys.stderr)
+            if completed.stdout:
+                print(completed.stdout, file=sys.stderr, end="")
+            if completed.stderr:
+                print(completed.stderr, file=sys.stderr, end="")
+            return 1
+        if payload["output"]:
+            print(payload["output"], end="")
+        if completed.stderr:
+            print(completed.stderr, file=sys.stderr, end="")
+        if completed.returncode == 0 and not payload["ok"]:
+            print(f"error: {display}: worker status contradicts result", file=sys.stderr)
+            return 1
+        if completed.returncode != 0 or not payload["ok"]:
+            detail = payload["detail"] or f"worker exited with status {completed.returncode}"
+            print(f"error: {display}: {detail}", file=sys.stderr)
+            return 1
+        total_cases += payload["discovered"]
+        total_executed += payload["executed"]
+        total_skipped += payload["skipped"]
 
     print(
         f"\nAll {total_executed} Hermes test cases executed "

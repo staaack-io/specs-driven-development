@@ -233,6 +233,57 @@ class ValidateSkillsTest(unittest.TestCase):
 
             self.assertEqual(2, sum("missing local reference" in error for error in errors))
 
+    def test_example_links_inside_inline_and_fenced_code_are_ignored(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            skill = self.add_skill(root)
+            (skill / "SKILL.md").write_text(
+                (skill / "SKILL.md").read_text(encoding="utf-8")
+                + "\n`[Inline example](references/missing-inline.md)`\n"
+                + "\n```markdown\n"
+                + "[Fenced example](references/missing-fenced.md)\n"
+                + '<a href="references/missing-html.md">HTML example</a>\n'
+                + "```\n",
+                encoding="utf-8",
+            )
+
+            _count, errors = self.validate(root)
+
+            self.assertEqual([], errors)
+
+    def test_inline_code_resource_path_is_still_validated(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            skill = self.add_skill(root)
+            (skill / "SKILL.md").write_text(
+                (skill / "SKILL.md").read_text(encoding="utf-8")
+                + "\nRead `references/missing-inline-path.md`.\n",
+                encoding="utf-8",
+            )
+
+            _count, errors = self.validate(root)
+
+            self.assertTrue(any("missing local reference" in error for error in errors))
+
+    def test_inline_code_path_may_reference_a_distributed_sibling_skill(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            skill = self.add_skill(root)
+            sibling = self.add_skill(root, "sibling-skill")
+            script = sibling / "scripts/guard.py"
+            script.parent.mkdir()
+            script.write_text("print('ok')\n", encoding="utf-8")
+            (skill / "SKILL.md").write_text(
+                (skill / "SKILL.md").read_text(encoding="utf-8")
+                + "\nRun `../sibling-skill/scripts/guard.py validate`.\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "hermes/skills"], cwd=root, check=True)
+
+            _count, errors = self.validate(root)
+
+            self.assertEqual([], errors)
+
     def test_nested_markdown_is_recursive_and_cycles_terminate(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))

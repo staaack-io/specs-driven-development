@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from contextlib import redirect_stderr, redirect_stdout
 import io
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -97,6 +98,35 @@ class RunPythonTestsTest(unittest.TestCase):
 
             self.assertEqual(0, status, output)
 
+    def test_each_file_runs_in_a_fresh_process(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            first = self.add(
+                root,
+                "hermes/tests/test_a_leak.py",
+                "import sys\n"
+                "import types\n"
+                "import unittest\n"
+                "sys.modules['hermes_test_leak'] = types.ModuleType('hermes_test_leak')\n"
+                "class LeakTest(unittest.TestCase):\n"
+                "    def test_leak(self): self.assertIn('hermes_test_leak', sys.modules)\n",
+            )
+            second = self.add(
+                root,
+                "hermes/tests/test_b_clean.py",
+                "import sys\n"
+                "import unittest\n"
+                "class CleanTest(unittest.TestCase):\n"
+                "    def test_clean(self): self.assertNotIn('hermes_test_leak', sys.modules)\n",
+            )
+
+            output = io.StringIO()
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests([first, second], root)
+
+            self.assertEqual(0, status, output.getvalue())
+            self.assertIn("All 2 Hermes test cases executed", output.getvalue())
+
     def test_system_exit_during_import_is_a_failure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))
@@ -158,6 +188,71 @@ class RunPythonTestsTest(unittest.TestCase):
 
             self.assertEqual(1, status)
             self.assertIn("cannot enumerate repository tests", output)
+
+    def test_worker_without_exactly_one_json_marker_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            test_file = self.add(
+                root,
+                "hermes/test_sample.py",
+                "import unittest\n"
+                "class SampleTest(unittest.TestCase):\n"
+                "    def test_passes(self): pass\n",
+            )
+            worker = root / "fake_worker.py"
+            worker.write_text("print('{}')\n", encoding="utf-8")
+            output = io.StringIO()
+
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests([test_file], root, worker=worker)
+
+            self.assertEqual(1, status)
+            self.assertIn("expected one 'HERMES_TEST_RESULT=' marker", output.getvalue())
+
+    def test_worker_timeout_is_a_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            test_file = self.add(
+                root,
+                "hermes/test_sample.py",
+                "import unittest\n"
+                "class SampleTest(unittest.TestCase):\n"
+                "    def test_passes(self): pass\n",
+            )
+            worker = root / "slow_worker.py"
+            worker.write_text("import time\ntime.sleep(10)\n", encoding="utf-8")
+            output = io.StringIO()
+
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests(
+                    [test_file],
+                    root,
+                    timeout_seconds=0.05,
+                    worker=worker,
+                )
+
+            self.assertEqual(1, status)
+            self.assertIn("timed out", output.getvalue())
+
+    def test_worker_with_inconsistent_counts_is_rejected(self) -> None:
+        payload = {
+            "version": runner.PROTOCOL_VERSION,
+            "ok": True,
+            "discovered": 1,
+            "executed": 2,
+            "skipped": 0,
+            "detail": "",
+            "output": "",
+        }
+        completed = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout=runner.RESULT_MARKER + json.dumps(payload),
+            stderr="",
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "inconsistent test counts"):
+            runner.worker_result(completed)
 
 
 if __name__ == "__main__":
