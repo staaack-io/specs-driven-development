@@ -149,6 +149,23 @@ class ValidateSkillsTest(unittest.TestCase):
 
             self.assertTrue(any("does not match folder" in error for error in errors))
 
+    def test_frontmatter_description_is_not_parsed_as_markdown(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            skill = self.add_skill(root)
+            self.replace_skill(
+                skill,
+                "---\n"
+                "name: demo-skill\n"
+                'description: "Example [link](references/missing-frontmatter.md)."\n'
+                "---\n\n"
+                "# Demo\n\nInstructions.\n",
+            )
+
+            _count, errors = self.validate(root)
+
+            self.assertEqual([], errors)
+
     def test_body_requires_h1_and_instructions(self) -> None:
         cases = (
             ("Text only.\n", "level-one title"),

@@ -170,8 +170,13 @@ def markdown_tokens(text: str) -> list[object]:
 def local_reference_targets(
     markdown_file: Path,
     include_inline_paths: bool,
+    text_override: str | None = None,
 ) -> set[tuple[str, bool]]:
-    text = markdown_file.read_text(encoding="utf-8")
+    text = (
+        markdown_file.read_text(encoding="utf-8")
+        if text_override is None
+        else text_override
+    )
     targets: set[tuple[str, bool]] = set()
 
     def add_target(raw: str, allow_skill_sibling: bool = False) -> None:
@@ -246,6 +251,7 @@ def validate_reference(
 def validate_markdown_graph(
     skill_root: Path,
     skill_file: Path,
+    skill_body: str,
     distributed_files: set[Path],
     errors: list[ValidationError],
 ) -> None:
@@ -263,9 +269,11 @@ def validate_markdown_graph(
             return
         visited.add(resolved_markdown)
         try:
+            is_skill_root = resolved_markdown == skill_file.resolve()
             references = local_reference_targets(
                 markdown_file,
-                include_inline_paths=resolved_markdown == skill_file.resolve(),
+                include_inline_paths=is_skill_root,
+                text_override=skill_body if is_skill_root else None,
             )
         except (OSError, UnicodeError, ContractError) as error:
             errors.append(ValidationError(markdown_file, f"cannot parse Markdown: {error}"))
@@ -372,7 +380,7 @@ def validate_skill(
     elif not "\n".join(body_lines[1:]).strip():
         errors.append(ValidationError(skill_file, "skill body must contain instructions"))
 
-    validate_markdown_graph(skill_root, skill_file, distributed_files, errors)
+    validate_markdown_graph(skill_root, skill_file, body, distributed_files, errors)
     errors.extend(validate_portability(skill_root, distributed_files))
     return errors
 
