@@ -12,6 +12,8 @@ import subprocess
 import sys
 import tempfile
 
+import run_python_test_file as test_file_worker
+
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKER = Path(__file__).with_name("run_python_test_file.py")
@@ -161,6 +163,15 @@ def run_tests(
     if not test_files:
         print("error: no Hermes Python tests were discovered", file=sys.stderr)
         return 1
+    try:
+        # The inner worker is itself a subreaper, but it can be killed by this
+        # outer timeout before cleaning a test process that called setsid().
+        # Becoming the next subreaper lets this runner adopt and reap that
+        # detached session instead of leaking it into the CI host.
+        test_file_worker.enable_child_subreaper()
+    except OSError as error:
+        print(f"error: cannot enable outer child subreaper: {error}", file=sys.stderr)
+        return 1
 
     print(f"Discovered {len(test_files)} Hermes test files.", flush=True)
     total_cases = 0
@@ -179,6 +190,7 @@ def run_tests(
         process: subprocess.Popen[bytes] | None = None
         returncode: int | None = None
         timed_out = False
+        cleanup_error: BaseException | None = None
         with (
             tempfile.TemporaryFile(mode="w+b") as worker_log,
             os.fdopen(read_fd, "rb", closefd=True) as control_stream,
@@ -206,9 +218,20 @@ def run_tests(
                     )
                 except subprocess.TimeoutExpired:
                     timed_out = True
-                    stop_worker_tree(process, worker_grace_seconds)
+                    try:
+                        stop_worker_tree(process, worker_grace_seconds)
+                    except BaseException as error:
+                        cleanup_error = error
             finally:
                 os.close(write_fd)
+                try:
+                    # On Linux, children from a detached test session are now
+                    # adopted by this subreaper after the worker exits. Cleanup
+                    # is required after normal worker completion as well as an
+                    # outer timeout, because a wedged worker may exit early.
+                    test_file_worker.kill_and_reap_linux_descendants()
+                except BaseException as error:
+                    cleanup_error = error
 
             protocol_output = read_protocol(control_stream)
             log_output, truncated = bounded_worker_log(worker_log)
@@ -217,6 +240,13 @@ def run_tests(
             print(log_output, end="" if log_output.endswith("\n") else "\n")
         if truncated:
             print(f"[worker output truncated after {MAX_LOG_BYTES} bytes]")
+        if cleanup_error is not None:
+            print(
+                f"error: {display}: outer descendant cleanup failed: "
+                f"{cleanup_error}",
+                file=sys.stderr,
+            )
+            return 1
         if timed_out:
             print(
                 f"error: {display} supervisor timed out after "

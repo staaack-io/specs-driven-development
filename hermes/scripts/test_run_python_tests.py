@@ -238,6 +238,63 @@ class RunPythonTestsTest(unittest.TestCase):
             self.assertEqual(1, status)
             self.assertIn("timed out", output.getvalue())
 
+    @unittest.skipUnless(
+        sys.platform.startswith("linux"),
+        "Linux child-subreaper support is required",
+    )
+    def test_outer_timeout_reaps_worker_detached_test_session(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            test_file = self.add(
+                root,
+                "hermes/test_sample.py",
+                "import unittest\n"
+                "class SampleTest(unittest.TestCase):\n"
+                "    def test_passes(self): pass\n",
+            )
+            pid_file = root / "detached-test.pid"
+            detached_test = (
+                "import os\n"
+                "from pathlib import Path\n"
+                "import signal\n"
+                "import time\n"
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                f"Path({str(pid_file)!r}).write_text(str(os.getpid()))\n"
+                "while True: time.sleep(0.05)\n"
+            )
+            fake_worker = root / "wedged_worker.py"
+            fake_worker.write_text(
+                "import signal\n"
+                "import subprocess\n"
+                "import sys\n"
+                "import time\n"
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                "subprocess.Popen(\n"
+                f"    [sys.executable, '-c', {detached_test!r}],\n"
+                "    start_new_session=True,\n"
+                ")\n"
+                f"while not __import__('pathlib').Path({str(pid_file)!r}).exists():\n"
+                "    time.sleep(0.01)\n"
+                "while True: time.sleep(0.05)\n",
+                encoding="utf-8",
+            )
+            output = io.StringIO()
+
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests(
+                    [test_file],
+                    root,
+                    timeout_seconds=0.2,
+                    worker=fake_worker,
+                    worker_grace_seconds=0.2,
+                )
+
+            self.assertEqual(1, status)
+            self.assertIn("supervisor timed out", output.getvalue())
+            detached_pid = int(pid_file.read_text(encoding="utf-8"))
+            with self.assertRaises(ProcessLookupError):
+                os.kill(detached_pid, 0)
+
     def test_worker_with_inconsistent_counts_is_rejected(self) -> None:
         payload = {
             "version": runner.PROTOCOL_VERSION,
