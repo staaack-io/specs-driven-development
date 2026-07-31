@@ -144,6 +144,8 @@ class HTMLReferenceParser(HTMLParser):
         for name, value in attrs:
             if name.casefold() in {"href", "src"} and value is not None:
                 self.destinations.append(value)
+            elif name.casefold() == "srcset" and value is not None:
+                self.destinations.extend(srcset_destinations(value))
 
     def handle_startendtag(
         self,
@@ -151,6 +153,40 @@ class HTMLReferenceParser(HTMLParser):
         attrs: list[tuple[str, str | None]],
     ) -> None:
         self.handle_starttag(tag, attrs)
+
+
+def srcset_destinations(value: str) -> list[str]:
+    """Return URL candidates while preserving commas inside non-space URLs."""
+
+    destinations: list[str] = []
+    position = 0
+    while position < len(value):
+        while position < len(value) and (value[position].isspace() or value[position] == ","):
+            position += 1
+        if position >= len(value):
+            break
+
+        url_start = position
+        while position < len(value) and not value[position].isspace():
+            position += 1
+        candidate = value[url_start:position]
+        if candidate.endswith(","):
+            candidate = candidate.rstrip(",")
+        else:
+            parentheses = 0
+            while position < len(value):
+                character = value[position]
+                if character == "(":
+                    parentheses += 1
+                elif character == ")" and parentheses:
+                    parentheses -= 1
+                elif character == "," and parentheses == 0:
+                    position += 1
+                    break
+                position += 1
+        if candidate:
+            destinations.append(candidate)
+    return destinations
 
 
 def markdown_tokens(text: str) -> list[object]:

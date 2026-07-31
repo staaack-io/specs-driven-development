@@ -250,6 +250,39 @@ class ValidateSkillsTest(unittest.TestCase):
 
             self.assertEqual(2, sum("missing local reference" in error for error in errors))
 
+    def test_html_srcset_local_candidates_are_validated(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            skill = self.add_skill(root)
+            (skill / "SKILL.md").write_text(
+                (skill / "SKILL.md").read_text(encoding="utf-8")
+                + '\n<source srcset="references/missing-small.png 1x, '
+                + 'references/missing-large.png 2x">\n',
+                encoding="utf-8",
+            )
+
+            _count, errors = self.validate(root)
+
+            self.assertEqual(2, sum("missing local reference" in error for error in errors))
+
+    def test_html_srcset_data_uri_with_commas_is_not_local(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            skill = self.add_skill(root)
+            image = skill / "references/present.png"
+            image.write_bytes(b"png")
+            (skill / "SKILL.md").write_text(
+                (skill / "SKILL.md").read_text(encoding="utf-8")
+                + '\n<img srcset="data:image/svg+xml,%3Csvg%3E,%3C/svg%3E 1x, '
+                + 'references/present.png 2x">\n',
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "hermes/skills"], cwd=root, check=True)
+
+            _count, errors = self.validate(root)
+
+            self.assertEqual([], errors)
+
     def test_example_links_inside_inline_and_fenced_code_are_ignored(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))
