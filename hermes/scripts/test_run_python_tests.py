@@ -343,6 +343,114 @@ class RunPythonTestsTest(unittest.TestCase):
             with self.assertRaises(ProcessLookupError):
                 os.kill(test_pid, 0)
 
+    @unittest.skipUnless(os.name == "posix", "POSIX process signals are required")
+    def test_missing_platform_enumerator_refuses_before_test_start(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            sentinel = root / "test-started"
+            test_file = self.add(
+                root,
+                "hermes/test_must_not_start.py",
+                "from pathlib import Path\n"
+                "import unittest\n"
+                f"Path({str(sentinel)!r}).write_text('started')\n"
+                "class MustNotStartTest(unittest.TestCase):\n"
+                "    def test_passes(self): pass\n",
+            )
+            output = io.StringIO()
+
+            def unavailable(*_args: object, **_kwargs: object) -> set[int]:
+                raise RuntimeError("platform process listing unavailable")
+
+            if sys.platform.startswith("linux"):
+                original = runner.test_file_worker.linux_direct_children
+                runner.test_file_worker.linux_direct_children = unavailable
+            else:
+                original = runner.tagged_posix_processes
+                runner.tagged_posix_processes = unavailable
+            try:
+                with redirect_stdout(output), redirect_stderr(output):
+                    status = runner.run_tests([test_file], root)
+            finally:
+                if sys.platform.startswith("linux"):
+                    runner.test_file_worker.linux_direct_children = original
+                else:
+                    runner.tagged_posix_processes = original
+
+            self.assertEqual(1, status)
+            self.assertIn("descendant cleanup preflight failed", output.getvalue())
+            self.assertFalse(sentinel.exists(), "test ran without cleanup capability")
+
+    @unittest.skipUnless(os.name == "posix", "POSIX process signals are required")
+    def test_registered_test_dies_if_enumerator_fails_after_preflight(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            pid_file = root / "registered-test.pid"
+            test_file = self.add(
+                root,
+                "hermes/test_stop_worker_after_preflight.py",
+                "import os\n"
+                "from pathlib import Path\n"
+                "import signal\n"
+                "import time\n"
+                "import unittest\n"
+                "class StopWorkerTest(unittest.TestCase):\n"
+                "    def test_stop_worker(self):\n"
+                f"        Path({str(pid_file)!r}).write_text(str(os.getpid()))\n"
+                "        os.kill(os.getppid(), signal.SIGSTOP)\n"
+                "        while True: time.sleep(0.05)\n",
+            )
+            output = io.StringIO()
+            calls = 0
+
+            if sys.platform.startswith("linux"):
+                original = runner.test_file_worker.linux_direct_children
+
+                def fail_after_preflight(
+                    *args: object,
+                    **kwargs: object,
+                ) -> set[int]:
+                    nonlocal calls
+                    calls += 1
+                    if calls > 1:
+                        raise RuntimeError("runtime /proc failure")
+                    return original(*args, **kwargs)
+
+                runner.test_file_worker.linux_direct_children = fail_after_preflight
+            else:
+                original = runner.tagged_posix_processes
+
+                def fail_after_preflight(
+                    *args: object,
+                    **kwargs: object,
+                ) -> set[int]:
+                    nonlocal calls
+                    calls += 1
+                    if calls > 1:
+                        raise RuntimeError("runtime ps failure")
+                    return original(*args, **kwargs)
+
+                runner.tagged_posix_processes = fail_after_preflight
+            try:
+                with redirect_stdout(output), redirect_stderr(output):
+                    status = runner.run_tests(
+                        [test_file],
+                        root,
+                        timeout_seconds=0.2,
+                        worker_grace_seconds=0.3,
+                    )
+            finally:
+                if sys.platform.startswith("linux"):
+                    runner.test_file_worker.linux_direct_children = original
+                else:
+                    runner.tagged_posix_processes = original
+
+            self.assertEqual(1, status)
+            self.assertIn("outer descendant cleanup failed", output.getvalue())
+            registered_pid = int(pid_file.read_text(encoding="utf-8"))
+            with self.assertRaises(ProcessLookupError):
+                os.kill(registered_pid, 0)
+
     @unittest.skipUnless(
         os.name == "posix" and not sys.platform.startswith("linux"),
         "non-Linux POSIX process tagging is required",

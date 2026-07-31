@@ -333,6 +333,23 @@ def terminate_tagged_posix_processes(
         time.sleep(0.01)
 
 
+def require_descendant_cleanup_capability() -> None:
+    """Fail before execution when detached descendants cannot be enumerated."""
+
+    if os.name != "posix":
+        return
+    if sys.platform.startswith("linux"):
+        test_file_worker.linux_direct_children(
+            os.getpid(),
+            require_visibility=True,
+        )
+        return
+    # Use a fresh value that cannot match an existing process. This exercises
+    # the exact bounded ps path later used for non-Linux POSIX cleanup without
+    # exposing the real per-worker token before that worker exists.
+    tagged_posix_processes(secrets.token_hex(32))
+
+
 def run_tests(
     test_files: list[Path],
     repository_root: Path = REPOSITORY_ROOT,
@@ -363,6 +380,14 @@ def run_tests(
         except ValueError:
             display = test_file
         print(f"\n==> {display}", flush=True)
+        try:
+            require_descendant_cleanup_capability()
+        except (OSError, RuntimeError) as error:
+            print(
+                f"error: {display}: descendant cleanup preflight failed: {error}",
+                file=sys.stderr,
+            )
+            return 1
 
         read_fd, write_fd = os.pipe()
         cleanup_read_fd, cleanup_write_fd = os.pipe()

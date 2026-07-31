@@ -115,3 +115,8 @@ les fuites accidentelles, pas une sandbox. Un programme exécuté avec le même
 utilisateur peut volontairement effacer ce marqueur et sortir de ce périmètre ;
 les tests hostiles exigent alors une sandbox ou un contrôle de jobs fourni par
 le système d'exploitation.
+
+Avant chaque fichier de test, le runner vérifie que l'énumérateur requis est
+disponible (`/proc` sous Linux, `ps` sur les autres POSIX). Il refuse de démarrer
+le fichier si cette porte échoue, plutôt que d'exécuter un descendant qu'il ne
+pourrait ensuite garantir de nettoyer.
