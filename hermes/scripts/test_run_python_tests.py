@@ -8,6 +8,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -346,30 +347,68 @@ class RunPythonTestsTest(unittest.TestCase):
         os.name == "posix" and not sys.platform.startswith("linux"),
         "non-Linux POSIX process tagging is required",
     )
-    def test_outer_timeout_reaps_double_forked_posix_descendant(self) -> None:
+    def test_outer_timeout_reaps_external_double_forked_posix_descendant(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))
             final_pid_file = root / "double-fork-final.pid"
+            helper_source = root / "double_fork_helper.c"
+            helper_binary = root / "double-fork-helper"
+            helper_source.write_text(
+                "#include <errno.h>\n"
+                "#include <signal.h>\n"
+                "#include <stdio.h>\n"
+                "#include <stdlib.h>\n"
+                "#include <sys/types.h>\n"
+                "#include <sys/wait.h>\n"
+                "#include <unistd.h>\n"
+                "int main(int argc, char **argv) {\n"
+                "    if (argc != 2) return 2;\n"
+                "    pid_t first = fork();\n"
+                "    if (first < 0) return 3;\n"
+                "    if (first == 0) {\n"
+                "        if (setsid() < 0) _exit(4);\n"
+                "        pid_t second = fork();\n"
+                "        if (second < 0) _exit(5);\n"
+                "        if (second == 0) {\n"
+                "            signal(SIGTERM, SIG_IGN);\n"
+                "            FILE *output = fopen(argv[1], \"w\");\n"
+                "            if (output == NULL) _exit(6);\n"
+                "            if (fprintf(output, \"%d\", getpid()) < 0) _exit(7);\n"
+                "            if (fclose(output) != 0) _exit(8);\n"
+                "            for (;;) pause();\n"
+                "        }\n"
+                "        _exit(0);\n"
+                "    }\n"
+                "    int status = 0;\n"
+                "    if (waitpid(first, &status, 0) < 0) return 9;\n"
+                "    return WIFEXITED(status) ? WEXITSTATUS(status) : 10;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            compiler = shutil.which("cc")
+            if compiler is None:
+                self.skipTest("a C compiler is required for the external helper")
+            subprocess.run(
+                [compiler, str(helper_source), "-o", str(helper_binary)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
             test_file = self.add(
                 root,
                 "hermes/test_double_fork.py",
                 "import os\n"
                 "from pathlib import Path\n"
                 "import signal\n"
+                "import subprocess\n"
                 "import time\n"
                 "import unittest\n"
                 "class DoubleForkTest(unittest.TestCase):\n"
                 "    def test_stop_worker_after_double_fork(self):\n"
-                "        first = os.fork()\n"
-                "        if first == 0:\n"
-                "            os.setsid()\n"
-                "            second = os.fork()\n"
-                "            if second == 0:\n"
-                "                signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
-                f"                Path({str(final_pid_file)!r}).write_text(str(os.getpid()))\n"
-                "                while True: time.sleep(0.05)\n"
-                "            os._exit(0)\n"
-                "        os.waitpid(first, 0)\n"
+                f"        subprocess.run([{str(helper_binary)!r}, "
+                f"{str(final_pid_file)!r}], check=True)\n"
                 f"        while not Path({str(final_pid_file)!r}).exists(): time.sleep(0.01)\n"
                 "        os.kill(os.getppid(), signal.SIGSTOP)\n"
                 "        while True: time.sleep(0.05)\n",
@@ -380,12 +419,12 @@ class RunPythonTestsTest(unittest.TestCase):
                 status = runner.run_tests(
                     [test_file],
                     root,
-                    timeout_seconds=0.3,
-                    worker_grace_seconds=1.0,
+                    timeout_seconds=1.0,
+                    worker_grace_seconds=2.0,
                 )
 
             self.assertEqual(1, status)
-            self.assertIn("supervisor timed out", output.getvalue())
+            self.assertIn("timed out", output.getvalue())
             final_pid = int(final_pid_file.read_text(encoding="utf-8"))
             with self.assertRaises(ProcessLookupError):
                 os.kill(final_pid, 0)

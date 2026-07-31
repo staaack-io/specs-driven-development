@@ -105,3 +105,13 @@ contient pas cette preuve.
 
 La validation avec Hermes sur le VPS reste obligatoire avant publication d'une
 version stable du profil.
+
+Le runner CI `hermes/scripts/run_python_tests.py` isole les fichiers de test et
+échoue en cas de timeout ou de protocole incomplet. Sous Linux, le mécanisme
+`child-subreaper` du noyau permet aussi de retrouver les descendants détachés.
+Sous les autres systèmes POSIX, le nettoyage des descendants ordinaires repose
+sur un marqueur privé hérité par `fork` et `exec` : c'est une protection contre
+les fuites accidentelles, pas une sandbox. Un programme exécuté avec le même
+utilisateur peut volontairement effacer ce marqueur et sortir de ce périmètre ;
+les tests hostiles exigent alors une sandbox ou un contrôle de jobs fourni par
+le système d'exploitation.

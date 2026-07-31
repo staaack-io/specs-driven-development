@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Discover and execute every supported Hermes unittest file."""
+"""Discover and execute every supported Hermes unittest file.
+
+This runner is a fail-closed result supervisor, not an OS sandbox. Linux uses
+kernel child-subreaper semantics for detached descendants. On other POSIX
+systems, cleanup of ordinary descendants is best effort and relies on a private
+run token inherited through fork/exec. Code running as the same user can erase
+that token or deliberately escape process supervision; such hostile code is
+outside this runner's threat model and needs an external sandbox or job-control
+facility.
+"""
 
 from __future__ import annotations
 
