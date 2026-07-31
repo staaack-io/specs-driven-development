@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Supervise one isolated unittest process and report through a private FD."""
+"""Supervise one isolated unittest process and report through a private FD.
+
+The process boundary prevents test output and ordinary early exits from forging a
+successful CI result. It is not an OS sandbox for deliberately hostile Python
+code running as the same user.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +13,6 @@ import ctypes
 import importlib.util
 import json
 import multiprocessing
-from multiprocessing.connection import Connection
 import os
 from pathlib import Path
 import signal
@@ -26,6 +30,13 @@ CHILD_KILL_GRACE_SECONDS = 1.0
 MAX_DESCENDANT_PROCESSES = 4096
 FORCE_KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 PR_SET_CHILD_SUBREAPER = 36
+NORMAL_COMPLETION_EXIT_CODE = 86
+OUTCOME_NOT_COMPLETED = 0
+OUTCOME_SUCCESS = 1
+OUTCOME_NO_TESTS = 2
+OUTCOME_NO_EXECUTED_TESTS = 3
+OUTCOME_TEST_FAILURE = 4
+OUTCOME_LOAD_FAILURE = 5
 
 
 def failure(detail: str) -> dict[str, object]:
@@ -39,11 +50,10 @@ def failure(detail: str) -> dict[str, object]:
     }
 
 
-def execute_in_child(test_file: str, result_connection: Connection) -> None:
-    """Load and run tests in a spawned process with no supervisor result FD."""
+def execute_in_child(test_file: str, metadata: object) -> None:
+    """Run tests and expose only fail-closed, untrusted count metadata."""
 
     try:
-        os.set_inheritable(result_connection.fileno(), False)
         if os.name == "posix":
             os.setsid()
         path = Path(test_file)
@@ -58,35 +68,78 @@ def execute_in_child(test_file: str, result_connection: Connection) -> None:
         suite = unittest.defaultTestLoader.loadTestsFromModule(module)
         discovered = suite.countTestCases()
         if discovered == 0:
-            payload = failure(
-                "contains no unittest cases; pytest-only files are unsupported"
-            )
+            executed = 0
+            skipped = 0
+            outcome = OUTCOME_NO_TESTS
         else:
             result = unittest.TextTestRunner(verbosity=1).run(suite)
             skipped = len(result.skipped)
             executed = result.testsRun - skipped
             if executed == 0:
-                detail = "executed no non-skipped unittest cases"
+                outcome = OUTCOME_NO_EXECUTED_TESTS
             elif not result.wasSuccessful():
-                detail = "unittest suite failed"
+                outcome = OUTCOME_TEST_FAILURE
             else:
-                detail = ""
-            ok = result.wasSuccessful() and executed > 0
-            payload = {
-                "version": PROTOCOL_VERSION,
-                "ok": ok,
-                "discovered": discovered,
-                "executed": executed,
-                "skipped": skipped,
-                "detail": detail,
-            }
+                outcome = OUTCOME_SUCCESS
     except BaseException as error:  # A test import must never terminate CI cleanly.
         traceback.print_exc()
-        payload = failure(f"cannot load test file: {error}")
-    try:
-        result_connection.send(payload)
-    finally:
-        result_connection.close()
+        discovered = 0
+        executed = 0
+        skipped = 0
+        outcome = OUTCOME_LOAD_FAILURE
+
+    # This shared array is deliberately metadata-only. The supervisor derives
+    # success from the reserved normal-completion exit status, never from these
+    # values. A test can therefore corrupt counts only to make the run fail.
+    metadata[0] = discovered
+    metadata[1] = executed
+    metadata[2] = skipped
+    metadata[3] = outcome
+    raise SystemExit(
+        NORMAL_COMPLETION_EXIT_CODE if outcome == OUTCOME_SUCCESS else 1
+    )
+
+
+def payload_from_observation(
+    exitcode: int | None,
+    metadata: object,
+) -> dict[str, object]:
+    discovered, executed, skipped, outcome = (int(value) for value in metadata)
+    counts_are_valid = (
+        discovered >= 0
+        and executed >= 0
+        and skipped >= 0
+        and executed + skipped <= discovered
+    )
+    if exitcode == NORMAL_COMPLETION_EXIT_CODE:
+        if (
+            not counts_are_valid
+            or outcome != OUTCOME_SUCCESS
+            or discovered == 0
+            or executed == 0
+        ):
+            return failure("test child returned invalid completion metadata")
+        return {
+            "version": PROTOCOL_VERSION,
+            "ok": True,
+            "discovered": discovered,
+            "executed": executed,
+            "skipped": skipped,
+            "detail": "",
+        }
+
+    details = {
+        OUTCOME_NO_TESTS: "contains no unittest cases; pytest-only files are unsupported",
+        OUTCOME_NO_EXECUTED_TESTS: "executed no non-skipped unittest cases",
+        OUTCOME_TEST_FAILURE: "unittest suite failed",
+        OUTCOME_LOAD_FAILURE: "cannot load test file",
+    }
+    if outcome in details and counts_are_valid:
+        return failure(details[outcome])
+    return failure(
+        "test child exited without normal framework completion "
+        f"(status {exitcode})"
+    )
 
 
 def signal_test_group(process: multiprocessing.Process, signal_number: int) -> None:
@@ -247,15 +300,14 @@ def stop_test_tree(process: multiprocessing.Process) -> bool:
 def supervise(test_file: Path, timeout_seconds: float) -> tuple[int, dict[str, object]]:
     enable_child_subreaper()
     context = multiprocessing.get_context("spawn")
-    receiver, sender = context.Pipe(duplex=False)
+    metadata = context.Array("q", 4, lock=False)
     process = context.Process(
         target=execute_in_child,
-        args=(str(test_file), sender),
+        args=(str(test_file), metadata),
     )
     payload: dict[str, object]
     try:
         process.start()
-        sender.close()
         process.join(timeout_seconds)
         if process.is_alive():
             stopped = stop_test_tree(process)
@@ -268,22 +320,7 @@ def supervise(test_file: Path, timeout_seconds: float) -> tuple[int, dict[str, o
             # descendants and returned without waiting for them.
             signal_test_group(process, FORCE_KILL_SIGNAL)
             kill_and_reap_linux_descendants()
-            try:
-                if not receiver.poll(0):
-                    raise EOFError
-                received = receiver.recv()
-            except (EOFError, OSError):
-                received = None
-            if not isinstance(received, dict):
-                payload = failure(
-                    f"test child exited without a result (status {process.exitcode})"
-                )
-            else:
-                payload = received
-            if process.exitcode != 0:
-                payload = failure(
-                    f"test child result contradicted exit status {process.exitcode}"
-                )
+            payload = payload_from_observation(process.exitcode, metadata)
     except BaseException as error:
         traceback.print_exc()
         payload = failure(f"worker supervisor failed: {error}")
@@ -298,8 +335,6 @@ def supervise(test_file: Path, timeout_seconds: float) -> tuple[int, dict[str, o
         except BaseException as error:
             traceback.print_exc()
             payload = failure(f"worker descendant cleanup failed: {error}")
-        receiver.close()
-        sender.close()
     return (0 if payload.get("ok") is True else 1), payload
 
 

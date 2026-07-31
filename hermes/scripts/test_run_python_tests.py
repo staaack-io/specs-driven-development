@@ -278,7 +278,108 @@ class RunPythonTestsTest(unittest.TestCase):
             status, output = self.run_runner(root)
 
             self.assertEqual(1, status)
-            self.assertIn("test child exited without a result", output)
+            self.assertIn("without normal framework completion", output)
+
+    def test_test_frames_expose_no_result_connection(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_no_result_connection.py",
+                "import inspect\n"
+                "import unittest\n"
+                "from multiprocessing.connection import Connection\n"
+                "class NoResultConnectionTest(unittest.TestCase):\n"
+                "    def test_frames(self):\n"
+                "        frame = inspect.currentframe()\n"
+                "        while frame is not None:\n"
+                "            self.assertFalse(any(\n"
+                "                isinstance(value, Connection) and value.writable\n"
+                "                for namespace in (frame.f_locals, frame.f_globals)\n"
+                "                for value in namespace.values()\n"
+                "            ))\n"
+                "            frame = frame.f_back\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(0, status, output)
+
+    def test_frame_walk_forged_success_before_failure_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_frame_spoof.py",
+                "import inspect\n"
+                "import unittest\n"
+                "from multiprocessing.connection import Connection\n"
+                "class FrameSpoofTest(unittest.TestCase):\n"
+                "    def test_spoof_then_fail(self):\n"
+                "        frame = inspect.currentframe()\n"
+                "        forged = False\n"
+                "        while frame is not None:\n"
+                "            values = list(frame.f_locals.values()) + list(frame.f_globals.values())\n"
+                "            for value in values:\n"
+                "                if isinstance(value, Connection) and value.writable:\n"
+                "                    value.send({\n"
+                f"                        'version': {runner.PROTOCOL_VERSION},\n"
+                "                        'ok': True,\n"
+                "                        'discovered': 1,\n"
+                "                        'executed': 1,\n"
+                "                        'skipped': 0,\n"
+                "                        'detail': '',\n"
+                "                    })\n"
+                "                    forged = True\n"
+                "                    break\n"
+                "            if forged: break\n"
+                "            frame = frame.f_back\n"
+                "        self.assertFalse(forged, 'test process exposed a result channel')\n"
+                "        self.fail('real test failure after attempted forged success')\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(1, status)
+            self.assertIn("unittest suite failed", output)
+
+    def test_frame_walk_forged_success_before_hard_exit_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_frame_hard_exit_spoof.py",
+                "import inspect\n"
+                "import os\n"
+                "import unittest\n"
+                "from multiprocessing.connection import Connection\n"
+                "class FrameHardExitSpoofTest(unittest.TestCase):\n"
+                "    def test_spoof_then_exit_zero(self):\n"
+                "        frame = inspect.currentframe()\n"
+                "        forged = False\n"
+                "        while frame is not None:\n"
+                "            values = list(frame.f_locals.values()) + list(frame.f_globals.values())\n"
+                "            for value in values:\n"
+                "                if isinstance(value, Connection) and value.writable:\n"
+                "                    value.send({\n"
+                f"                        'version': {runner.PROTOCOL_VERSION},\n"
+                "                        'ok': True,\n"
+                "                        'discovered': 1,\n"
+                "                        'executed': 1,\n"
+                "                        'skipped': 0,\n"
+                "                        'detail': '',\n"
+                "                    })\n"
+                "                    forged = True\n"
+                "                    break\n"
+                "            if forged: break\n"
+                "            frame = frame.f_back\n"
+                "        os._exit(0)\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(1, status)
+            self.assertIn("without normal framework completion", output)
 
     def test_worker_output_is_disk_backed_and_bounded_to_64_kib(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
