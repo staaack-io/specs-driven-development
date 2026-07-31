@@ -460,6 +460,80 @@ class RunPythonTestsTest(unittest.TestCase):
                 output.getvalue(),
             )
 
+    @unittest.skipUnless(os.name == "posix", "POSIX process signals are required")
+    def test_nonzero_worker_exit_reaps_registered_detached_test(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            identity_file = root / "unexpected-exit-child.identity"
+            helper_directory = Path(worker.__file__).resolve().parent
+            child_program = (
+                "import os\n"
+                "from pathlib import Path\n"
+                "import signal\n"
+                "import sys\n"
+                "import time\n"
+                f"sys.path.insert(0, {str(helper_directory)!r})\n"
+                "import run_python_test_file as helper\n"
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                "identity = (os.getpid(), helper.process_start_token(os.getpid()))\n"
+                f"Path({str(identity_file)!r}).write_text(f'{{identity[0]}}|{{identity[1]}}')\n"
+                "while True: time.sleep(0.05)\n"
+            )
+            fake_worker = root / "unexpected_exit_worker.py"
+            fake_worker.write_text(
+                "import argparse\n"
+                "import json\n"
+                "import os\n"
+                "from pathlib import Path\n"
+                "import subprocess\n"
+                "import sys\n"
+                "import time\n"
+                f"sys.path.insert(0, {str(helper_directory)!r})\n"
+                "import run_python_test_file as helper\n"
+                "parser = argparse.ArgumentParser()\n"
+                "parser.add_argument('--result-fd', type=int, required=True)\n"
+                "parser.add_argument('--cleanup-fd', type=int, required=True)\n"
+                "parser.add_argument('--timeout')\n"
+                "parser.add_argument('test_file')\n"
+                "args = parser.parse_args()\n"
+                f"child = subprocess.Popen([sys.executable, '-c', {child_program!r}], start_new_session=True)\n"
+                f"while not Path({str(identity_file)!r}).exists(): time.sleep(0.01)\n"
+                "payload = {'pid': child.pid, 'start': helper.process_start_token(child.pid)}\n"
+                "message = helper.CLEANUP_MARKER + json.dumps(payload, sort_keys=True) + '\\n'\n"
+                "os.write(args.cleanup_fd, message.encode('ascii'))\n"
+                "os.close(args.cleanup_fd)\n"
+                "os.close(args.result_fd)\n"
+                "raise SystemExit(7)\n",
+                encoding="utf-8",
+            )
+            test_file = self.add(
+                root,
+                "hermes/test_placeholder.py",
+                "import unittest\n"
+                "class PlaceholderTest(unittest.TestCase):\n"
+                "    def test_placeholder(self): pass\n",
+            )
+            output = io.StringIO()
+
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests(
+                    [test_file],
+                    root,
+                    timeout_seconds=2.0,
+                    worker=fake_worker,
+                    worker_grace_seconds=1.0,
+                )
+
+            self.assertEqual(1, status)
+            self.assertIn("worker protocol error", output.getvalue())
+            raw_pid, start_token = identity_file.read_text(encoding="utf-8").split(
+                "|", 1
+            )
+            self.assertFalse(
+                runner.identity_matches((int(raw_pid), start_token)),
+                output.getvalue(),
+            )
+
     @unittest.skipUnless(os.name == "posix", "POSIX process identity is required")
     def test_reused_registered_pid_is_never_signaled(self) -> None:
         identity = (4242, "original-birth-token")

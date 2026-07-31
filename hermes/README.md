@@ -126,3 +126,5 @@ Le worker transmet aussi le temps de naissance du processus (`/proc` sous Linux,
 `libproc` sous Darwin). L'outer le revalide avant tout signal ; sous Linux, il
 ouvre en plus un `pidfd` et signale ce handle stable. Si l'identité ne correspond
 plus, le PID a disparu ou a été réutilisé et aucun signal ne lui est envoyé.
+Ce nettoyage est appliqué aux timeouts comme à toute sortie worker non nulle ou
+à tout protocole de résultat incomplet.
