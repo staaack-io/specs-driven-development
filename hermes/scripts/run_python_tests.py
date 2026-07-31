@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import select
 import signal
 import subprocess
 import sys
@@ -29,7 +30,7 @@ import run_python_test_file as test_file_worker
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKER = Path(__file__).with_name("run_python_test_file.py")
 RESULT_MARKER = "HERMES_TEST_RESULT="
-CLEANUP_MARKER = "HERMES_TEST_CHILD_PID="
+CLEANUP_MARKER = "HERMES_TEST_CHILD="
 RUN_TOKEN_ENV = "HERMES_TEST_RUN_TOKEN"
 PROTOCOL_VERSION = 1
 DEFAULT_TIMEOUT_SECONDS = 120.0
@@ -169,7 +170,7 @@ def read_protocol(control_stream: object) -> str:
     return encoded.decode("utf-8", errors="strict")
 
 
-def cleanup_process_id(cleanup_stream: object) -> int | None:
+def cleanup_process_identity(cleanup_stream: object) -> tuple[int, str] | None:
     encoded = cleanup_stream.read(MAX_CLEANUP_PROTOCOL_BYTES + 1)
     if len(encoded) > MAX_CLEANUP_PROTOCOL_BYTES:
         raise RuntimeError("cleanup protocol error: result exceeds size limit")
@@ -181,49 +182,109 @@ def cleanup_process_id(cleanup_stream: object) -> int | None:
         raise RuntimeError("cleanup protocol error: invalid ASCII") from error
     lines = value.splitlines()
     if len(lines) != 1 or not lines[0].startswith(CLEANUP_MARKER):
-        raise RuntimeError("cleanup protocol error: expected exactly one child PID")
-    raw_process_id = lines[0].removeprefix(CLEANUP_MARKER)
-    if not raw_process_id.isascii() or not raw_process_id.isdecimal():
+        raise RuntimeError("cleanup protocol error: expected exactly one child identity")
+    encoded_payload = lines[0].removeprefix(CLEANUP_MARKER)
+    try:
+        payload = json.loads(encoded_payload)
+    except json.JSONDecodeError as error:
+        raise RuntimeError("cleanup protocol error: invalid JSON") from error
+    if not isinstance(payload, dict) or set(payload) != {"pid", "start"}:
+        raise RuntimeError("cleanup protocol error: invalid identity fields")
+    process_id = payload["pid"]
+    start_token = payload["start"]
+    if not isinstance(process_id, int) or isinstance(process_id, bool):
         raise RuntimeError("cleanup protocol error: invalid child PID")
-    process_id = int(raw_process_id)
     if process_id <= 1:
         raise RuntimeError("cleanup protocol error: unsafe child PID")
-    return process_id
+    if (
+        not isinstance(start_token, str)
+        or not start_token
+        or len(start_token) > 96
+    ):
+        raise RuntimeError("cleanup protocol error: invalid process start token")
+    return process_id, start_token
 
 
-def signal_registered_test(process_id: int, signal_number: int) -> None:
-    """Signal a registered POSIX test session and its leader."""
+def identity_matches(identity: tuple[int, str]) -> bool:
+    """Revalidate a process birth token immediately before PID-based use."""
 
-    if os.name != "posix":
+    process_id, expected_start = identity
+    try:
+        return test_file_worker.process_start_token(process_id) == expected_start
+    except ProcessLookupError:
+        return False
+
+
+def open_registered_test_pidfd(identity: tuple[int, str]) -> int | None:
+    """Pin the registered Linux process and reject an already-reused PID."""
+
+    if not sys.platform.startswith("linux"):
+        return None
+    process_id, _expected_start = identity
+    try:
+        process_fd = os.pidfd_open(process_id, 0)
+    except ProcessLookupError:
+        return None
+    try:
+        if not identity_matches(identity):
+            os.close(process_fd)
+            return None
+    except BaseException:
+        os.close(process_fd)
+        raise
+    return process_fd
+
+
+def signal_registered_test(
+    identity: tuple[int, str],
+    process_fd: int | None,
+    signal_number: int,
+) -> None:
+    """Signal only the registered process identity, never a bare reused PID."""
+
+    process_id, _expected_start = identity
+    if sys.platform.startswith("linux"):
+        if process_fd is None:
+            return
+        try:
+            signal.pidfd_send_signal(process_fd, signal_number)
+        except ProcessLookupError:
+            pass
+        return
+    if os.name != "posix" or not identity_matches(identity):
         return
     try:
         os.killpg(process_id, signal_number)
     except (PermissionError, ProcessLookupError):
-        pass
-    try:
-        os.kill(process_id, signal_number)
-    except (PermissionError, ProcessLookupError):
-        pass
+        return
 
 
 def wait_for_registered_test_exit(
-    process_id: int,
+    identity: tuple[int, str],
+    process_fd: int | None,
     timeout_seconds: float,
 ) -> None:
-    """Require a registered POSIX test leader to disappear within a bound."""
+    """Require the same registered identity to disappear within a bound."""
 
     if os.name != "posix":
         return
+    process_id, _expected_start = identity
+    if sys.platform.startswith("linux") and process_fd is not None:
+        readable, _writable, _exceptional = select.select(
+            [process_fd],
+            [],
+            [],
+            timeout_seconds,
+        )
+        if readable:
+            return
+        raise RuntimeError(
+            f"registered test process {process_id} survived cleanup"
+        )
     deadline = time.monotonic() + timeout_seconds
     while True:
-        try:
-            os.kill(process_id, 0)
-        except ProcessLookupError:
+        if not identity_matches(identity):
             return
-        except PermissionError as error:
-            raise RuntimeError(
-                f"cannot verify registered test process {process_id}"
-            ) from error
         if time.monotonic() >= deadline:
             raise RuntimeError(
                 f"registered test process {process_id} survived cleanup"
@@ -231,11 +292,11 @@ def wait_for_registered_test_exit(
         time.sleep(0.01)
 
 
-def tagged_posix_processes(run_token: str) -> set[int]:
+def tagged_posix_processes(run_token: str) -> dict[int, str]:
     """List non-Linux POSIX processes carrying one inherited run token."""
 
     if os.name != "posix" or sys.platform.startswith("linux"):
-        return set()
+        return {}
     environment = os.environ.copy()
     environment.pop(RUN_TOKEN_ENV, None)
     try:
@@ -254,7 +315,7 @@ def tagged_posix_processes(run_token: str) -> set[int]:
     if len(result.stdout) > MAX_PROCESS_LIST_BYTES:
         raise RuntimeError("tagged POSIX process listing exceeds size limit")
     marker = f"{RUN_TOKEN_ENV}={run_token}".encode("ascii")
-    processes: set[int] = set()
+    processes: dict[int, str] = {}
     for raw_line in result.stdout.splitlines():
         stripped = raw_line.lstrip()
         raw_process_id, separator, command = stripped.partition(b" ")
@@ -266,7 +327,10 @@ def tagged_posix_processes(run_token: str) -> set[int]:
             raise RuntimeError("tagged POSIX process listing has invalid PID") from error
         if process_id <= 1 or process_id == os.getpid():
             raise RuntimeError("tagged POSIX process listing has unsafe PID")
-        processes.add(process_id)
+        try:
+            processes[process_id] = test_file_worker.process_start_token(process_id)
+        except ProcessLookupError:
+            continue
         if len(processes) > MAX_TAGGED_PROCESSES:
             raise RuntimeError(
                 f"tagged POSIX process tree exceeds {MAX_TAGGED_PROCESSES} processes"
@@ -283,11 +347,14 @@ def terminate_tagged_posix_processes(
     if os.name != "posix" or sys.platform.startswith("linux"):
         return
     deadline = time.monotonic() + timeout_seconds
-    frozen: set[int] = set()
+    frozen: dict[int, str] = {}
     while True:
         current = tagged_posix_processes(run_token)
-        new_processes = current - frozen
+        new_processes = set(current) - set(frozen)
         for process_id in new_processes:
+            identity = (process_id, current[process_id])
+            if not identity_matches(identity):
+                continue
             try:
                 os.kill(process_id, signal.SIGSTOP)
             except ProcessLookupError:
@@ -296,13 +363,17 @@ def terminate_tagged_posix_processes(
                 raise RuntimeError(
                     f"cannot freeze tagged POSIX process {process_id}"
                 ) from error
-        frozen.update(current)
+            frozen[process_id] = current[process_id]
         if not new_processes:
             break
         if time.monotonic() >= deadline:
             raise RuntimeError("tagged POSIX fork tree did not reach a fixed point")
 
-    for process_id in frozen:
+    current = tagged_posix_processes(run_token)
+    for process_id, start_token in frozen.items():
+        identity = (process_id, start_token)
+        if current.get(process_id) != start_token or not identity_matches(identity):
+            continue
         try:
             os.kill(process_id, FORCE_KILL_SIGNAL)
         except ProcessLookupError:
@@ -312,17 +383,15 @@ def terminate_tagged_posix_processes(
                 f"cannot kill tagged POSIX process {process_id}"
             ) from error
 
-    remaining = set(frozen)
+    remaining = dict(frozen)
     while remaining:
-        for process_id in tuple(remaining):
-            try:
-                os.kill(process_id, 0)
-            except ProcessLookupError:
-                remaining.remove(process_id)
-            except PermissionError as error:
-                raise RuntimeError(
-                    f"cannot verify tagged POSIX process {process_id}"
-                ) from error
+        current = tagged_posix_processes(run_token)
+        for process_id, start_token in tuple(remaining.items()):
+            if (
+                current.get(process_id) != start_token
+                or not identity_matches((process_id, start_token))
+            ):
+                remaining.pop(process_id)
         if not remaining:
             return
         if time.monotonic() >= deadline:
@@ -343,10 +412,15 @@ def require_descendant_cleanup_capability() -> None:
             os.getpid(),
             require_visibility=True,
         )
+        if not hasattr(os, "pidfd_open") or not hasattr(signal, "pidfd_send_signal"):
+            raise RuntimeError("Linux pidfd support is unavailable")
+        process_fd = os.pidfd_open(os.getpid(), 0)
+        os.close(process_fd)
         return
     # Use a fresh value that cannot match an existing process. This exercises
     # the exact bounded ps path later used for non-Linux POSIX cleanup without
     # exposing the real per-worker token before that worker exists.
+    test_file_worker.process_start_token(os.getpid())
     tagged_posix_processes(secrets.token_hex(32))
 
 
@@ -399,7 +473,8 @@ def run_tests(
         returncode: int | None = None
         timed_out = False
         cleanup_error: BaseException | None = None
-        registered_test_pid: int | None = None
+        registered_test_identity: tuple[int, str] | None = None
+        registered_test_pidfd: int | None = None
         run_token = secrets.token_hex(32)
         worker_environment = os.environ.copy()
         worker_environment[RUN_TOKEN_ENV] = run_token
@@ -442,17 +517,31 @@ def run_tests(
                 os.close(write_fd)
                 os.close(cleanup_write_fd)
                 try:
-                    registered_test_pid = cleanup_process_id(cleanup_stream)
+                    registered_test_identity = cleanup_process_identity(cleanup_stream)
                 except BaseException as error:
                     cleanup_error = error
-                if registered_test_pid is not None and (
+                if registered_test_identity is not None and (
                     timed_out or returncode not in {0, None}
                 ):
-                    signal_registered_test(registered_test_pid, signal.SIGTERM)
-                    signal_registered_test(
-                        registered_test_pid,
-                        FORCE_KILL_SIGNAL,
-                    )
+                    try:
+                        registered_test_pidfd = open_registered_test_pidfd(
+                            registered_test_identity
+                        )
+                    except BaseException as error:
+                        cleanup_error = error
+                    try:
+                        signal_registered_test(
+                            registered_test_identity,
+                            registered_test_pidfd,
+                            signal.SIGTERM,
+                        )
+                        signal_registered_test(
+                            registered_test_identity,
+                            registered_test_pidfd,
+                            FORCE_KILL_SIGNAL,
+                        )
+                    except BaseException as error:
+                        cleanup_error = error
                 try:
                     # On Linux, children from a detached test session are now
                     # adopted by this subreaper after the worker exits. Cleanup
@@ -471,16 +560,6 @@ def run_tests(
                             f"{enumeration_error}; waitpid fallback failed: "
                             f"{fallback_error}"
                         )
-                if registered_test_pid is not None and (
-                    timed_out or returncode not in {0, None}
-                ):
-                    try:
-                        wait_for_registered_test_exit(
-                            registered_test_pid,
-                            worker_grace_seconds,
-                        )
-                    except BaseException as error:
-                        cleanup_error = error
                 if timed_out or returncode not in {0, None}:
                     try:
                         terminate_tagged_posix_processes(
@@ -489,6 +568,19 @@ def run_tests(
                         )
                     except BaseException as error:
                         cleanup_error = error
+                if registered_test_identity is not None and (
+                    timed_out or returncode not in {0, None}
+                ):
+                    try:
+                        wait_for_registered_test_exit(
+                            registered_test_identity,
+                            registered_test_pidfd,
+                            worker_grace_seconds,
+                        )
+                    except BaseException as error:
+                        cleanup_error = error
+                if registered_test_pidfd is not None:
+                    os.close(registered_test_pidfd)
 
             protocol_output = read_protocol(control_stream)
             log_output, truncated = bounded_worker_log(worker_log)

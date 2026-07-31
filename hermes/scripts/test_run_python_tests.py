@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -394,9 +395,11 @@ class RunPythonTestsTest(unittest.TestCase):
                 "import signal\n"
                 "import time\n"
                 "import unittest\n"
+                "import run_python_test_file as worker\n"
                 "class StopWorkerTest(unittest.TestCase):\n"
                 "    def test_stop_worker(self):\n"
-                f"        Path({str(pid_file)!r}).write_text(str(os.getpid()))\n"
+                "        identity = (os.getpid(), worker.process_start_token(os.getpid()))\n"
+                f"        Path({str(pid_file)!r}).write_text(f'{{identity[0]}}|{{identity[1]}}')\n"
                 "        os.kill(os.getppid(), signal.SIGSTOP)\n"
                 "        while True: time.sleep(0.05)\n",
             )
@@ -451,9 +454,71 @@ class RunPythonTestsTest(unittest.TestCase):
                 output.getvalue(),
                 r"outer descendant cleanup failed|supervisor timed out",
             )
-            registered_pid = int(pid_file.read_text(encoding="utf-8"))
-            with self.assertRaises(ProcessLookupError):
-                os.kill(registered_pid, 0)
+            raw_pid, start_token = pid_file.read_text(encoding="utf-8").split("|", 1)
+            self.assertFalse(
+                runner.identity_matches((int(raw_pid), start_token)),
+                output.getvalue(),
+            )
+
+    @unittest.skipUnless(os.name == "posix", "POSIX process identity is required")
+    def test_reused_registered_pid_is_never_signaled(self) -> None:
+        identity = (4242, "original-birth-token")
+        original_start_token = runner.test_file_worker.process_start_token
+        runner.test_file_worker.process_start_token = (
+            lambda _process_id: "replacement-birth-token"
+        )
+        try:
+            if sys.platform.startswith("linux"):
+                read_fd, write_fd = os.pipe()
+                original_pidfd_open = runner.os.pidfd_open
+                runner.os.pidfd_open = lambda _process_id, _flags: read_fd
+                signals: list[tuple[int, int]] = []
+                original_pidfd_signal = runner.signal.pidfd_send_signal
+                runner.signal.pidfd_send_signal = (
+                    lambda process_fd, signal_number: signals.append(
+                        (process_fd, signal_number)
+                    )
+                )
+                try:
+                    process_fd = runner.open_registered_test_pidfd(identity)
+                    self.assertIsNone(process_fd)
+                    runner.signal_registered_test(identity, process_fd, signal.SIGKILL)
+                    self.assertEqual([], signals)
+                    with self.assertRaises(OSError):
+                        os.fstat(read_fd)
+                finally:
+                    runner.os.pidfd_open = original_pidfd_open
+                    runner.signal.pidfd_send_signal = original_pidfd_signal
+                    os.close(write_fd)
+            else:
+                signals: list[tuple[int, int]] = []
+                original_killpg = runner.os.killpg
+                runner.os.killpg = lambda process_id, signal_number: signals.append(
+                    (process_id, signal_number)
+                )
+                try:
+                    runner.signal_registered_test(identity, None, signal.SIGKILL)
+                finally:
+                    runner.os.killpg = original_killpg
+                self.assertEqual([], signals)
+        finally:
+            runner.test_file_worker.process_start_token = original_start_token
+
+    def test_cleanup_protocol_requires_pid_and_birth_token(self) -> None:
+        encoded = (
+            runner.CLEANUP_MARKER
+            + json.dumps({"pid": 4242, "start": "linux:12345"})
+            + "\n"
+        ).encode("ascii")
+
+        self.assertEqual(
+            (4242, "linux:12345"),
+            runner.cleanup_process_identity(io.BytesIO(encoded)),
+        )
+        with self.assertRaisesRegex(RuntimeError, "invalid identity fields"):
+            runner.cleanup_process_identity(
+                io.BytesIO((runner.CLEANUP_MARKER + '{"pid": 4242}\n').encode())
+            )
 
     @unittest.skipUnless(
         os.name == "posix" and not sys.platform.startswith("linux"),

@@ -120,3 +120,9 @@ Avant chaque fichier de test, le runner vérifie que l'énumérateur requis est
 disponible (`/proc` sous Linux, `ps` sur les autres POSIX). Il refuse de démarrer
 le fichier si cette porte échoue, plutôt que d'exécuter un descendant qu'il ne
 pourrait ensuite garantir de nettoyer.
+
+Le registre de secours ne considère jamais un PID comme une identité suffisante.
+Le worker transmet aussi le temps de naissance du processus (`/proc` sous Linux,
+`libproc` sous Darwin). L'outer le revalide avant tout signal ; sous Linux, il
+ouvre en plus un `pidfd` et signale ce handle stable. Si l'identité ne correspond
+plus, le PID a disparu ou a été réutilisé et aucun signal ne lui est envoyé.

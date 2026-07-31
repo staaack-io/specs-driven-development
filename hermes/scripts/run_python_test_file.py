@@ -23,7 +23,7 @@ import unittest
 
 
 RESULT_MARKER = "HERMES_TEST_RESULT="
-CLEANUP_MARKER = "HERMES_TEST_CHILD_PID="
+CLEANUP_MARKER = "HERMES_TEST_CHILD="
 PROTOCOL_VERSION = 1
 MAX_DETAIL_CHARACTERS = 4096
 CHILD_TERM_GRACE_SECONDS = 0.25
@@ -39,6 +39,86 @@ OUTCOME_NO_TESTS = 2
 OUTCOME_NO_EXECUTED_TESTS = 3
 OUTCOME_TEST_FAILURE = 4
 OUTCOME_LOAD_FAILURE = 5
+
+
+class DarwinBsdInfo(ctypes.Structure):
+    """Prefix-complete proc_bsdinfo layout through the process start time."""
+
+    _fields_ = [
+        ("pbi_flags", ctypes.c_uint32),
+        ("pbi_status", ctypes.c_uint32),
+        ("pbi_xstatus", ctypes.c_uint32),
+        ("pbi_pid", ctypes.c_uint32),
+        ("pbi_ppid", ctypes.c_uint32),
+        ("pbi_uid", ctypes.c_uint32),
+        ("pbi_gid", ctypes.c_uint32),
+        ("pbi_ruid", ctypes.c_uint32),
+        ("pbi_rgid", ctypes.c_uint32),
+        ("pbi_svuid", ctypes.c_uint32),
+        ("pbi_svgid", ctypes.c_uint32),
+        ("rfu_1", ctypes.c_uint32),
+        ("pbi_comm", ctypes.c_char * 16),
+        ("pbi_name", ctypes.c_char * 32),
+        ("pbi_nfiles", ctypes.c_uint32),
+        ("pbi_pgid", ctypes.c_uint32),
+        ("pbi_pjobc", ctypes.c_uint32),
+        ("e_tdev", ctypes.c_uint32),
+        ("e_tpgid", ctypes.c_uint32),
+        ("pbi_nice", ctypes.c_int32),
+        ("pbi_start_tvsec", ctypes.c_uint64),
+        ("pbi_start_tvusec", ctypes.c_uint64),
+    ]
+
+
+def process_start_token(process_id: int) -> str:
+    """Return a platform birth token, never a PID-only identity."""
+
+    if process_id <= 1:
+        raise RuntimeError("unsafe process ID for start-token lookup")
+    if sys.platform.startswith("linux"):
+        try:
+            content = Path(f"/proc/{process_id}/stat").read_text(encoding="ascii")
+        except FileNotFoundError as error:
+            raise ProcessLookupError(process_id) from error
+        closing_parenthesis = content.rfind(")")
+        if closing_parenthesis < 0:
+            raise RuntimeError("invalid Linux process stat record")
+        fields_after_name = content[closing_parenthesis + 2 :].split()
+        if len(fields_after_name) <= 19:
+            raise RuntimeError("invalid Linux process stat record")
+        start_ticks = fields_after_name[19]
+        if not start_ticks.isascii() or not start_ticks.isdecimal():
+            raise RuntimeError("invalid Linux process start time")
+        return f"linux:{start_ticks}"
+    if sys.platform == "darwin":
+        info = DarwinBsdInfo()
+        libproc = ctypes.CDLL("/usr/lib/libproc.dylib", use_errno=True)
+        proc_pidinfo = libproc.proc_pidinfo
+        proc_pidinfo.argtypes = [
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_uint64,
+            ctypes.c_void_p,
+            ctypes.c_int,
+        ]
+        proc_pidinfo.restype = ctypes.c_int
+        ctypes.set_errno(0)
+        returned = proc_pidinfo(
+            process_id,
+            3,  # PROC_PIDTBSDINFO
+            0,
+            ctypes.byref(info),
+            ctypes.sizeof(info),
+        )
+        if returned <= 0:
+            error_number = ctypes.get_errno()
+            if error_number in {0, 3}:
+                raise ProcessLookupError(process_id)
+            raise OSError(error_number, os.strerror(error_number))
+        if returned < ctypes.sizeof(info):
+            raise RuntimeError("incomplete Darwin process info")
+        return f"darwin:{info.pbi_start_tvsec}:{info.pbi_start_tvusec}"
+    raise RuntimeError("stable process identity is unavailable")
 
 
 def failure(detail: str) -> dict[str, object]:
@@ -339,8 +419,14 @@ def stop_test_tree(process: multiprocessing.Process) -> bool:
     return not process.is_alive()
 
 
-def emit_cleanup_pid(cleanup_fd: int, process_id: int) -> None:
-    encoded = f"{CLEANUP_MARKER}{process_id}\n".encode("ascii")
+def emit_cleanup_identity(cleanup_fd: int, process_id: int) -> None:
+    payload = {
+        "pid": process_id,
+        "start": process_start_token(process_id),
+    }
+    encoded = (
+        CLEANUP_MARKER + json.dumps(payload, ensure_ascii=True, sort_keys=True) + "\n"
+    ).encode("ascii")
     while encoded:
         written = os.write(cleanup_fd, encoded)
         encoded = encoded[written:]
@@ -365,7 +451,7 @@ def supervise(
             raise RuntimeError("spawned test child has no process ID")
         # Only this trusted supervisor owns the registry FD. It is marked
         # non-inheritable before spawn, so test code cannot forge a cleanup PID.
-        emit_cleanup_pid(cleanup_fd, process.pid)
+        emit_cleanup_identity(cleanup_fd, process.pid)
         process.join(timeout_seconds)
         if process.is_alive():
             stopped = stop_test_tree(process)
