@@ -23,6 +23,7 @@ import unittest
 
 
 RESULT_MARKER = "HERMES_TEST_RESULT="
+CLEANUP_MARKER = "HERMES_TEST_CHILD_PID="
 PROTOCOL_VERSION = 1
 MAX_DETAIL_CHARACTERS = 4096
 CHILD_TERM_GRACE_SECONDS = 0.25
@@ -338,7 +339,18 @@ def stop_test_tree(process: multiprocessing.Process) -> bool:
     return not process.is_alive()
 
 
-def supervise(test_file: Path, timeout_seconds: float) -> tuple[int, dict[str, object]]:
+def emit_cleanup_pid(cleanup_fd: int, process_id: int) -> None:
+    encoded = f"{CLEANUP_MARKER}{process_id}\n".encode("ascii")
+    while encoded:
+        written = os.write(cleanup_fd, encoded)
+        encoded = encoded[written:]
+
+
+def supervise(
+    test_file: Path,
+    timeout_seconds: float,
+    cleanup_fd: int,
+) -> tuple[int, dict[str, object]]:
     enable_child_subreaper()
     context = multiprocessing.get_context("spawn")
     metadata = context.Array("q", 4, lock=False)
@@ -349,6 +361,11 @@ def supervise(test_file: Path, timeout_seconds: float) -> tuple[int, dict[str, o
     payload: dict[str, object]
     try:
         process.start()
+        if process.pid is None:
+            raise RuntimeError("spawned test child has no process ID")
+        # Only this trusted supervisor owns the registry FD. It is marked
+        # non-inheritable before spawn, so test code cannot forge a cleanup PID.
+        emit_cleanup_pid(cleanup_fd, process.pid)
         process.join(timeout_seconds)
         if process.is_alive():
             stopped = stop_test_tree(process)
@@ -391,15 +408,18 @@ def emit_result(result_fd: int, payload: dict[str, object]) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--result-fd", type=int, required=True)
+    parser.add_argument("--cleanup-fd", type=int, required=True)
     parser.add_argument("--timeout", type=float, required=True)
     parser.add_argument("test_file", type=Path)
     args = parser.parse_args(argv)
 
     os.set_inheritable(args.result_fd, False)
+    os.set_inheritable(args.cleanup_fd, False)
     try:
         status, payload = supervise(
             args.test_file.resolve(strict=True),
             args.timeout,
+            args.cleanup_fd,
         )
         emit_result(args.result_fd, payload)
     except BaseException as error:
@@ -407,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
         status = 1
         emit_result(args.result_fd, failure(f"worker failed: {error}"))
     finally:
+        os.close(args.cleanup_fd)
         os.close(args.result_fd)
     return status
 

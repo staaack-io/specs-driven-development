@@ -295,10 +295,7 @@ class RunPythonTestsTest(unittest.TestCase):
             with self.assertRaises(ProcessLookupError):
                 os.kill(detached_pid, 0)
 
-    @unittest.skipUnless(
-        sys.platform.startswith("linux"),
-        "Linux child-subreaper support is required",
-    )
+    @unittest.skipUnless(os.name == "posix", "POSIX process signals are required")
     def test_outer_timeout_reaps_adopted_test_without_process_listing(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))

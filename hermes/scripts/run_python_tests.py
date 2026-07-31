@@ -11,6 +11,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 
 import run_python_test_file as test_file_worker
 
@@ -18,11 +19,13 @@ import run_python_test_file as test_file_worker
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKER = Path(__file__).with_name("run_python_test_file.py")
 RESULT_MARKER = "HERMES_TEST_RESULT="
+CLEANUP_MARKER = "HERMES_TEST_CHILD_PID="
 PROTOCOL_VERSION = 1
 DEFAULT_TIMEOUT_SECONDS = 120.0
 WORKER_GRACE_SECONDS = 5.0
 MAX_LOG_BYTES = 64 * 1024
 MAX_PROTOCOL_BYTES = 16 * 1024
+MAX_CLEANUP_PROTOCOL_BYTES = 128
 FORCE_KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 
 
@@ -153,6 +156,68 @@ def read_protocol(control_stream: object) -> str:
     return encoded.decode("utf-8", errors="strict")
 
 
+def cleanup_process_id(cleanup_stream: object) -> int | None:
+    encoded = cleanup_stream.read(MAX_CLEANUP_PROTOCOL_BYTES + 1)
+    if len(encoded) > MAX_CLEANUP_PROTOCOL_BYTES:
+        raise RuntimeError("cleanup protocol error: result exceeds size limit")
+    if not encoded:
+        return None
+    try:
+        value = encoded.decode("ascii", errors="strict")
+    except UnicodeError as error:
+        raise RuntimeError("cleanup protocol error: invalid ASCII") from error
+    lines = value.splitlines()
+    if len(lines) != 1 or not lines[0].startswith(CLEANUP_MARKER):
+        raise RuntimeError("cleanup protocol error: expected exactly one child PID")
+    raw_process_id = lines[0].removeprefix(CLEANUP_MARKER)
+    if not raw_process_id.isascii() or not raw_process_id.isdecimal():
+        raise RuntimeError("cleanup protocol error: invalid child PID")
+    process_id = int(raw_process_id)
+    if process_id <= 1:
+        raise RuntimeError("cleanup protocol error: unsafe child PID")
+    return process_id
+
+
+def signal_registered_test(process_id: int, signal_number: int) -> None:
+    """Signal a registered POSIX test session and its leader."""
+
+    if os.name != "posix":
+        return
+    try:
+        os.killpg(process_id, signal_number)
+    except (PermissionError, ProcessLookupError):
+        pass
+    try:
+        os.kill(process_id, signal_number)
+    except (PermissionError, ProcessLookupError):
+        pass
+
+
+def wait_for_registered_test_exit(
+    process_id: int,
+    timeout_seconds: float,
+) -> None:
+    """Require a registered POSIX test leader to disappear within a bound."""
+
+    if os.name != "posix":
+        return
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        try:
+            os.kill(process_id, 0)
+        except ProcessLookupError:
+            return
+        except PermissionError as error:
+            raise RuntimeError(
+                f"cannot verify registered test process {process_id}"
+            ) from error
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"registered test process {process_id} survived cleanup"
+            )
+        time.sleep(0.01)
+
+
 def run_tests(
     test_files: list[Path],
     repository_root: Path = REPOSITORY_ROOT,
@@ -185,15 +250,20 @@ def run_tests(
         print(f"\n==> {display}", flush=True)
 
         read_fd, write_fd = os.pipe()
+        cleanup_read_fd, cleanup_write_fd = os.pipe()
         os.set_inheritable(read_fd, False)
         os.set_inheritable(write_fd, False)
+        os.set_inheritable(cleanup_read_fd, False)
+        os.set_inheritable(cleanup_write_fd, False)
         process: subprocess.Popen[bytes] | None = None
         returncode: int | None = None
         timed_out = False
         cleanup_error: BaseException | None = None
+        registered_test_pid: int | None = None
         with (
             tempfile.TemporaryFile(mode="w+b") as worker_log,
             os.fdopen(read_fd, "rb", closefd=True) as control_stream,
+            os.fdopen(cleanup_read_fd, "rb", closefd=True) as cleanup_stream,
         ):
             try:
                 process = subprocess.Popen(
@@ -202,12 +272,14 @@ def run_tests(
                         str(worker),
                         "--result-fd",
                         str(write_fd),
+                        "--cleanup-fd",
+                        str(cleanup_write_fd),
                         "--timeout",
                         str(timeout_seconds),
                         str(test_file),
                     ],
                     cwd=repository_root,
-                    pass_fds=(write_fd,),
+                    pass_fds=(write_fd, cleanup_write_fd),
                     stdout=worker_log,
                     stderr=subprocess.STDOUT,
                     start_new_session=os.name == "posix",
@@ -224,6 +296,19 @@ def run_tests(
                         cleanup_error = error
             finally:
                 os.close(write_fd)
+                os.close(cleanup_write_fd)
+                try:
+                    registered_test_pid = cleanup_process_id(cleanup_stream)
+                except BaseException as error:
+                    cleanup_error = error
+                if registered_test_pid is not None and (
+                    timed_out or returncode not in {0, None}
+                ):
+                    signal_registered_test(registered_test_pid, signal.SIGTERM)
+                    signal_registered_test(
+                        registered_test_pid,
+                        FORCE_KILL_SIGNAL,
+                    )
                 try:
                     # On Linux, children from a detached test session are now
                     # adopted by this subreaper after the worker exits. Cleanup
@@ -242,6 +327,16 @@ def run_tests(
                             f"{enumeration_error}; waitpid fallback failed: "
                             f"{fallback_error}"
                         )
+                if registered_test_pid is not None and (
+                    timed_out or returncode not in {0, None}
+                ):
+                    try:
+                        wait_for_registered_test_exit(
+                            registered_test_pid,
+                            worker_grace_seconds,
+                        )
+                    except BaseException as error:
+                        cleanup_error = error
 
             protocol_output = read_protocol(control_stream)
             log_output, truncated = bounded_worker_log(worker_log)
