@@ -24,6 +24,10 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SKILLS_ROOT = REPOSITORY_ROOT / "hermes/skills"
 PINNED_PYYAML = "6.0.3"
 PINNED_MARKDOWN_IT_PY = "4.2.0"
+EXPECTED_CI_REQUIREMENTS = (
+    f"PyYAML=={PINNED_PYYAML}",
+    f"markdown-it-py=={PINNED_MARKDOWN_IT_PY}",
+)
 MAX_MARKDOWN_FILES = 256
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 INLINE_PATH_RE = re.compile(r"^((?:\.\./|references/|templates/|scripts/)[^\s,;:]+)")
@@ -54,6 +58,28 @@ class ValidationError:
 
 class ContractError(Exception):
     """Raised when a skill contract cannot be parsed safely."""
+
+
+def validate_ci_requirements(repository_root: Path) -> list[ValidationError]:
+    requirements = repository_root / "requirements-ci.txt"
+    try:
+        lines = requirements.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError) as error:
+        return [ValidationError(requirements, f"cannot read pinned CI requirements: {error}")]
+    actual = tuple(
+        line.strip()
+        for line in lines
+        if line.strip() and not line.lstrip().startswith("#")
+    )
+    if actual != EXPECTED_CI_REQUIREMENTS:
+        expected = ", ".join(EXPECTED_CI_REQUIREMENTS)
+        return [
+            ValidationError(
+                requirements,
+                f"must contain exactly these pins in order: {expected}",
+            )
+        ]
+    return []
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -359,7 +385,8 @@ def validate_portability(
         try:
             text = resource.read_text(encoding="utf-8")
         except UnicodeError:
-            errors.append(ValidationError(resource, "text resource is not valid UTF-8"))
+            if resource.suffix.casefold() != ".md":
+                errors.append(ValidationError(resource, "text resource is not valid UTF-8"))
             continue
         for pattern in FORBIDDEN_PATHS:
             match = pattern.search(text)
@@ -451,6 +478,16 @@ def validate_skills(
         else:
             safe_files.add(path.resolve())
 
+    for markdown_file in sorted(
+        path for path in safe_files if path.suffix.casefold() == ".md"
+    ):
+        try:
+            markdown_file.read_text(encoding="utf-8")
+        except UnicodeError:
+            errors.append(
+                ValidationError(markdown_file, "Markdown resource is not valid UTF-8")
+            )
+
     loose_entries = [path for relative, path in skill_entries if len(relative.parts) == 1]
     for entry in sorted(loose_entries):
         errors.append(ValidationError(entry, "skills directory may only contain skill folders"))
@@ -503,6 +540,11 @@ def main(argv: list[str] | None = None) -> int:
             f"found {markdown_it.__version__}",
             file=sys.stderr,
         )
+        return 1
+    requirement_errors = validate_ci_requirements(REPOSITORY_ROOT)
+    if requirement_errors:
+        for error in requirement_errors:
+            print(f"error: {error.render(REPOSITORY_ROOT)}", file=sys.stderr)
         return 1
     skills_root = args.skills_root
     if not skills_root.is_absolute():

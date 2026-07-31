@@ -78,6 +78,10 @@ python3 hermes/scripts/check_profile_parity.py \
 Le contrôle échoue si un fichier manque, si le profil contient un fichier en
 plus ou si le contenu d'un fichier diffère.
 
+Cette parité entre deux dépôts reste une gate locale obligatoire avant
+publication du profil ; elle n'est pas exécutée par GitHub Actions dans ce
+dépôt, qui ne dispose volontairement ni du checkout ni des secrets du profil.
+
 Ne pas utiliser un lien direct vers `.agents/skills/` : ce dossier contient la
 version Codex et ses chemins ne sont pas tous portables vers Hermes.
 

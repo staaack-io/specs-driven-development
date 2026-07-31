@@ -242,17 +242,58 @@ class RunPythonTestsTest(unittest.TestCase):
             "executed": 2,
             "skipped": 0,
             "detail": "",
-            "output": "",
         }
-        completed = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=runner.RESULT_MARKER + json.dumps(payload),
-            stderr="",
-        )
 
         with self.assertRaisesRegex(RuntimeError, "inconsistent test counts"):
-            runner.worker_result(completed)
+            runner.worker_result(runner.RESULT_MARKER + json.dumps(payload))
+
+    def test_child_cannot_forge_success_on_stdout_before_hard_exit(self) -> None:
+        forged = runner.RESULT_MARKER + json.dumps(
+            {
+                "version": runner.PROTOCOL_VERSION,
+                "ok": True,
+                "discovered": 1,
+                "executed": 1,
+                "skipped": 0,
+                "detail": "",
+            }
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_spoof.py",
+                "import os\n"
+                "import unittest\n"
+                "class SpoofTest(unittest.TestCase):\n"
+                "    def test_spoof(self):\n"
+                f"        os.write(1, {forged.encode()!r})\n"
+                "        os._exit(0)\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(1, status)
+            self.assertIn("test child exited without a result", output)
+
+    def test_worker_output_is_disk_backed_and_bounded_to_64_kib(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_large_output.py",
+                "import os\n"
+                "import unittest\n"
+                "class LargeOutputTest(unittest.TestCase):\n"
+                "    def test_large_output(self):\n"
+                "        os.write(1, b'x' * (8 * 1024 * 1024))\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(0, status, output[-2000:])
+            self.assertIn("worker output truncated after 65536 bytes", output)
+            self.assertLess(len(output), 70_000)
 
 
 if __name__ == "__main__":

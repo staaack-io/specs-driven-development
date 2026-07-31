@@ -48,6 +48,29 @@ class ValidateSkillsTest(unittest.TestCase):
     def replace_skill(self, skill: Path, content: str) -> None:
         (skill / "SKILL.md").write_text(content, encoding="utf-8")
 
+    def test_ci_requirements_require_exact_pins(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "requirements-ci.txt").write_text(
+                "PyYAML==6.0.3\nmarkdown-it-py==4.2.0\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual([], validator.validate_ci_requirements(root))
+
+    def test_ci_requirements_reject_version_ranges(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "requirements-ci.txt").write_text(
+                "PyYAML>=6.0.3\nmarkdown-it-py==4.2.0\n",
+                encoding="utf-8",
+            )
+
+            errors = validator.validate_ci_requirements(root)
+
+            self.assertEqual(1, len(errors))
+            self.assertIn("must contain exactly", errors[0].message)
+
     def test_current_contract_passes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))
@@ -496,6 +519,18 @@ class ValidateSkillsTest(unittest.TestCase):
 
             self.assertEqual(1, count)
             self.assertTrue(any("distributed SKILL.md is required" in error for error in errors))
+
+    def test_orphan_distributed_markdown_must_be_utf8(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            resource = root / "hermes/skills/incomplete/references/orphan.md"
+            resource.parent.mkdir(parents=True)
+            resource.write_bytes(b"# invalid\n\xff\n")
+            subprocess.run(["git", "add", "hermes/skills"], cwd=root, check=True)
+
+            _count, errors = self.validate(root)
+
+            self.assertTrue(any("Markdown resource is not valid UTF-8" in error for error in errors))
 
 
 if __name__ == "__main__":
