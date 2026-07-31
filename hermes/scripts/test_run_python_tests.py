@@ -562,6 +562,99 @@ class RunPythonTestsTest(unittest.TestCase):
             emit_failure_payload=True
         )
 
+    @unittest.skipUnless(
+        sys.platform.startswith("linux"),
+        "Linux nested child-subreaper cleanup is required",
+    )
+    def test_dead_worker_reaps_adopted_daemon_after_root_pdeath(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            root_identity_file = root / "dead-worker-root.identity"
+            daemon_identity_file = root / "dead-worker-daemon.identity"
+            helper_directory = Path(worker.__file__).resolve().parent
+            root_program = (
+                "import ctypes\n"
+                "import os\n"
+                "from pathlib import Path\n"
+                "import signal\n"
+                "import sys\n"
+                "import time\n"
+                f"sys.path.insert(0, {str(helper_directory)!r})\n"
+                "import run_python_test_file as helper\n"
+                "helper.enable_parent_death_signal(int(sys.argv[1]))\n"
+                "daemon = os.fork()\n"
+                "if daemon == 0:\n"
+                "    ctypes.CDLL(None).prctl(helper.PR_SET_PDEATHSIG, 0, 0, 0, 0)\n"
+                "    os.setsid()\n"
+                "    signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                "    identity = (os.getpid(), helper.process_start_token(os.getpid()))\n"
+                f"    Path({str(daemon_identity_file)!r}).write_text(f'{{identity[0]}}|{{identity[1]}}')\n"
+                "    while True: time.sleep(0.05)\n"
+                f"while not Path({str(daemon_identity_file)!r}).exists(): time.sleep(0.01)\n"
+                "identity = (os.getpid(), helper.process_start_token(os.getpid()))\n"
+                f"Path({str(root_identity_file)!r}).write_text(f'{{identity[0]}}|{{identity[1]}}')\n"
+                "while True: time.sleep(0.05)\n"
+            )
+            fake_worker = root / "dead_worker_with_daemon.py"
+            fake_worker.write_text(
+                "import argparse\n"
+                "import json\n"
+                "import os\n"
+                "from pathlib import Path\n"
+                "import subprocess\n"
+                "import sys\n"
+                "import time\n"
+                f"sys.path.insert(0, {str(helper_directory)!r})\n"
+                "import run_python_test_file as helper\n"
+                "parser = argparse.ArgumentParser()\n"
+                "parser.add_argument('--result-fd', type=int, required=True)\n"
+                "parser.add_argument('--cleanup-fd', type=int, required=True)\n"
+                "parser.add_argument('--timeout')\n"
+                "parser.add_argument('test_file')\n"
+                "args = parser.parse_args()\n"
+                "helper.enable_child_subreaper()\n"
+                f"root = subprocess.Popen([sys.executable, '-c', {root_program!r}, str(os.getpid())], start_new_session=True)\n"
+                f"while not Path({str(root_identity_file)!r}).exists(): time.sleep(0.01)\n"
+                "identity = {'pid': root.pid, 'start': helper.process_start_token(root.pid)}\n"
+                "cleanup = helper.CLEANUP_MARKER + json.dumps(identity, sort_keys=True) + '\\n'\n"
+                "os.write(args.cleanup_fd, cleanup.encode('ascii'))\n"
+                "failure = helper.failure('synthetic dead worker')\n"
+                "result = helper.RESULT_MARKER + json.dumps(failure, sort_keys=True) + '\\n'\n"
+                "os.write(args.result_fd, result.encode('utf-8'))\n"
+                "os.close(args.cleanup_fd)\n"
+                "os.close(args.result_fd)\n"
+                "raise SystemExit(9)\n",
+                encoding="utf-8",
+            )
+            test_file = self.add(
+                root,
+                "hermes/test_placeholder.py",
+                "import unittest\n"
+                "class PlaceholderTest(unittest.TestCase):\n"
+                "    def test_placeholder(self): pass\n",
+            )
+            output = io.StringIO()
+
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests(
+                    [test_file],
+                    root,
+                    timeout_seconds=3.0,
+                    worker=fake_worker,
+                    worker_grace_seconds=2.0,
+                )
+
+            self.assertEqual(1, status)
+            self.assertIn("synthetic dead worker", output.getvalue())
+            for identity_file in (root_identity_file, daemon_identity_file):
+                raw_pid, start_token = identity_file.read_text(
+                    encoding="utf-8"
+                ).split("|", 1)
+                self.assertFalse(
+                    runner.identity_matches((int(raw_pid), start_token)),
+                    f"{identity_file.name}: {output.getvalue()}",
+                )
+
     @unittest.skipUnless(os.name == "posix", "POSIX process identity is required")
     def test_reused_registered_pid_is_never_signaled(self) -> None:
         identity = (4242, "original-birth-token")

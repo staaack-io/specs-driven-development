@@ -133,3 +133,6 @@ La même règle s'applique aux descendants énumérés. Linux recoupe deux snaps
 d'ascendance et de temps de naissance autour de l'ouverture du `pidfd`, puis ne
 signale que ce handle. Les descendants POSIX marqués sont revalidés par token et
 temps de naissance immédiatement avant chaque `SIGSTOP` ou `SIGKILL`.
+Sous Linux, cette énumération reste obligatoire après la mort du worker :
+l'outer `child-subreaper` récupère et nettoie aussi les daemons que le subreaper
+intermédiaire avait adoptés avant de disparaître.
