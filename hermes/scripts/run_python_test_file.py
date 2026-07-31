@@ -30,6 +30,7 @@ CHILD_KILL_GRACE_SECONDS = 1.0
 MAX_DESCENDANT_PROCESSES = 4096
 FORCE_KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 PR_SET_CHILD_SUBREAPER = 36
+PR_SET_PDEATHSIG = 1
 NORMAL_COMPLETION_EXIT_CODE = 86
 OUTCOME_NOT_COMPLETED = 0
 OUTCOME_SUCCESS = 1
@@ -50,12 +51,32 @@ def failure(detail: str) -> dict[str, object]:
     }
 
 
-def execute_in_child(test_file: str, metadata: object) -> None:
+def enable_parent_death_signal(expected_parent_pid: int) -> None:
+    """Kill the Linux test process if its trusted worker disappears."""
+
+    if not sys.platform.startswith("linux"):
+        return
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.prctl(PR_SET_PDEATHSIG, FORCE_KILL_SIGNAL, 0, 0, 0) != 0:
+        error_number = ctypes.get_errno()
+        raise OSError(error_number, os.strerror(error_number))
+    # The worker may have died between spawn and prctl. Close that race instead
+    # of silently continuing under the outer subreaper.
+    if os.getppid() != expected_parent_pid:
+        os.kill(os.getpid(), FORCE_KILL_SIGNAL)
+
+
+def execute_in_child(
+    test_file: str,
+    metadata: object,
+    expected_parent_pid: int,
+) -> None:
     """Run tests and expose only fail-closed, untrusted count metadata."""
 
     try:
         if os.name == "posix":
             os.setsid()
+        enable_parent_death_signal(expected_parent_pid)
         path = Path(test_file)
         module_name = "_hermes_isolated_test_file"
         module_spec = importlib.util.spec_from_file_location(module_name, path)
@@ -246,6 +267,26 @@ def reap_children_nonblocking() -> None:
             return
 
 
+def reap_adopted_linux_children(timeout_seconds: float = 1.0) -> None:
+    """Reap adopted children without relying on ps or /proc enumeration."""
+
+    if not sys.platform.startswith("linux"):
+        return
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        try:
+            process_id, _status = os.waitpid(-1, os.WNOHANG)
+        except ChildProcessError:
+            return
+        if process_id > 0:
+            continue
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                "adopted test descendants remained alive after worker exit"
+            )
+        time.sleep(0.01)
+
+
 def kill_and_reap_linux_descendants() -> None:
     """TERM, KILL and reap all recursively discovered/adopted descendants."""
 
@@ -303,7 +344,7 @@ def supervise(test_file: Path, timeout_seconds: float) -> tuple[int, dict[str, o
     metadata = context.Array("q", 4, lock=False)
     process = context.Process(
         target=execute_in_child,
-        args=(str(test_file), metadata),
+        args=(str(test_file), metadata, os.getpid()),
     )
     payload: dict[str, object]
     try:

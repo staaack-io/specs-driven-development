@@ -230,8 +230,18 @@ def run_tests(
                     # is required after normal worker completion as well as an
                     # outer timeout, because a wedged worker may exit early.
                     test_file_worker.kill_and_reap_linux_descendants()
-                except BaseException as error:
-                    cleanup_error = error
+                except BaseException as enumeration_error:
+                    try:
+                        # The direct test child has PDEATHSIG=SIGKILL. Once the
+                        # worker dies, this subreaper can therefore reap it via
+                        # waitpid even when ps or /proc cannot enumerate PIDs.
+                        test_file_worker.reap_adopted_linux_children()
+                    except BaseException as fallback_error:
+                        cleanup_error = RuntimeError(
+                            "process enumeration failed: "
+                            f"{enumeration_error}; waitpid fallback failed: "
+                            f"{fallback_error}"
+                        )
 
             protocol_output = read_protocol(control_stream)
             log_output, truncated = bounded_worker_log(worker_log)

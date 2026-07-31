@@ -295,6 +295,56 @@ class RunPythonTestsTest(unittest.TestCase):
             with self.assertRaises(ProcessLookupError):
                 os.kill(detached_pid, 0)
 
+    @unittest.skipUnless(
+        sys.platform.startswith("linux"),
+        "Linux child-subreaper support is required",
+    )
+    def test_outer_timeout_reaps_adopted_test_without_process_listing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            pid_file = root / "stopped-worker-test.pid"
+            test_file = self.add(
+                root,
+                "hermes/test_stop_worker.py",
+                "import os\n"
+                "from pathlib import Path\n"
+                "import signal\n"
+                "import time\n"
+                "import unittest\n"
+                "class StopWorkerTest(unittest.TestCase):\n"
+                "    def test_stop_worker(self):\n"
+                f"        Path({str(pid_file)!r}).write_text(str(os.getpid()))\n"
+                "        os.kill(os.getppid(), signal.SIGSTOP)\n"
+                "        while True: time.sleep(0.05)\n",
+            )
+            output = io.StringIO()
+            original_cleanup = runner.test_file_worker.kill_and_reap_linux_descendants
+
+            def unavailable_process_listing() -> None:
+                raise RuntimeError("process listing unavailable")
+
+            runner.test_file_worker.kill_and_reap_linux_descendants = (
+                unavailable_process_listing
+            )
+            try:
+                with redirect_stdout(output), redirect_stderr(output):
+                    status = runner.run_tests(
+                        [test_file],
+                        root,
+                        timeout_seconds=0.2,
+                        worker_grace_seconds=0.2,
+                    )
+            finally:
+                runner.test_file_worker.kill_and_reap_linux_descendants = (
+                    original_cleanup
+                )
+
+            self.assertEqual(1, status)
+            self.assertIn("supervisor timed out", output.getvalue())
+            test_pid = int(pid_file.read_text(encoding="utf-8"))
+            with self.assertRaises(ProcessLookupError):
+                os.kill(test_pid, 0)
+
     def test_worker_with_inconsistent_counts_is_rejected(self) -> None:
         payload = {
             "version": runner.PROTOCOL_VERSION,
