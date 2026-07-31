@@ -7,6 +7,7 @@ import fnmatch
 import json
 import os
 from pathlib import Path
+import secrets
 import signal
 import subprocess
 import sys
@@ -20,12 +21,15 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKER = Path(__file__).with_name("run_python_test_file.py")
 RESULT_MARKER = "HERMES_TEST_RESULT="
 CLEANUP_MARKER = "HERMES_TEST_CHILD_PID="
+RUN_TOKEN_ENV = "HERMES_TEST_RUN_TOKEN"
 PROTOCOL_VERSION = 1
 DEFAULT_TIMEOUT_SECONDS = 120.0
 WORKER_GRACE_SECONDS = 5.0
 MAX_LOG_BYTES = 64 * 1024
 MAX_PROTOCOL_BYTES = 16 * 1024
 MAX_CLEANUP_PROTOCOL_BYTES = 128
+MAX_PROCESS_LIST_BYTES = 8 * 1024 * 1024
+MAX_TAGGED_PROCESSES = 4096
 FORCE_KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 
 
@@ -218,6 +222,108 @@ def wait_for_registered_test_exit(
         time.sleep(0.01)
 
 
+def tagged_posix_processes(run_token: str) -> set[int]:
+    """List non-Linux POSIX processes carrying one inherited run token."""
+
+    if os.name != "posix" or sys.platform.startswith("linux"):
+        return set()
+    environment = os.environ.copy()
+    environment.pop(RUN_TOKEN_ENV, None)
+    try:
+        result = subprocess.run(
+            ["ps", "eww", "-axo", "pid=,command="],
+            check=False,
+            capture_output=True,
+            env=environment,
+            timeout=1.0,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError(f"cannot inspect tagged POSIX processes: {error}") from error
+    if result.returncode:
+        detail = os.fsdecode(result.stderr).strip() or "ps failed"
+        raise RuntimeError(f"cannot inspect tagged POSIX processes: {detail}")
+    if len(result.stdout) > MAX_PROCESS_LIST_BYTES:
+        raise RuntimeError("tagged POSIX process listing exceeds size limit")
+    marker = f"{RUN_TOKEN_ENV}={run_token}".encode("ascii")
+    processes: set[int] = set()
+    for raw_line in result.stdout.splitlines():
+        stripped = raw_line.lstrip()
+        raw_process_id, separator, command = stripped.partition(b" ")
+        if not separator or marker not in command:
+            continue
+        try:
+            process_id = int(raw_process_id)
+        except ValueError as error:
+            raise RuntimeError("tagged POSIX process listing has invalid PID") from error
+        if process_id <= 1 or process_id == os.getpid():
+            raise RuntimeError("tagged POSIX process listing has unsafe PID")
+        processes.add(process_id)
+        if len(processes) > MAX_TAGGED_PROCESSES:
+            raise RuntimeError(
+                f"tagged POSIX process tree exceeds {MAX_TAGGED_PROCESSES} processes"
+            )
+    return processes
+
+
+def terminate_tagged_posix_processes(
+    run_token: str,
+    timeout_seconds: float,
+) -> None:
+    """Freeze a tagged fork tree to a fixed point, then kill and verify it."""
+
+    if os.name != "posix" or sys.platform.startswith("linux"):
+        return
+    deadline = time.monotonic() + timeout_seconds
+    frozen: set[int] = set()
+    while True:
+        current = tagged_posix_processes(run_token)
+        new_processes = current - frozen
+        for process_id in new_processes:
+            try:
+                os.kill(process_id, signal.SIGSTOP)
+            except ProcessLookupError:
+                pass
+            except PermissionError as error:
+                raise RuntimeError(
+                    f"cannot freeze tagged POSIX process {process_id}"
+                ) from error
+        frozen.update(current)
+        if not new_processes:
+            break
+        if time.monotonic() >= deadline:
+            raise RuntimeError("tagged POSIX fork tree did not reach a fixed point")
+
+    for process_id in frozen:
+        try:
+            os.kill(process_id, FORCE_KILL_SIGNAL)
+        except ProcessLookupError:
+            pass
+        except PermissionError as error:
+            raise RuntimeError(
+                f"cannot kill tagged POSIX process {process_id}"
+            ) from error
+
+    remaining = set(frozen)
+    while remaining:
+        for process_id in tuple(remaining):
+            try:
+                os.kill(process_id, 0)
+            except ProcessLookupError:
+                remaining.remove(process_id)
+            except PermissionError as error:
+                raise RuntimeError(
+                    f"cannot verify tagged POSIX process {process_id}"
+                ) from error
+        if not remaining:
+            return
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                "tagged POSIX descendants survived cleanup: "
+                + ", ".join(str(value) for value in sorted(remaining))
+            )
+        time.sleep(0.01)
+
+
 def run_tests(
     test_files: list[Path],
     repository_root: Path = REPOSITORY_ROOT,
@@ -260,6 +366,9 @@ def run_tests(
         timed_out = False
         cleanup_error: BaseException | None = None
         registered_test_pid: int | None = None
+        run_token = secrets.token_hex(32)
+        worker_environment = os.environ.copy()
+        worker_environment[RUN_TOKEN_ENV] = run_token
         with (
             tempfile.TemporaryFile(mode="w+b") as worker_log,
             os.fdopen(read_fd, "rb", closefd=True) as control_stream,
@@ -279,6 +388,7 @@ def run_tests(
                         str(test_file),
                     ],
                     cwd=repository_root,
+                    env=worker_environment,
                     pass_fds=(write_fd, cleanup_write_fd),
                     stdout=worker_log,
                     stderr=subprocess.STDOUT,
@@ -333,6 +443,14 @@ def run_tests(
                     try:
                         wait_for_registered_test_exit(
                             registered_test_pid,
+                            worker_grace_seconds,
+                        )
+                    except BaseException as error:
+                        cleanup_error = error
+                if timed_out or returncode not in {0, None}:
+                    try:
+                        terminate_tagged_posix_processes(
+                            run_token,
                             worker_grace_seconds,
                         )
                     except BaseException as error:

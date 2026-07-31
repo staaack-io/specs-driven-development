@@ -342,6 +342,54 @@ class RunPythonTestsTest(unittest.TestCase):
             with self.assertRaises(ProcessLookupError):
                 os.kill(test_pid, 0)
 
+    @unittest.skipUnless(
+        os.name == "posix" and not sys.platform.startswith("linux"),
+        "non-Linux POSIX process tagging is required",
+    )
+    def test_outer_timeout_reaps_double_forked_posix_descendant(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            final_pid_file = root / "double-fork-final.pid"
+            test_file = self.add(
+                root,
+                "hermes/test_double_fork.py",
+                "import os\n"
+                "from pathlib import Path\n"
+                "import signal\n"
+                "import time\n"
+                "import unittest\n"
+                "class DoubleForkTest(unittest.TestCase):\n"
+                "    def test_stop_worker_after_double_fork(self):\n"
+                "        first = os.fork()\n"
+                "        if first == 0:\n"
+                "            os.setsid()\n"
+                "            second = os.fork()\n"
+                "            if second == 0:\n"
+                "                signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                f"                Path({str(final_pid_file)!r}).write_text(str(os.getpid()))\n"
+                "                while True: time.sleep(0.05)\n"
+                "            os._exit(0)\n"
+                "        os.waitpid(first, 0)\n"
+                f"        while not Path({str(final_pid_file)!r}).exists(): time.sleep(0.01)\n"
+                "        os.kill(os.getppid(), signal.SIGSTOP)\n"
+                "        while True: time.sleep(0.05)\n",
+            )
+            output = io.StringIO()
+
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests(
+                    [test_file],
+                    root,
+                    timeout_seconds=0.3,
+                    worker_grace_seconds=1.0,
+                )
+
+            self.assertEqual(1, status)
+            self.assertIn("supervisor timed out", output.getvalue())
+            final_pid = int(final_pid_file.read_text(encoding="utf-8"))
+            with self.assertRaises(ProcessLookupError):
+                os.kill(final_pid, 0)
+
     def test_worker_with_inconsistent_counts_is_rejected(self) -> None:
         payload = {
             "version": runner.PROTOCOL_VERSION,
