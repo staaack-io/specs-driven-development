@@ -6,10 +6,12 @@ from __future__ import annotations
 from contextlib import redirect_stderr, redirect_stdout
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 import run_python_tests as runner
@@ -229,6 +231,7 @@ class RunPythonTestsTest(unittest.TestCase):
                     root,
                     timeout_seconds=0.05,
                     worker=worker,
+                    worker_grace_seconds=0.1,
                 )
 
             self.assertEqual(1, status)
@@ -294,6 +297,113 @@ class RunPythonTestsTest(unittest.TestCase):
             self.assertEqual(0, status, output[-2000:])
             self.assertIn("worker output truncated after 65536 bytes", output)
             self.assertLess(len(output), 70_000)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX process groups are required")
+    def test_timeout_escalates_from_term_to_kill_and_reaps_child(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            pid_file = root / "test-child.pid"
+            test_file = self.add(
+                root,
+                "hermes/test_ignore_term.py",
+                "import os\n"
+                "from pathlib import Path\n"
+                "import signal\n"
+                "import time\n"
+                "import unittest\n"
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                "class IgnoreTermTest(unittest.TestCase):\n"
+                "    def test_never_finishes(self):\n"
+                f"        Path({str(pid_file)!r}).write_text(str(os.getpid()))\n"
+                "        while True: time.sleep(0.05)\n",
+            )
+            output = io.StringIO()
+
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests(
+                    [test_file],
+                    root,
+                    timeout_seconds=0.3,
+                    worker_grace_seconds=1.0,
+                )
+
+            self.assertEqual(1, status)
+            self.assertIn("timed out after 0.3 seconds", output.getvalue())
+            child_pid = int(pid_file.read_text(encoding="utf-8"))
+            with self.assertRaises(ProcessLookupError):
+                os.kill(child_pid, 0)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX process groups are required")
+    def test_success_cleanup_kills_unwaited_same_group_descendant(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            sentinel = root / "leaked-descendant.txt"
+            descendant = (
+                "import time\n"
+                "from pathlib import Path\n"
+                "time.sleep(1)\n"
+                f"Path({str(sentinel)!r}).write_text('leaked')\n"
+            )
+            self.add(
+                root,
+                "hermes/test_descendant.py",
+                "import subprocess\n"
+                "import sys\n"
+                "import unittest\n"
+                f"subprocess.Popen([sys.executable, '-c', {descendant!r}])\n"
+                "class DescendantTest(unittest.TestCase):\n"
+                "    def test_passes(self): self.assertTrue(True)\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(0, status, output)
+            time.sleep(1.2)
+            self.assertFalse(sentinel.exists(), "test descendant survived cleanup")
+
+    @unittest.skipUnless(
+        sys.platform.startswith("linux"),
+        "Linux child-subreaper support is required",
+    )
+    def test_detached_descendant_is_adopted_killed_and_reaped(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            sentinel = root / "leaked-detached-descendant.txt"
+            descendant = (
+                "import time\n"
+                "from pathlib import Path\n"
+                "time.sleep(1)\n"
+                f"Path({str(sentinel)!r}).write_text('leaked')\n"
+            )
+            detached_parent = (
+                "import subprocess\n"
+                "import sys\n"
+                "import time\n"
+                "subprocess.Popen(\n"
+                f"    [sys.executable, '-c', {descendant!r}],\n"
+                "    start_new_session=True,\n"
+                ")\n"
+                "time.sleep(2)\n"
+            )
+            self.add(
+                root,
+                "hermes/test_detached_descendant.py",
+                "import subprocess\n"
+                "import sys\n"
+                "import unittest\n"
+                "subprocess.Popen(\n"
+                f"    [sys.executable, '-c', {detached_parent!r}],\n"
+                "    start_new_session=True,\n"
+                ")\n"
+                "class DetachedDescendantTest(unittest.TestCase):\n"
+                "    def test_passes(self): self.assertTrue(True)\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(0, status, output)
+            time.sleep(1.2)
+            self.assertFalse(sentinel.exists(), "detached descendant survived cleanup")
 
 
 if __name__ == "__main__":

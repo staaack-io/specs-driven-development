@@ -18,8 +18,10 @@ WORKER = Path(__file__).with_name("run_python_test_file.py")
 RESULT_MARKER = "HERMES_TEST_RESULT="
 PROTOCOL_VERSION = 1
 DEFAULT_TIMEOUT_SECONDS = 120.0
+WORKER_GRACE_SECONDS = 5.0
 MAX_LOG_BYTES = 64 * 1024
 MAX_PROTOCOL_BYTES = 16 * 1024
+FORCE_KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 
 
 def repository_inventory(root: Path) -> list[Path]:
@@ -100,25 +102,50 @@ def worker_result(protocol_output: str) -> dict[str, object]:
     return payload
 
 
-def read_bounded_log(log_file: object) -> tuple[str, bool]:
-    log_file.seek(0, os.SEEK_END)
-    size = log_file.tell()
+def bounded_worker_log(log_file: object) -> tuple[str, bool]:
+    log_file.flush()
     log_file.seek(0)
-    content = log_file.read(MAX_LOG_BYTES)
-    return content.decode("utf-8", errors="replace"), size > MAX_LOG_BYTES
+    content = log_file.read(MAX_LOG_BYTES + 1)
+    truncated = len(content) > MAX_LOG_BYTES
+    return content[:MAX_LOG_BYTES].decode("utf-8", errors="replace"), truncated
 
 
-def read_protocol(read_fd: int) -> str:
-    chunks: list[bytes] = []
-    remaining = MAX_PROTOCOL_BYTES + 1
-    with os.fdopen(read_fd, "rb", closefd=True) as stream:
-        while remaining:
-            chunk = stream.read(remaining)
-            if not chunk:
-                break
-            chunks.append(chunk)
-            remaining -= len(chunk)
-    encoded = b"".join(chunks)
+def stop_worker_tree(
+    process: subprocess.Popen[bytes],
+    grace_seconds: float,
+) -> None:
+    """TERM, KILL and reap a wedged worker and its process group."""
+
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except (PermissionError, ProcessLookupError):
+            pass
+    elif process.poll() is None:
+        process.terminate()
+    try:
+        process.wait(grace_seconds)
+    except subprocess.TimeoutExpired:
+        if os.name == "posix":
+            try:
+                os.killpg(process.pid, FORCE_KILL_SIGNAL)
+            except (PermissionError, ProcessLookupError):
+                pass
+        if process.poll() is None:
+            process.kill()
+        try:
+            process.wait(grace_seconds)
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError("worker process tree could not be reaped") from error
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, FORCE_KILL_SIGNAL)
+        except (PermissionError, ProcessLookupError):
+            pass
+
+
+def read_protocol(control_stream: object) -> str:
+    encoded = control_stream.read(MAX_PROTOCOL_BYTES + 1)
     if len(encoded) > MAX_PROTOCOL_BYTES:
         raise RuntimeError("worker protocol error: result exceeds size limit")
     return encoded.decode("utf-8", errors="strict")
@@ -129,6 +156,7 @@ def run_tests(
     repository_root: Path = REPOSITORY_ROOT,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
     worker: Path = WORKER,
+    worker_grace_seconds: float = WORKER_GRACE_SECONDS,
 ) -> int:
     if not test_files:
         print("error: no Hermes Python tests were discovered", file=sys.stderr)
@@ -146,47 +174,57 @@ def run_tests(
         print(f"\n==> {display}", flush=True)
 
         read_fd, write_fd = os.pipe()
+        os.set_inheritable(read_fd, False)
+        os.set_inheritable(write_fd, False)
+        process: subprocess.Popen[bytes] | None = None
+        returncode: int | None = None
         timed_out = False
-        with tempfile.TemporaryFile(mode="w+b") as worker_log:
-            process = subprocess.Popen(
-                [
-                    sys.executable,
-                    str(worker),
-                    "--result-fd",
-                    str(write_fd),
-                    str(test_file),
-                ],
-                cwd=repository_root,
-                pass_fds=(write_fd,),
-                stdout=worker_log,
-                stderr=subprocess.STDOUT,
-                start_new_session=True,
-            )
-            os.close(write_fd)
+        with (
+            tempfile.TemporaryFile(mode="w+b") as worker_log,
+            os.fdopen(read_fd, "rb", closefd=True) as control_stream,
+        ):
             try:
-                returncode = process.wait(timeout=timeout_seconds)
-            except subprocess.TimeoutExpired:
-                timed_out = True
+                process = subprocess.Popen(
+                    [
+                        sys.executable,
+                        str(worker),
+                        "--result-fd",
+                        str(write_fd),
+                        "--timeout",
+                        str(timeout_seconds),
+                        str(test_file),
+                    ],
+                    cwd=repository_root,
+                    pass_fds=(write_fd,),
+                    stdout=worker_log,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=os.name == "posix",
+                )
                 try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except (AttributeError, ProcessLookupError):
-                    process.kill()
-                returncode = process.wait()
-            log_output, truncated = read_bounded_log(worker_log)
+                    returncode = process.wait(
+                        timeout_seconds + worker_grace_seconds
+                    )
+                except subprocess.TimeoutExpired:
+                    timed_out = True
+                    stop_worker_tree(process, worker_grace_seconds)
+            finally:
+                os.close(write_fd)
+
+            protocol_output = read_protocol(control_stream)
+            log_output, truncated = bounded_worker_log(worker_log)
 
         if log_output:
             print(log_output, end="" if log_output.endswith("\n") else "\n")
         if truncated:
             print(f"[worker output truncated after {MAX_LOG_BYTES} bytes]")
         if timed_out:
-            os.close(read_fd)
             print(
-                f"error: {display} timed out after {timeout_seconds:g} seconds",
+                f"error: {display} supervisor timed out after "
+                f"{timeout_seconds + worker_grace_seconds:g} seconds",
                 file=sys.stderr,
             )
             return 1
         try:
-            protocol_output = read_protocol(read_fd)
             payload = worker_result(protocol_output)
         except (RuntimeError, UnicodeError) as error:
             print(f"error: {display}: {error}", file=sys.stderr)
