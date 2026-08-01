@@ -41,7 +41,7 @@ Retourner un unique objet JSON :
     {
       "stack": "spring",
       "phase": "pre-commit | post-commit",
-      "argv": ["./mvnw", "verify"],
+      "argv": ["./mvnw", "--offline", "verify"],
       "working_directory": "backend",
       "timeout_seconds": 900
     }
@@ -54,8 +54,8 @@ Retourner un unique objet JSON :
 
 - Couvrir chaque module Spring, React ou Next.js prouvé avec une gate pré et
   post identiques et sérialisées.
-- Utiliser Maven `verify` pour Spring et le gestionnaire prouvé avec un script
-  existant pour React/Next.js.
+- Utiliser Maven `verify` hors ligne pour Spring et le gestionnaire prouvé avec
+  un script existant allowlisté pour React/Next.js.
 - Proposer uniquement un chemin fourni dans `allowed_targets`.
 - Préserver tous les contrats existants. Ne proposer aucune suppression,
   réécriture de version, baisse de seuil ou remplacement d'outil de migration.
@@ -63,4 +63,5 @@ Retourner un unique objet JSON :
   choix de seuil ou une configuration incompatible.
 - Retourner `blocked` si les preuves sont ambiguës, si Flyway et Liquibase
   coexistent ou si une gate sûre ne peut pas être nommée.
-- Ne jamais proposer de commande réseau, de déploiement ou de mutation du code.
+- Ne jamais proposer de shell composé, interpréteur arbitraire, chemin absolu,
+  commande réseau, déploiement ou mutation du code.

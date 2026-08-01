@@ -87,10 +87,10 @@ En mode non sec :
    les changements minimaux. Ne jamais écrire directement dans le projet.
 3. Préserver toutes les dépendances, versions, scripts, plugins, profils,
    modules, propriétés, workspaces, overrides, exports, seuils, migrations et
-   règles existants. Déclarer chaque clé JSON ajoutée dans
-   `approved_additions` et citer la réponse utilisateur exacte sous
-   `approval_evidence`. Demander l'accord explicite avant toute nouvelle
-   dépendance.
+   règles existants. Déclarer chaque clé JSON ajoutée et chaque nouvelle
+   coordonnée Maven de dépendance ou plugin dans `approved_additions`, puis
+   citer la réponse utilisateur exacte sous `approval_evidence`. Demander
+   l'accord explicite avant toute nouvelle dépendance ou tout nouveau plugin.
 4. Ne placer aucun secret, chemin absolu, commande de déploiement, téléchargement
    exécutable, `sudo`, suppression récursive ou contournement de tests dans les
    candidats.
@@ -120,15 +120,24 @@ python3 <skill>/scripts/harness_guard.py commit \
 
 Le garde conserve le verrou global pendant toute validation, y compris un
 replay. Il exécute réellement et séquentiellement les gates `pre-commit` dans
-un bac à sable temporaire de `HEAD` contenant les candidats, les fichiers sûrs
+une copie temporaire de `HEAD` contenant les candidats, les fichiers sûrs
 en attente et une copie des `node_modules` existants. Le gestionnaire Node doit
 être celui prouvé et disponible sur `PATH` ; ne jamais installer ni simuler un
-wrapper. Il revérifie ensuite le CAS, journalise les versions, remplace
+wrapper. Maven doit exécuter `verify` hors ligne. Les scripts Node et
+`harness.sh` sont limités à une allowlist structurée de commandes de build,
+test, lint et typecheck sans shell composé, interpréteur arbitraire, chemin
+absolu ou réseau. Il revérifie ensuite le CAS, journalise les versions, remplace
 atomiquement les configurations et réexécute les commandes strictement
-identiques en phase `post-commit` dans un nouveau bac à sable. Les empreintes de
+identiques en phase `post-commit` dans une nouvelle copie. Les empreintes de
 tout le dépôt, fichiers ignorés et métadonnées Git pertinentes comprises,
 doivent rester identiques hors cibles. Un échec restaure l'ensemble précédent.
 Deux gates lourdes ne s'exécutent jamais simultanément.
+
+Cette copie est une isolation de système de fichiers, pas une sandbox noyau
+portable. Le garde refuse les formes de commandes dangereuses connues, mais du
+code de test déjà approuvé pourrait encore écrire hors de la copie. N'exécuter
+les gates que sur un dépôt de confiance ; pour du code non fiable, ajouter une
+isolation externe telle qu'un conteneur sans réseau et à montages restreints.
 
 Sur succès, supprimer uniquement le dossier candidat exact. Sur refus ou
 échec, le préserver et annoncer son chemin. Un replay exact retourne
@@ -154,7 +163,7 @@ publier, pousser, fusionner ou déployer.
 - chaque stack prouvée possède une gate pré et post réussie ;
 - seules les configurations autorisées ont changé ;
 - les empreintes avant/après et sorties de gates sont structurées ;
-- le journal est absent et le reçu namespacé par worktree, branche et HEAD
+- le journal est absent et le reçu namespacé par identité stable du worktree
   permet reprise et idempotence sans collision ;
 - le résumé précise les fichiers modifiés, les gates exécutées et l'absence de
   déploiement.

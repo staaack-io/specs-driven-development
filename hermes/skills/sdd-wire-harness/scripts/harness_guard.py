@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -28,7 +29,7 @@ MAX_FILE_BYTES = 2_000_000
 FEATURE_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 GLOB_RE = re.compile(r"[*?\[\]{}]")
 SECRET_PATTERNS = (
-    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----"),
     re.compile(r"\bghp_[A-Za-z0-9]{20,}\b"),
     re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"),
     re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
@@ -38,12 +39,20 @@ SECRET_PATTERNS = (
     re.compile(r"\bnpm_[A-Za-z0-9]{20,}\b"),
     re.compile(r"\bpypi-[A-Za-z0-9_-]{20,}\b"),
     re.compile(
-        r"(?im)^\s*(?:password|passwd|token|api[_-]?key|client[_-]?secret)\s*[:=]\s*"
+        r"(?im)^\s*(?:password|passwd|token|api[_-]?key|client[_-]?secret|credentials?)\s*[:=]\s*"
         r"(?!\$\{|<|REDACTED\b|CHANGEME\b)[\"']?[^\s\"']{8,}"
     ),
     re.compile(
         r"(?is)(?:name|key)\s*=\s*[\"'](?:password|passwd|token|api[_-]?key|"
-        r"client[_-]?secret)[\"'][^>]{0,200}value\s*=\s*[\"'](?!\$\{|<|REDACTED|CHANGEME)[^\"']{8,}"
+        r"client[_-]?secret|credentials?)[\"'][^>]{0,200}value\s*=\s*[\"'](?!\$\{|<|REDACTED|CHANGEME)[^\"']{8,}"
+    ),
+    re.compile(
+        r"(?i)\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis|amqps?|"
+        r"mssql|jdbc:[a-z0-9]+)://[^\s:/@]+:(?!\$\{|<|REDACTED|CHANGEME)[^\s/@]{4,}@"
+    ),
+    re.compile(
+        r"(?i)https?://[^\s?#]+[?&](?:password|passwd|token|api[_-]?key|"
+        r"client[_-]?secret|credentials?)=(?!\$\{|<|REDACTED|CHANGEME)[^\s&#]{4,}"
     ),
 )
 DEPLOY_WORDS = re.compile(
@@ -65,15 +74,37 @@ DANGEROUS_HARNESS_RE = re.compile(
 SENSITIVE_KEY_RE = re.compile(
     r"^(?:password|passwd|token|api[_-]?key|apikey|secret|client[_-]?secret|"
     r"clientsecret|private[_-]?key|privatekey|access[_-]?(?:key|token)|"
-    r"access(?:key|token))s?$",
+    r"access(?:key|token)|credential)s?$",
     re.IGNORECASE,
 )
 PLACEHOLDER_RE = re.compile(r"^(?:\$\{[^}]+\}|<[^>]+>|REDACTED|CHANGEME)$", re.IGNORECASE)
 SCRIPT_SECRET_RE = re.compile(
     r"(?i)\b(password|passwd|token|api[_-]?key|apikey|secret|client[_-]?secret|"
-    r"private[_-]?key|access[_-]?(?:key|token))\b\s*[:=]\s*[\"']"
+    r"private[_-]?key|access[_-]?(?:key|token)|credentials?)\b\s*[:=]\s*[\"']"
     r"(?!\$\{|<|REDACTED|CHANGEME)([^\"']{8,})[\"']"
 )
+SAFE_NODE_SCRIPT_COMMANDS = {
+    "eslint",
+    "jest",
+    "next",
+    "react-scripts",
+    "tsc",
+    "vitest",
+}
+NODE_SCRIPT_RUNNERS = {"npm", "pnpm", "yarn", "bun"}
+SAFE_MAVEN_ARGUMENTS = {
+    "verify",
+    "--offline",
+    "-o",
+    "--batch-mode",
+    "-B",
+    "--no-transfer-progress",
+    "-ntp",
+    "--show-version",
+    "-V",
+    "--quiet",
+    "-q",
+}
 SPRING_FILES = {
     "pom.xml",
     "checkstyle.xml",
@@ -154,19 +185,11 @@ def resolve_project(project_root: str) -> tuple[Path, Path]:
 
 
 def worktree_namespace(root: Path) -> str:
-    head = run_git(root, "rev-parse", "HEAD").decode().strip()
-    branch_result = subprocess.run(
-        ["git", "-C", str(root), "symbolic-ref", "--quiet", "--short", "HEAD"],
-        check=False,
-        capture_output=True,
-    )
-    branch = (
-        branch_result.stdout.decode("utf-8", "replace").strip()
-        if branch_result.returncode == 0
-        else "detached"
-    )
+    worktree_git_dir = Path(
+        run_git(root, "rev-parse", "--absolute-git-dir").decode().strip()
+    ).resolve(strict=True)
     return hashlib.sha256(
-        canonical_json({"root": str(root), "branch": branch, "head": head})
+        canonical_json({"root": str(root.resolve(strict=True)), "git_dir": str(worktree_git_dir)})
     ).hexdigest()[:24]
 
 
@@ -366,7 +389,9 @@ def evidence_strings(module: dict[str, Any]) -> list[str]:
     return values
 
 
-def detect_stacks(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def detect_stacks(
+    root: Path, *, require_current_head: bool = True
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     specs = root / ".specs"
     if specs.is_symlink() or not specs.is_dir():
         raise GuardError(".specs must be a real directory created by /sdd-onboard")
@@ -384,7 +409,7 @@ def detect_stacks(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     ):
         raise GuardError("wire-harness requires proved onboarding confidence")
     head = run_git(root, "rev-parse", "HEAD").decode().strip()
-    if stack.get("git_sha") != head:
+    if require_current_head and stack.get("git_sha") != head:
         raise GuardError("_stack.json does not describe the current Git HEAD")
 
     detected: list[dict[str, Any]] = []
@@ -566,7 +591,40 @@ def check_secrets(data: bytes, label: str) -> str:
             raise GuardError(f"potential secret refused in {label}")
     if SCRIPT_SECRET_RE.search(text):
         raise GuardError(f"potential script credential refused in {label}")
+    reject_indirect_script_secrets(text, label)
     return text
+
+
+def reject_indirect_script_secrets(text: str, label: str) -> None:
+    """Reject simple JavaScript/TypeScript credential aliases without executing code."""
+    if not re.search(r"(?:\.m?[cm]?[jt]sx?$|package\.json#scripts\.)", label):
+        return
+    literals: dict[str, str] = {}
+    literal_assignment = re.compile(
+        r"(?m)\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
+        r"((?:[\"'][^\"'\r\n]*[\"'])(?:\s*\+\s*[\"'][^\"'\r\n]*[\"'])*)\s*;?"
+    )
+    for match in literal_assignment.finditer(text):
+        pieces = re.findall(r"[\"']([^\"'\r\n]*)[\"']", match.group(2))
+        literals[match.group(1)] = "".join(pieces)
+    sensitive = (
+        r"(?:password|passwd|token|api[_-]?key|apikey|secret|client[_-]?secret|"
+        r"private[_-]?key|access[_-]?(?:key|token)|credentials?)"
+    )
+    alias_patterns = (
+        re.compile(
+            rf"(?i)\b(?:const|let|var)?\s*{sensitive}\s*=\s*"
+            r"([A-Za-z_$][\w$]*)\b"
+        ),
+        re.compile(
+            rf"(?i)[\"']?{sensitive}[\"']?\s*:\s*([A-Za-z_$][\w$]*)\b"
+        ),
+    )
+    for pattern in alias_patterns:
+        for match in pattern.finditer(text):
+            value = literals.get(match.group(1))
+            if value and len(value) >= 8 and not PLACEHOLDER_RE.fullmatch(value):
+                raise GuardError(f"potential indirect script credential refused in {label}")
 
 
 def reject_xml_secrets(root: ET.Element, relative: str) -> None:
@@ -656,6 +714,23 @@ def xml_inventory(root: ET.Element) -> dict[str, set[tuple[str, ...]]]:
     }
 
 
+def maven_added_coordinates(before: bytes | None, after_root: ET.Element) -> list[str]:
+    if before is None:
+        previous = {"dependencies": set(), "plugins": set()}
+    else:
+        try:
+            before_root = ET.fromstring(before.decode("utf-8"))
+        except (UnicodeDecodeError, ET.ParseError) as error:
+            raise GuardError(f"existing Maven XML cannot be compared safely: {error}") from error
+        previous = xml_inventory(before_root)
+    candidate = xml_inventory(after_root)
+    additions: list[str] = []
+    for category in ("dependencies", "plugins"):
+        for coordinate in candidate[category] - previous[category]:
+            additions.append(f"maven.{category}[{':'.join(coordinate)}]")
+    return sorted(additions)
+
+
 def preserve_xml_configuration(relative: str, before: bytes, after_root: ET.Element) -> None:
     try:
         before_root = ET.fromstring(before.decode("utf-8"))
@@ -734,6 +809,55 @@ def preserve_text_configuration(relative: str, before: bytes, after: str) -> Non
             raise GuardError(f"candidate removes or reorders existing configuration in {relative}") from error
 
 
+def validate_harness_script(text: str) -> None:
+    """Accept only declarative, single-command build/test lines in harness.sh."""
+    for number, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        try:
+            tokens = shlex.split(line, posix=True)
+        except ValueError as error:
+            raise GuardError(f"unparseable harness.sh line {number}") from error
+        if not tokens:
+            continue
+        if any(
+            any(character in token for character in (";", "|", "&", "`", "<", ">", "$", "(", ")"))
+            for token in tokens
+        ):
+            raise GuardError(f"shell composition refused in harness.sh line {number}")
+        if any(
+            PurePosixPath(token).is_absolute()
+            or re.match(r"^[A-Za-z]:[\\/]", token)
+            or ".." in PurePosixPath(token).parts
+            or "://" in token
+            for token in tokens[1:]
+        ):
+            raise GuardError(f"absolute, escaping, or network token refused in harness.sh line {number}")
+        executable = tokens[0]
+        if executable == "set" and all(re.fullmatch(r"-[euxo]+", item) or item == "pipefail" for item in tokens[1:]):
+            continue
+        if executable == "cd" and len(tokens) == 2:
+            continue
+        if executable in {"mvn", "./mvnw"}:
+            if "verify" in tokens and ({"--offline", "-o"} & set(tokens)) and all(
+                item in SAFE_MAVEN_ARGUMENTS for item in tokens[1:]
+            ):
+                continue
+        elif executable == "npm":
+            if len(tokens) == 3 and tokens[1] == "run" and tokens[2] in {"lint", "typecheck", "test", "build"}:
+                continue
+        elif executable in {"pnpm", "yarn"}:
+            if (len(tokens) == 2 or (len(tokens) == 3 and tokens[1] == "run")) and tokens[-1] in {
+                "lint", "typecheck", "test", "build"
+            }:
+                continue
+        elif executable == "bun":
+            if len(tokens) == 3 and tokens[1] == "run" and tokens[2] in {"lint", "typecheck", "test", "build"}:
+                continue
+        raise GuardError(f"harness.sh line {number} is outside the command allowlist")
+
+
 def validate_config(relative: str, before: bytes | None, data: bytes) -> None:
     text = check_secrets(data, relative)
     name = PurePosixPath(relative).name
@@ -775,6 +899,7 @@ def validate_config(relative: str, before: bytes | None, data: bytes) -> None:
             raise GuardError("deployment command refused in harness.sh")
         if DANGEROUS_HARNESS_RE.search(text):
             raise GuardError("dangerous or network command refused in harness.sh")
+        validate_harness_script(text)
         if before is not None:
             preserve_text_configuration(relative, before, text)
     elif before is not None:
@@ -800,12 +925,22 @@ def validate_command(command: object, detected: list[dict[str, Any]]) -> dict[st
     if not isinstance(workdir, str):
         raise GuardError("validation working_directory must be a string")
     normalized_workdir = "." if workdir == "." else safe_relative(workdir, "validation working_directory")
-    for argument in argv:
+    for index, argument in enumerate(argv):
         lowered = argument.casefold()
         if any(value in lowered for value in FORBIDDEN_COMMAND_PARTS):
             raise GuardError(f"test-bypass argument refused: {argument}")
-        if any(character in argument for character in ("\n", "\r", "\0", ";", "|", "`")):
+        if any(
+            character in argument
+            for character in ("\n", "\r", "\0", ";", "|", "&", "`", "<", ">", "$", "(", ")")
+        ):
             raise GuardError(f"shell metacharacter refused in argv: {argument!r}")
+        if index > 0 and (
+            PurePosixPath(argument).is_absolute()
+            or re.match(r"^[A-Za-z]:[\\/]", argument)
+            or ".." in PurePosixPath(argument).parts
+            or "://" in argument
+        ):
+            raise GuardError(f"absolute, escaping, or network argument refused: {argument}")
     rendered = " ".join(argv)
     if DEPLOY_WORDS.search(rendered):
         raise GuardError("deployment command refused")
@@ -816,8 +951,13 @@ def validate_command(command: object, detected: list[dict[str, Any]]) -> dict[st
     if normalized_workdir not in matching_modules:
         raise GuardError("validation working_directory does not match its proved module")
     if stack == "spring":
-        if executable not in {"mvn", "mvnw"} or "verify" not in argv:
-            raise GuardError("Spring validation must run Maven verify")
+        if argv[0] not in {"mvn", "./mvnw"} or executable not in {"mvn", "mvnw"}:
+            raise GuardError("Spring validation must use mvn or the local ./mvnw")
+        if "verify" not in argv or not ({"--offline", "-o"} & set(argv)):
+            raise GuardError("Spring validation must run Maven verify in offline mode")
+        unexpected = [argument for argument in argv[1:] if argument not in SAFE_MAVEN_ARGUMENTS]
+        if unexpected:
+            raise GuardError(f"unsupported Maven validation arguments: {unexpected}")
     else:
         matching_managers = {
             item.get("package_manager")
@@ -826,7 +966,16 @@ def validate_command(command: object, detected: list[dict[str, Any]]) -> dict[st
         }
         if argv[0] not in matching_managers or executable != argv[0]:
             raise GuardError("React/Next.js validation must use its proved package manager")
-        if not any(gate in argv for gate in ("lint", "typecheck", "test", "build")):
+        if argv[0] == "npm":
+            valid_shape = len(argv) == 3 and argv[1] == "run"
+            script_name = argv[2] if valid_shape else None
+        elif argv[0] in {"pnpm", "yarn"}:
+            valid_shape = len(argv) == 2 or (len(argv) == 3 and argv[1] == "run")
+            script_name = argv[-1] if valid_shape else None
+        else:
+            valid_shape = len(argv) == 3 and argv[1] == "run"
+            script_name = argv[2] if valid_shape else None
+        if not valid_shape or script_name not in {"lint", "typecheck", "test", "build"}:
             raise GuardError("React/Next.js validation must name a configured gate")
     return {
         "stack": stack,
@@ -896,19 +1045,34 @@ def validate_plan(
             raise GuardError(f"candidate must be a real file: {candidate_relative}")
         after = candidate.read_bytes()
         validate_config(relative, before, after)
+        additions: list[str] = []
+        addition_kind: str | None = None
         if relative.endswith("package.json") and before is not None:
             additions = sorted(json_added_paths(json.loads(before), json.loads(after)))
+            addition_kind = "package.json"
+        elif PurePosixPath(relative).name == "pom.xml":
+            try:
+                after_xml = ET.fromstring(after.decode("utf-8"))
+            except (UnicodeDecodeError, ET.ParseError) as error:
+                raise GuardError(f"invalid Maven XML candidate {relative}: {error}") from error
+            additions = maven_added_coordinates(before, after_xml)
+            addition_kind = "Maven dependency/plugin"
+        if addition_kind is not None:
             declared_additions = change.get("approved_additions", [])
             if not isinstance(declared_additions, list) or not all(
                 isinstance(item, str) for item in declared_additions
             ):
                 raise GuardError("approved_additions must be a string array")
             if sorted(declared_additions) != additions:
-                raise GuardError("package.json additions require an exact approved_additions list")
+                raise GuardError(
+                    f"{addition_kind} additions require an exact approved_additions list"
+                )
             if additions:
                 evidence = change.get("approval_evidence")
                 if not isinstance(evidence, str) or not evidence.startswith("user:"):
-                    raise GuardError("package.json additions require explicit user approval evidence")
+                    raise GuardError(
+                        f"{addition_kind} additions require explicit user approval evidence"
+                    )
         if change.get("expected_after_sha256") != sha256(after):
             raise GuardError(f"candidate fingerprint mismatch for {relative}")
         mode = 0o755 if relative == ".github/scripts/harness.sh" else 0o644
@@ -1097,7 +1261,7 @@ def recover(root: Path, paths: dict[str, Path], *, dry_run: bool) -> str | None:
     entries = journal.get("entries")
     if not isinstance(entries, list) or not entries:
         raise GuardError("wire-harness journal entries are invalid")
-    _stack, detected = detect_stacks(root)
+    _stack, detected = detect_stacks(root, require_current_head=False)
     allowed = allowed_targets(detected)
     seen_targets: set[str] = set()
     for entry in entries:
@@ -1224,11 +1388,41 @@ def validate_node_script(workspace: Path, command: dict[str, Any]) -> None:
         if DEPLOY_WORDS.search(script_value) or DANGEROUS_HARNESS_RE.search(script_value):
             raise GuardError(f"dangerous or network command refused in package script {name}")
         check_secrets(script_value.encode(), f"package.json#scripts.{name}")
-        for match in re.finditer(
-            r"(?:npm\s+run|pnpm(?:\s+run)?|yarn(?:\s+run)?|bun\s+run)\s+([A-Za-z0-9:._-]+)",
-            script_value,
-        ):
-            inspect_script(match.group(1))
+        try:
+            tokens = shlex.split(script_value, posix=True)
+        except ValueError as error:
+            raise GuardError(f"unparseable package script refused: {name}") from error
+        if not tokens:
+            raise GuardError(f"empty package script refused: {name}")
+        for token in tokens:
+            if (
+                any(character in token for character in (";", "|", "&", "`", "<", ">", "$", "(", ")"))
+                or PurePosixPath(token).is_absolute()
+                or re.match(r"^[A-Za-z]:[\\/]", token)
+                or ".." in PurePosixPath(token).parts
+                or "://" in token
+            ):
+                raise GuardError(f"shell, absolute, escaping, or network token refused in package script {name}")
+        executable = tokens[0]
+        if "/" in executable or "\\" in executable:
+            raise GuardError(f"path-based package script executable refused: {name}")
+        if executable in NODE_SCRIPT_RUNNERS:
+            if executable == "npm":
+                valid_shape = len(tokens) == 3 and tokens[1] == "run"
+                nested = tokens[2] if valid_shape else None
+            elif executable in {"pnpm", "yarn"}:
+                valid_shape = len(tokens) == 2 or (len(tokens) == 3 and tokens[1] == "run")
+                nested = tokens[-1] if valid_shape else None
+            else:
+                valid_shape = len(tokens) == 3 and tokens[1] == "run"
+                nested = tokens[2] if valid_shape else None
+            if not valid_shape or not re.fullmatch(r"[A-Za-z0-9:._-]+", nested or ""):
+                raise GuardError(f"unsupported nested package script invocation: {name}")
+            inspect_script(nested)
+        elif executable not in SAFE_NODE_SCRIPT_COMMANDS:
+            raise GuardError(
+                f"package script executable is outside the validation allowlist: {executable}"
+            )
 
     for lifecycle_name in (f"pre{script_name}", script_name, f"post{script_name}"):
         inspect_script(lifecycle_name)

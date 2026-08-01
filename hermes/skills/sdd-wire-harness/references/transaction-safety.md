@@ -2,8 +2,9 @@
 
 Le garde utilise le répertoire Git commun afin que tous les worktrees partagent
 le même verrou. Journaux et reçus y sont séparés par un namespace dérivé du
-chemin réel du worktree, de la branche et du HEAD. Il ouvre le verrou sans suivre
-de lien symbolique et le conserve jusqu'à la fin d'un commit ou d'un replay.
+chemin réel et du git-dir absolu du worktree. Cette identité ne change ni après
+un checkout, ni après un pull, ni avec un `HEAD` détaché. Il ouvre le verrou sans
+suivre de lien symbolique et le conserve jusqu'à la fin d'un commit ou replay.
 
 ## Commit
 
@@ -11,7 +12,7 @@ de lien symbolique et le conserve jusqu'à la fin d'un commit ou d'un replay.
    et les candidats.
 2. Empreinter le contenu complet du dépôt, y compris fichiers ignorés et
    métadonnées Git pertinentes, hors cibles et fichiers techniques du garde.
-3. Exécuter les gates pré-commit en série dans une archive temporaire sûre de
+3. Exécuter les gates pré-commit en série dans une copie temporaire sûre de
    `HEAD` avec les candidats, fichiers reçus et dépendances Node existantes.
 4. Écrire un journal durable contenant les versions avant/après, modes et
    empreintes.
@@ -35,6 +36,16 @@ sorties de gates sont représentées par leur code et une empreinte SHA-256.
 
 Une interruption donne donc l'ancien ou le nouvel ensemble complet, jamais un
 mélange. Un échec de gate post-commit restaure immédiatement l'ancien ensemble.
+Le namespace stable permet de retrouver le journal même si la branche ou HEAD
+a changé avant la reprise.
+
+## Limite d'isolation
+
+La copie temporaire n'est pas une sandbox noyau. Maven est forcé hors ligne et
+les commandes/scripts sont validés par allowlist, sans shell composé, chemins
+absolus ou réseau explicite. Cela réduit la surface mais ne peut pas empêcher du
+code de test déjà présent d'accéder au système. Exécuter un dépôt non fiable
+dans une isolation externe sans réseau et avec des montages restreints.
 
 ## Replay
 

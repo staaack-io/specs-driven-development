@@ -252,7 +252,7 @@ class HarnessGuardTest(unittest.TestCase):
                 {
                     "stack": stack,
                     "phase": phase,
-                    "argv": ["./mvnw", "verify"]
+                    "argv": ["./mvnw", "--offline", "verify"]
                     if stack == "spring"
                     else [
                         "pnpm",
@@ -465,6 +465,78 @@ class HarnessGuardTest(unittest.TestCase):
         result = self.commit(inspection, candidates, plan_path, expected=2)
         self.assertIn("package script pretest", result["error"])
 
+    def test_maven_dependency_and_plugin_additions_need_exact_user_approval(self) -> None:
+        inspection = self.inspect(dry_run=True)
+        candidates, plan_path = self.candidates_and_plan(inspection)
+        pom_path = candidates / "backend/pom.xml"
+        pom_path.write_text(
+            """<project>
+  <parent><artifactId>spring-boot-starter-parent</artifactId><version>4.0.1</version></parent>
+  <dependencies>
+    <dependency><groupId>org.example</groupId><artifactId>quality-tests</artifactId><version>1.2.3</version></dependency>
+  </dependencies>
+  <build><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-checkstyle-plugin</artifactId><version>3.6.0</version></plugin>
+  </plugins></build>
+</project>
+""",
+            encoding="utf-8",
+        )
+        plan = json.loads(plan_path.read_text())
+        change = plan["changes"][0]
+        change["expected_after_sha256"] = GUARD.sha256(pom_path.read_bytes())
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+        result = self.validate(inspection, candidates, plan_path, expected=2)
+        self.assertIn("Maven dependency/plugin additions require an exact", result["error"])
+
+        change["approved_additions"] = [
+            "maven.dependencies[org.example:quality-tests:1.2.3]",
+            "maven.plugins[org.apache.maven.plugins:maven-checkstyle-plugin:3.6.0]",
+        ]
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+        result = self.validate(inspection, candidates, plan_path, expected=2)
+        self.assertIn("explicit user approval evidence", result["error"])
+
+        change["approval_evidence"] = "user:approve the two exact Maven coordinates"
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+        self.assertEqual("validated", self.validate(inspection, candidates, plan_path)["status"])
+
+    def test_gate_allowlist_refuses_interpreters_mutators_network_and_absolute_paths(self) -> None:
+        inspection = self.inspect(dry_run=True)
+        unsafe_scripts = (
+            "python -c 'open(\"/tmp/out\", \"w\").write(\"x\")'",
+            "node -e 'require(\"fs\").writeFileSync(\"/tmp/out\", \"x\")'",
+            "git clean -fdx",
+            "find . -delete",
+            "vitest run https://example.invalid/spec.ts",
+            "vitest run /tmp/spec.ts",
+            "vitest run ../outside/spec.ts",
+        )
+        for unsafe in unsafe_scripts:
+            with self.subTest(script=unsafe):
+                candidates, plan_path = self.candidates_and_plan(inspection)
+                package_path = candidates / "frontend/package.json"
+                package = json.loads(package_path.read_text())
+                package["scripts"]["test"] = unsafe
+                package_path.write_text(json.dumps(package), encoding="utf-8")
+                plan = json.loads(plan_path.read_text())
+                plan["changes"][1]["expected_after_sha256"] = GUARD.sha256(
+                    package_path.read_bytes()
+                )
+                plan_path.write_text(json.dumps(plan), encoding="utf-8")
+                result = self.commit(inspection, candidates, plan_path, expected=2)
+                self.assertRegex(result["error"], "allowlist|shell|absolute|network")
+
+        candidates, plan_path = self.candidates_and_plan(inspection)
+        plan = json.loads(plan_path.read_text())
+        for gate in plan["validation"]:
+            if gate["stack"] == "nextjs":
+                gate["argv"] = ["pnpm", "run", "test", "--", "/tmp/spec.ts"]
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+        result = self.validate(inspection, candidates, plan_path, expected=2)
+        self.assertRegex(result["error"], "absolute|configured gate")
+
     def test_xml_and_javascript_secret_forms_are_refused(self) -> None:
         inspection = self.inspect(dry_run=True)
         candidates, plan_path = self.candidates_and_plan(
@@ -505,7 +577,7 @@ class HarnessGuardTest(unittest.TestCase):
                 {
                     "stack": stack,
                     "phase": phase,
-                    "argv": ["./mvnw", "verify"] if stack == "spring" else ["pnpm", "build"],
+                    "argv": ["./mvnw", "--offline", "verify"] if stack == "spring" else ["pnpm", "build"],
                     "working_directory": "backend" if stack == "spring" else "frontend",
                     "timeout_seconds": 30,
                 }
@@ -517,6 +589,22 @@ class HarnessGuardTest(unittest.TestCase):
         plan_path.write_text(json.dumps(plan), encoding="utf-8")
         result = self.validate(inspection, candidates, plan_path, expected=2)
         self.assertIn("script credential", result["error"])
+
+        secret_forms = (
+            'const raw = "abcdefghijk-secret"; const credentials = raw;\n',
+            'export default { dsn: "postgres://service:supersecret@db.internal/app" };\n',
+            'const key = "-----BEGIN ENCRYPTED PRIVATE KEY-----\\nabc";\n',
+        )
+        for secret_text in secret_forms:
+            with self.subTest(secret=secret_text):
+                candidate_path.write_text(secret_text, encoding="utf-8")
+                plan = json.loads(plan_path.read_text())
+                plan["changes"][0]["expected_after_sha256"] = GUARD.sha256(
+                    candidate_path.read_bytes()
+                )
+                plan_path.write_text(json.dumps(plan), encoding="utf-8")
+                result = self.validate(inspection, candidates, plan_path, expected=2)
+                self.assertRegex(result["error"], "secret|credential")
 
     def test_dangerous_harness_and_symbolic_global_lock_are_refused(self) -> None:
         inspection = self.inspect(dry_run=True)
@@ -643,7 +731,7 @@ class HarnessGuardTest(unittest.TestCase):
                 {
                     "stack": stack,
                     "phase": phase,
-                    "argv": ["./mvnw", "verify"] if stack == "spring" else ["pnpm", "build"],
+                    "argv": ["./mvnw", "--offline", "verify"] if stack == "spring" else ["pnpm", "build"],
                     "working_directory": "backend" if stack == "spring" else "frontend",
                     "timeout_seconds": 30,
                 }
@@ -719,6 +807,24 @@ class HarnessGuardTest(unittest.TestCase):
         recovered = self.inspect()
 
         self.assertEqual("rolled-back", recovered["recovery"])
+        self.assertEqual(original_pom, (self.root / "backend/pom.xml").read_bytes())
+        self.assertEqual(original_package, (self.root / "frontend/package.json").read_bytes())
+
+    def test_recovery_namespace_survives_branch_and_head_changes(self) -> None:
+        inspection = self.inspect()
+        original_pom = (self.root / "backend/pom.xml").read_bytes()
+        original_package = (self.root / "frontend/package.json").read_bytes()
+        candidates, plan = self.candidates_and_plan(inspection)
+        paths_before = self.harness_paths
+
+        self.assertEqual(86, self.run_crashing_commit(inspection, candidates, plan, 1))
+        self.git("checkout", "-qb", "recovery-renamed")
+        self.git("commit", "--allow-empty", "-qm", "advance head during recovery")
+        paths_after = self.harness_paths
+
+        self.assertEqual(paths_before["journal"], paths_after["journal"])
+        self.assertTrue(paths_after["journal"].is_file())
+        self.assertEqual("rolled-back", GUARD.recover(self.root, paths_after, dry_run=False))
         self.assertEqual(original_pom, (self.root / "backend/pom.xml").read_bytes())
         self.assertEqual(original_package, (self.root / "frontend/package.json").read_bytes())
 

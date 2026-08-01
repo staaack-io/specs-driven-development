@@ -19,7 +19,9 @@ absolu.
       "purpose": "Ajouter les portes Maven absentes",
       "expected_before_sha256": "sha256:<empreinte>",
       "expected_after_sha256": "sha256:<empreinte>",
-      "approved_additions": ["$.scripts.test"],
+      "approved_additions": [
+        "maven.plugins[org.apache.maven.plugins:maven-checkstyle-plugin:3.6.0]"
+      ],
       "approval_evidence": "user:<réponse exacte>"
     }
   ],
@@ -27,14 +29,14 @@ absolu.
     {
       "stack": "spring",
       "phase": "pre-commit",
-      "argv": ["./mvnw", "verify"],
+      "argv": ["./mvnw", "--offline", "verify"],
       "working_directory": "backend",
       "timeout_seconds": 900
     },
     {
       "stack": "spring",
       "phase": "post-commit",
-      "argv": ["./mvnw", "verify"],
+      "argv": ["./mvnw", "--offline", "verify"],
       "working_directory": "backend",
       "timeout_seconds": 900
     }
@@ -49,8 +51,11 @@ absolu.
   fichier courant pour un remplacement.
 - Faire correspondre `stack`, module, manifeste, `working_directory` et
   gestionnaire de paquets aux preuves de l'inspection.
-- Déclarer exactement des arguments, jamais une chaîne shell. Refuser
-  métacaractères, options de contournement et commandes de déploiement.
+- Déclarer exactement des arguments, jamais une chaîne shell. Maven utilise
+  `verify` avec `--offline` ou `-o`. Les scripts Node et `harness.sh` utilisent
+  uniquement l'allowlist structurée ; refuser interpréteurs `python -c` ou
+  `node -e`, `git clean`, `find -delete`, métacaractères, chemins absolus ou
+  échappants, réseau, options de contournement et déploiement.
 - Inclure au moins une gate `pre-commit` et `post-commit` par module prouvé.
   Les listes d'arguments, répertoires et timeouts doivent être strictement
   identiques entre les deux phases. Le garde les exécute séquentiellement.
@@ -60,6 +65,9 @@ absolu.
   dans `approved_additions` avec une preuve `user:`. Inspecter aussi les scripts
   lifecycle `pre*` et `post*`.
 - Conserver les propriétés, plugins, profils, modules, migrations, règles et
-  seuils XML déjà présents.
+  seuils XML déjà présents. Lister exactement chaque nouvelle dépendance et
+  chaque nouveau plugin Maven sous la forme
+  `maven.dependencies[groupId:artifactId:version]` ou
+  `maven.plugins[groupId:artifactId:version]`, avec une preuve `user:`.
 - Le plan et les candidats restent hors du dépôt. Ils ne contiennent aucun
   secret ni valeur d'environnement.
