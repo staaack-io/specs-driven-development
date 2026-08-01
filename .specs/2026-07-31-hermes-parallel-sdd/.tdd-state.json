@@ -43,11 +43,11 @@
       ]
     },
     "T-003": {
-      "phase": "pending",
+      "phase": "done",
       "red_at": null,
       "red_test_signature": null,
       "red_failure_excerpt": null,
-      "green_at": null,
+      "green_at": "2026-08-01T23:00:29Z",
       "files_in_scope": [
         ".github/workflows/ci.yml",
         "distribution.yaml",
