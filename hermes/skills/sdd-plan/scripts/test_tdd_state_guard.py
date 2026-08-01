@@ -152,6 +152,103 @@ class GuardTest(unittest.TestCase):
             self.assertIn("no matching completion receipt", rejected["error"])
             self.assertEqual("# Different tasks\n", tasks.read_text())
 
+    def test_commit_plan_v2_requires_matching_markdown_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-v2"
+            feature.mkdir()
+            design = feature / "03-design.approved.candidate.md"
+            tasks = feature / "04-tasks.approved.candidate.md"
+            candidate = feature / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text(
+                """# Tasks
+
+### T-001 : Runtime
+
+- **Test-IDs :** T-001-T1
+- **Files in scope :** `src/Runtime.java`
+- **Dependencies :** none
+""",
+                encoding="utf-8",
+            )
+            v2 = {
+                "schema_version": 2,
+                "feature_id": feature.name,
+                "mode": "sequential",
+                "project": None,
+                "board": None,
+                "max_workers": 1,
+                "revision": 0,
+                "active_task": None,
+                "tasks": {
+                    "T-001": {
+                        "phase": "pending",
+                        "status": "pending",
+                        "dependencies": [],
+                        "test_ids": ["T-001-T1"],
+                        "files_in_scope": ["src/Runtime.java"],
+                        "kanban_id": None,
+                        "issue": None,
+                        "branch": None,
+                        "pr": None,
+                        "red_at": None,
+                        "red_test_signature": None,
+                        "red_failure_excerpt": None,
+                        "green_at": None,
+                    }
+                },
+            }
+            candidate.write_text(json.dumps(v2), encoding="utf-8")
+            result = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(feature),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+            )
+            self.assertTrue(result["committed"])
+
+            other = Path(temporary) / "feature-v2-mismatch"
+            other.mkdir()
+            design = other / "03-design.approved.candidate.md"
+            tasks = other / "04-tasks.approved.candidate.md"
+            candidate = other / ".tdd-state.candidate.json"
+            design.write_text("decision: approve\n", encoding="utf-8")
+            tasks.write_text(
+                """# Tasks
+
+### T-001 : Runtime
+
+- **Test-IDs :** T-001-T2
+- **Files in scope :** `src/Runtime.java`
+- **Dependencies :** none
+""",
+                encoding="utf-8",
+            )
+            v2["feature_id"] = other.name
+            candidate.write_text(json.dumps(v2), encoding="utf-8")
+            rejected = self.run_guard(
+                "commit-plan",
+                "--feature-dir",
+                str(other),
+                "--expected-token",
+                "absent",
+                "--design-candidate",
+                str(design),
+                "--tasks-candidate",
+                str(tasks),
+                "--state-candidate",
+                str(candidate),
+                expected=2,
+            )
+            self.assertIn("plan candidates disagree", rejected["error"])
+
     def test_concurrent_change_rejects_both_plan_writes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             feature = Path(temporary) / "feature-two"
@@ -607,6 +704,30 @@ class GuardTest(unittest.TestCase):
             self.assertEqual(target_design, (feature / "03-design.md").read_bytes())
             self.assertEqual(target_tasks, (feature / "04-tasks.md").read_bytes())
             self.assertEqual(state_data, (feature / ".tdd-state.json").read_bytes())
+
+    def test_snapshot_refuses_symlink_and_non_regular_lock_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-lock"
+            feature.mkdir()
+            target = feature / "external-lock"
+            target.write_text("", encoding="utf-8")
+            lock = feature / ".tdd-state.lock"
+            lock.symlink_to(target)
+            rejected = self.run_guard(
+                "snapshot", "--feature-dir", str(feature), expected=2
+            )
+            self.assertIn("cannot open TDD state lock", rejected["error"])
+
+        if not hasattr(os, "mkfifo"):
+            return
+        with tempfile.TemporaryDirectory() as temporary:
+            feature = Path(temporary) / "feature-fifo-lock"
+            feature.mkdir()
+            os.mkfifo(feature / ".tdd-state.lock")
+            rejected = self.run_guard(
+                "snapshot", "--feature-dir", str(feature), expected=2
+            )
+            self.assertIn("not a regular file", rejected["error"])
 
 
 if __name__ == "__main__":

@@ -5,13 +5,27 @@ from __future__ import annotations
 
 import argparse
 import base64
+from contextlib import contextmanager
 import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import stat
+import sys
 import tempfile
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from hermes.runtime.sdd_runtime_guard import (  # noqa: E402
+    GuardError as RuntimeGuardError,
+    assert_state_matches_tasks,
+    git_common_dir,
+    validate_state,
+)
 
 
 PROOF_FIELDS = (
@@ -44,11 +58,18 @@ def parse_state(data: bytes, label: str) -> dict:
         value = json.loads(data)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise GuardError(f"{label} is not valid JSON: {error}") from error
-    if not isinstance(value, dict) or not isinstance(value.get("tasks"), dict):
-        raise GuardError(f"{label} must be an object with a tasks object")
-    if not value["tasks"]:
-        raise GuardError(f"{label} must contain at least one task")
-    return value
+    repo_root = None
+    try:
+        repo_root = Path(label).resolve().parent
+        while repo_root.parent != repo_root and repo_root.name != ".specs":
+            repo_root = repo_root.parent
+        if repo_root.name == ".specs":
+            repo_root = repo_root.parent
+        else:
+            repo_root = None
+        return validate_state(value, repo_root=repo_root)
+    except RuntimeGuardError as error:
+        raise GuardError(f"{label} violates the runtime state contract: {error}") from error
 
 
 def require_pristine(state: dict, label: str) -> None:
@@ -119,13 +140,44 @@ def path_mode(path: Path, fallback: int) -> int:
 
 def feature_paths(feature_dir: str) -> tuple[Path, Path, Path, Path, Path]:
     directory = Path(feature_dir).resolve()
+    try:
+        lock_path = git_common_dir(directory) / "sdd-runtime" / "writer.lock"
+    except RuntimeGuardError:
+        # Backward-compatible fallback for isolated fixtures that are not Git
+        # repositories. Real SDD projects always use the common Git directory.
+        lock_path = directory / ".tdd-state.lock"
     return (
-        directory / ".tdd-state.lock",
+        lock_path,
         directory / ".tdd-state.json",
         directory / "03-design.md",
         directory / "04-tasks.md",
         directory / ".tdd-state.transaction.json",
     )
+
+
+@contextmanager
+def state_lock(lock_path: Path):
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    flags = os.O_RDWR | os.O_CREAT
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(lock_path, flags, 0o600)
+    except OSError as error:
+        raise GuardError(f"cannot open TDD state lock: {error}") from error
+    locked = False
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise GuardError(f"TDD state lock is not a regular file: {lock_path}")
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        locked = True
+        yield
+    finally:
+        try:
+            if locked:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+        finally:
+            os.close(descriptor)
 
 
 def encode_artifact(data: bytes | None, mode: int | None) -> dict:
@@ -247,9 +299,7 @@ def snapshot(args: argparse.Namespace) -> None:
     lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
         args.feature_dir
     )
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+    with state_lock(lock_path):
         recovery_outcome = recover_transaction(
             state_path, design_path, tasks_path, transaction_path
         )
@@ -383,9 +433,7 @@ def commit_plan(args: argparse.Namespace) -> None:
         tasks_data = tasks_candidate.read_bytes()
         candidate_data = state_candidate.read_bytes()
     except FileNotFoundError as error:
-        lock_path.parent.mkdir(parents=True, exist_ok=True)
-        with lock_path.open("a+b") as lock:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        with state_lock(lock_path):
             recover_transaction(
                 state_path, design_path, tasks_path, transaction_path
             )
@@ -411,14 +459,27 @@ def commit_plan(args: argparse.Namespace) -> None:
     if not tasks_data.strip():
         raise GuardError("approved tasks candidate is empty")
     state_mode = stat.S_IMODE(state_candidate.stat().st_mode)
+    try:
+        raw_candidate_state = json.loads(candidate_data)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raw_candidate_state = None
     candidate_state = parse_state(candidate_data, str(state_candidate))
     require_pristine(candidate_state, str(state_candidate))
+    if isinstance(raw_candidate_state, dict) and raw_candidate_state.get("schema_version") == 2:
+        try:
+            assert_state_matches_tasks(
+                candidate_state,
+                tasks_data.decode("utf-8"),
+                repo_root=state_path.parent.parent.parent
+                if state_path.parent.parent.name == ".specs"
+                else None,
+            )
+        except (RuntimeGuardError, UnicodeDecodeError) as error:
+            raise GuardError(f"plan candidates disagree: {error}") from error
     if candidate_state.get("feature_id") != state_path.parent.name:
         raise GuardError("candidate feature_id does not match the feature directory")
 
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+    with state_lock(lock_path):
         recovery_outcome = recover_transaction(
             state_path, design_path, tasks_path, transaction_path
         )
@@ -571,9 +632,7 @@ def write_state(args: argparse.Namespace) -> None:
     if candidate_state.get("feature_id") != state_path.parent.name:
         raise GuardError("candidate feature_id does not match the feature directory")
 
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+    with state_lock(lock_path):
         recover_transaction(state_path, design_path, tasks_path, transaction_path)
         current_token = token_for(read_bytes(state_path))
         if current_token != args.expected_token:
