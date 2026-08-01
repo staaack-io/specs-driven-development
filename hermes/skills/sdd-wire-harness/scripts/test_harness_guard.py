@@ -594,6 +594,10 @@ class HarnessGuardTest(unittest.TestCase):
             'const raw = "abcdefghijk-secret"; const credentials = raw;\n',
             'export default { dsn: "postgres://service:supersecret@db.internal/app" };\n',
             'const key = "-----BEGIN ENCRYPTED PRIVATE KEY-----\\nabc";\n',
+            "const apiKey = `supersecretvalue`;\n",
+            "export default { credentials: `supersecretvalue` };\n",
+            "const raw = `super` + \"secret\" + 'value'; const credentials = raw;\n",
+            "export default { credentials: `super` + `secretvalue` };\n",
         )
         for secret_text in secret_forms:
             with self.subTest(secret=secret_text):

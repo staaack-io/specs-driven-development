@@ -599,18 +599,43 @@ def reject_indirect_script_secrets(text: str, label: str) -> None:
     """Reject simple JavaScript/TypeScript credential aliases without executing code."""
     if not re.search(r"(?:\.m?[cm]?[jt]sx?$|package\.json#scripts\.)", label):
         return
+    string_term = r'(?:"[^"\r\n]*"|\'[^\'\r\n]*\'|`[^`${}\r\n]*`)'
+    static_expression = rf"({string_term}(?:\s*\+\s*{string_term})*)"
+
+    def static_value(expression: str) -> str:
+        pieces: list[str] = []
+        for match in re.finditer(
+            r'"([^"\r\n]*)"|\'([^\'\r\n]*)\'|`([^`${}\r\n]*)`', expression
+        ):
+            pieces.append(next(value for value in match.groups() if value is not None))
+        return "".join(pieces)
+
     literals: dict[str, str] = {}
     literal_assignment = re.compile(
         r"(?m)\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
-        r"((?:[\"'][^\"'\r\n]*[\"'])(?:\s*\+\s*[\"'][^\"'\r\n]*[\"'])*)\s*;?"
+        + static_expression
+        + r"\s*;?"
     )
     for match in literal_assignment.finditer(text):
-        pieces = re.findall(r"[\"']([^\"'\r\n]*)[\"']", match.group(2))
-        literals[match.group(1)] = "".join(pieces)
+        literals[match.group(1)] = static_value(match.group(2))
     sensitive = (
         r"(?:password|passwd|token|api[_-]?key|apikey|secret|client[_-]?secret|"
         r"private[_-]?key|access[_-]?(?:key|token)|credentials?)"
     )
+    for name, value in literals.items():
+        if (
+            SENSITIVE_KEY_RE.fullmatch(name)
+            and len(value) >= 8
+            and not PLACEHOLDER_RE.fullmatch(value)
+        ):
+            raise GuardError(f"potential static script credential refused in {label}")
+    static_property = re.compile(
+        rf"(?i)[\"']?{sensitive}[\"']?\s*:\s*{static_expression}"
+    )
+    for match in static_property.finditer(text):
+        value = static_value(match.group(1))
+        if len(value) >= 8 and not PLACEHOLDER_RE.fullmatch(value):
+            raise GuardError(f"potential static script credential refused in {label}")
     alias_patterns = (
         re.compile(
             rf"(?i)\b(?:const|let|var)?\s*{sensitive}\s*=\s*"
