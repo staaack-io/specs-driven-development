@@ -21,7 +21,7 @@
 
 | Rôle | Statut | Preuves lues | Fichiers modifiés |
 | --- | --- | --- | --- |
-| <rôle> | <ready | needs-input | blocked> | <liste> | aucun |
+| <rôle> | <ready / needs-input / blocked> | <liste> | aucun |
 
 ## Epic Scope
 
