@@ -5,13 +5,29 @@ from __future__ import annotations
 
 import argparse
 import base64
+from contextlib import contextmanager
 import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import stat
+import sys
 import tempfile
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from hermes.runtime.sdd_runtime_guard import (  # noqa: E402
+    GuardError as RuntimeGuardError,
+    assert_state_matches_tasks,
+    repository_root,
+    runtime_directory,
+    validate_state,
+)
 
 
 PROOF_FIELDS = (
@@ -44,11 +60,18 @@ def parse_state(data: bytes, label: str) -> dict:
         value = json.loads(data)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise GuardError(f"{label} is not valid JSON: {error}") from error
-    if not isinstance(value, dict) or not isinstance(value.get("tasks"), dict):
-        raise GuardError(f"{label} must be an object with a tasks object")
-    if not value["tasks"]:
-        raise GuardError(f"{label} must contain at least one task")
-    return value
+    repo_root = None
+    try:
+        repo_root = Path(label).resolve().parent
+        while repo_root.parent != repo_root and repo_root.name != ".specs":
+            repo_root = repo_root.parent
+        if repo_root.name == ".specs":
+            repo_root = repo_root.parent
+        else:
+            repo_root = None
+        return validate_state(value, repo_root=repo_root)
+    except RuntimeGuardError as error:
+        raise GuardError(f"{label} violates the runtime state contract: {error}") from error
 
 
 def require_pristine(state: dict, label: str) -> None:
@@ -117,15 +140,74 @@ def path_mode(path: Path, fallback: int) -> int:
         return fallback
 
 
-def feature_paths(feature_dir: str) -> tuple[Path, Path, Path, Path, Path]:
-    directory = Path(feature_dir).resolve()
+def feature_paths(
+    feature_dir: str, *, allow_non_git_test_fixture: bool = False
+) -> tuple[Path, Path, Path, Path, Path]:
+    supplied = Path(feature_dir)
+    if supplied.is_symlink():
+        raise GuardError(f"feature directory is a symlink: {supplied}")
+    if allow_non_git_test_fixture:
+        directory = supplied.resolve()
+        if not directory.is_dir():
+            raise GuardError(f"test fixture feature directory is invalid: {directory}")
+        lock_path = directory / ".tdd-state.lock"
+    else:
+        try:
+            root = repository_root(Path.cwd())
+        except RuntimeGuardError as error:
+            raise GuardError("SDD state guard requires a Git repository") from error
+        absolute = supplied if supplied.is_absolute() else Path.cwd() / supplied
+        # Resolve platform aliases such as macOS /var -> /private/var only
+        # after rejecting a symlink supplied as the feature directory itself.
+        absolute = absolute.resolve(strict=False)
+        feature_id = absolute.name
+        if re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}", feature_id) is None:
+            raise GuardError(f"invalid canonical feature ID: {feature_id!r}")
+        directory = root / ".specs" / feature_id
+        if absolute != directory:
+            raise GuardError(
+                "feature directory must be canonical .specs/<feature-id> under Git root"
+            )
+        for component in (root / ".specs", directory):
+            try:
+                metadata = component.lstat()
+            except FileNotFoundError as error:
+                raise GuardError(f"canonical feature directory is missing: {component}") from error
+            if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+                raise GuardError(f"canonical feature directory chain is unsafe: {component}")
+        lock_path = runtime_directory(root) / "writer.lock"
     return (
-        directory / ".tdd-state.lock",
+        lock_path,
         directory / ".tdd-state.json",
         directory / "03-design.md",
         directory / "04-tasks.md",
         directory / ".tdd-state.transaction.json",
     )
+
+
+@contextmanager
+def state_lock(lock_path: Path):
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    flags = os.O_RDWR | os.O_CREAT
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(lock_path, flags, 0o600)
+    except OSError as error:
+        raise GuardError(f"cannot open TDD state lock: {error}") from error
+    locked = False
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise GuardError(f"TDD state lock is not a regular file: {lock_path}")
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        locked = True
+        yield
+    finally:
+        try:
+            if locked:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+        finally:
+            os.close(descriptor)
 
 
 def encode_artifact(data: bytes | None, mode: int | None) -> dict:
@@ -245,11 +327,12 @@ def recover_transaction(
 
 def snapshot(args: argparse.Namespace) -> None:
     lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
-        args.feature_dir
+        args.feature_dir,
+        allow_non_git_test_fixture=getattr(
+            args, "allow_non_git_test_fixture", False
+        ),
     )
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+    with state_lock(lock_path):
         recovery_outcome = recover_transaction(
             state_path, design_path, tasks_path, transaction_path
         )
@@ -373,7 +456,10 @@ def resume_completed_commit(
 
 def commit_plan(args: argparse.Namespace) -> None:
     lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
-        args.feature_dir
+        args.feature_dir,
+        allow_non_git_test_fixture=getattr(
+            args, "allow_non_git_test_fixture", False
+        ),
     )
     design_candidate = Path(args.design_candidate).resolve()
     tasks_candidate = Path(args.tasks_candidate).resolve()
@@ -383,9 +469,7 @@ def commit_plan(args: argparse.Namespace) -> None:
         tasks_data = tasks_candidate.read_bytes()
         candidate_data = state_candidate.read_bytes()
     except FileNotFoundError as error:
-        lock_path.parent.mkdir(parents=True, exist_ok=True)
-        with lock_path.open("a+b") as lock:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        with state_lock(lock_path):
             recover_transaction(
                 state_path, design_path, tasks_path, transaction_path
             )
@@ -411,14 +495,27 @@ def commit_plan(args: argparse.Namespace) -> None:
     if not tasks_data.strip():
         raise GuardError("approved tasks candidate is empty")
     state_mode = stat.S_IMODE(state_candidate.stat().st_mode)
+    try:
+        raw_candidate_state = json.loads(candidate_data)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raw_candidate_state = None
     candidate_state = parse_state(candidate_data, str(state_candidate))
     require_pristine(candidate_state, str(state_candidate))
+    if isinstance(raw_candidate_state, dict) and raw_candidate_state.get("schema_version") == 2:
+        try:
+            assert_state_matches_tasks(
+                candidate_state,
+                tasks_data.decode("utf-8"),
+                repo_root=state_path.parent.parent.parent
+                if state_path.parent.parent.name == ".specs"
+                else None,
+            )
+        except (RuntimeGuardError, UnicodeDecodeError) as error:
+            raise GuardError(f"plan candidates disagree: {error}") from error
     if candidate_state.get("feature_id") != state_path.parent.name:
         raise GuardError("candidate feature_id does not match the feature directory")
 
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+    with state_lock(lock_path):
         recovery_outcome = recover_transaction(
             state_path, design_path, tasks_path, transaction_path
         )
@@ -562,7 +659,10 @@ def commit_plan(args: argparse.Namespace) -> None:
 
 def write_state(args: argparse.Namespace) -> None:
     lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
-        args.feature_dir
+        args.feature_dir,
+        allow_non_git_test_fixture=getattr(
+            args, "allow_non_git_test_fixture", False
+        ),
     )
     candidate_path = Path(args.state_candidate).resolve()
     candidate_data = candidate_path.read_bytes()
@@ -571,9 +671,7 @@ def write_state(args: argparse.Namespace) -> None:
     if candidate_state.get("feature_id") != state_path.parent.name:
         raise GuardError("candidate feature_id does not match the feature directory")
 
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+    with state_lock(lock_path):
         recover_transaction(state_path, design_path, tasks_path, transaction_path)
         current_token = token_for(read_bytes(state_path))
         if current_token != args.expected_token:
@@ -592,6 +690,9 @@ def parser() -> argparse.ArgumentParser:
 
     snapshot_command = commands.add_parser("snapshot")
     snapshot_command.add_argument("--feature-dir", required=True)
+    snapshot_command.add_argument(
+        "--allow-non-git-test-fixture", action="store_true", help=argparse.SUPPRESS
+    )
     snapshot_command.set_defaults(handler=snapshot)
 
     commit_command = commands.add_parser("commit-plan")
@@ -600,12 +701,18 @@ def parser() -> argparse.ArgumentParser:
     commit_command.add_argument("--design-candidate", required=True)
     commit_command.add_argument("--tasks-candidate", required=True)
     commit_command.add_argument("--state-candidate", required=True)
+    commit_command.add_argument(
+        "--allow-non-git-test-fixture", action="store_true", help=argparse.SUPPRESS
+    )
     commit_command.set_defaults(handler=commit_plan)
 
     write_command = commands.add_parser("write-state")
     write_command.add_argument("--feature-dir", required=True)
     write_command.add_argument("--expected-token", required=True)
     write_command.add_argument("--state-candidate", required=True)
+    write_command.add_argument(
+        "--allow-non-git-test-fixture", action="store_true", help=argparse.SUPPRESS
+    )
     write_command.set_defaults(handler=write_state)
     return root
 

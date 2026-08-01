@@ -128,6 +128,10 @@ expliquer qu'un premier `/sdd-plan <feature-id>` est requis.
 5. ne jamais remplacer l'état directement après une délégation : la validation
    finale et le remplacement appartiennent à la même section critique décrite
    dans `references/tdd-state-atomicity.md`.
+6. produire le schéma v2 du modèle avec `mode`, `project`, `board`,
+   `max_workers`, `revision`, puis pour chaque tâche les dépendances, Test-IDs,
+   identifiants Kanban/GitHub, phase et statut ; ne jamais y écrire de chemin
+   absolu, transcript, token, secret ou credential.
 
 Ne jamais migrer, vider ou recréer silencieusement un état commencé. Recommander
 une nouvelle fonctionnalité ou un processus de changement distinct lorsque le
@@ -211,6 +215,8 @@ Ne jamais déduire l'approbation du seul lancement de `/sdd-plan`.
 - Écrire uniquement dans `.specs/<feature-id>/`.
 - Toute écriture de `.tdd-state.json` passe par
   `scripts/tdd_state_guard.py` ; aucune commande ne le remplace directement.
+- Le garde runtime partagé valide le DAG, les Test-IDs et les périmètres avant
+  que `commit-plan` ou `write-state` accepte le candidat.
 - Ne jamais modifier `.tdd-state.json` lorsqu'une tâche est active, non
   `pending`, ou possède une preuve RED/GREEN.
 - Ne jamais modifier le code, les tests, les dépendances ou la configuration du

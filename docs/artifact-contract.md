@@ -24,6 +24,10 @@ une phase exige que le fichier précédent existe et que sa checklist soit verte
     ├── 08-code-review.md           # phase 7 — spring-code-reviewer
     ├── 09-ship-plan.md             # phase 8 facultative — spring-code-reviewer
     ├── .tdd-state.json             # état utilisé par le hook TDD
+    ├── jobs/                        # journaux immuables des workers Hermes
+    │   └── T-001/
+    │       ├── 001-red.json
+    │       └── 002-green.json
     └── adr/
         └── NNN-<slug>.md           # ADR MADR référencé depuis 03-design.md
 ```
@@ -78,16 +82,30 @@ Chaque artefact part du modèle correspondant sous `.codex/templates/` :
 
 ## Fichier `.tdd-state.json`
 
-`$build` maintient ce fichier d’exécution. Le hook
-`block-impl-without-failing-test` le lit avant une édition de production.
+`$build` maintient ce fichier d’exécution. Le hook Codex historique
+`block-impl-without-failing-test` peut le lire, mais les skills Hermes doivent
+appeler le garde runtime explicite : ils ne bénéficient pas des hooks Codex.
 
 ```json
 {
+  "schema_version": 2,
   "feature_id": "shop-1422-gift-card-checkout",
-  "active_task": "T-001",
+  "mode": "parallel",
+  "project": "shop",
+  "board": "shop",
+  "max_workers": 2,
+  "revision": 4,
+  "active_task": null,
   "tasks": {
     "T-001": {
-      "phase": "red | green | refactor | simplify | done",
+      "phase": "red",
+      "status": "in_progress",
+      "dependencies": [],
+      "test_ids": ["T-001-T1"],
+      "kanban_id": "card-123",
+      "issue": 1423,
+      "branch": "sdd/shop-1422-gift-card-checkout/t-001-api",
+      "pr": 1424,
       "red_at": "2026-04-18T10:00:00Z",
       "red_test_signature": "com.example.X.shouldRejectExpiredCard",
       "red_failure_excerpt": "AssertionFailedError: expected 400 but was 200",
@@ -101,9 +119,51 @@ Chaque artefact part du modèle correspondant sous `.codex/templates/` :
 Les valeurs des clés JSON restent en anglais car les hooks les consomment
 directement.
 
+Le schéma v2 est additif : `feature_id`, `active_task`, `tasks`, `phase` et les
+preuves TDD restent aux mêmes emplacements. Un état v1 est accepté en lecture et
+peut produire un candidat v2 explicite. Il n'est jamais migré silencieusement
+pendant une implémentation commencée.
+
+L'état ne contient aucun chemin absolu, transcript, token, credential ou secret.
+Les tokens CAS et journaux de transaction résident dans le Git common dir, hors
+des artefacts versionnés. `max_workers` vaut `1` ou `2`, et le mode `sequential`
+impose `1`.
+
 Une nouvelle modification de `src/main/**` n’est autorisée que si la phase de
 la tâche active vaut `red`, que `red_at` est renseigné et que
 `red_failure_excerpt` n’est pas vide.
+
+## Écrivains parallèles et fan-in
+
+Chaque worker possède un worktree, un lease de fichiers et un journal propre
+sous `jobs/<T-ID>/`. Un événement existant peut être rejoué uniquement avec le
+même identifiant et le même contenu. Le worker ne modifie jamais
+`04-tasks.md`, `.tdd-state.json` ou `05-implementation-log.md`.
+
+Le lease est lié à la session Hermes et à l'identité complète du processus
+(PID et temps de naissance). Un heartbeat prolonge son TTL, borné à 45 minutes.
+Un lease expiré ou dont le processus a disparu est récupéré avant une nouvelle
+attribution. Le nombre de leases actifs ne dépasse jamais `max_workers`.
+L'attribution exige la feature exacte, une tâche en phase `pending` avec le
+statut `pending` ou `ready`, et chaque dépendance en phase et statut `done`.
+
+Chaque événement task-local est couvert par un manifeste dans le Git common
+dir. Une modification, une suppression ou un fichier non manifesté bloque la
+reprise. Le fingerprint avant/après inclut les fichiers ignorés, les modes et
+l'index Git, en plus du contenu du worktree.
+
+Deux tâches ne sont prêtes dans la même vague que si leurs dépendances sont
+terminées et leurs chemins concrets disjoints. Un conflit de chemin impose une
+dépendance et une exécution séquentielle. Les globs, dossiers, chemins hors
+dépôt et chaînes de symlinks sont refusés.
+
+Après fusion autorisée des PR d'une vague, un synthesizer unique lit les
+journaux task-local et publie les artefacts partagés. Le fan-in utilise le
+verrou du Git common dir, des tokens CAS, un journal synchronisé et un marqueur
+de commit lié au dépôt, au worktree et au `HEAD`. Après interruption, la reprise
+restitue l'ancien ou le nouvel ensemble complet, jamais un mélange. Elle refuse
+une reprise depuis un autre worktree, après un changement de `HEAD` ou avec un
+marqueur altéré.
 
 ## Interdictions
 

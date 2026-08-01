@@ -68,6 +68,12 @@ Les hooks projet ne s'exécutent que pour un dépôt approuvé comme fiable. Apr
 un clone ou une modification de hook, ouvrez `/hooks` dans Codex, examinez les
 commandes et approuvez-les avant de compter sur leur protection.
 
+Hermes n'exécute pas ces hooks Codex. Les skills Hermes d'écriture utilisent le
+garde déterministe sous `hermes/runtime/` pour vérifier explicitement questions
+ouvertes, preuve RED, arguments interdits, chemins, symlinks, fingerprints et
+transitions transactionnelles. Un prompt ou un hook absent n'est jamais traité
+comme une preuve de conformité.
+
 ## Assets internes
 
 Codex impose les emplacements de `AGENTS.md`, des skills, des agents et des
