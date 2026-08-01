@@ -5,7 +5,11 @@ une phase exige que le fichier précédent existe et que sa checklist soit verte
 
 ```text
 .specs/
-├── _baseline.json                  # référence des échecs brownfield du dépôt
+├── _onboarding.md                  # résumé de l'inspection du dépôt
+├── _stack.json                     # stacks, versions et preuves détectées
+├── _baseline.json                  # commandes et référence statique initiale
+├── _starter-design.md              # architecture existante observée
+├── _known-debt.md                  # dette prouvée et inconnues
 └── <feature-id>/
     ├── 01-spec.md                  # phase 1 — responsable : spec-author
     ├── 02-spec-review.md           # phase 2 — responsable : spec-author
@@ -23,6 +27,26 @@ une phase exige que le fichier précédent existe et que sa checklist soit verte
     └── adr/
         └── NNN-<slug>.md           # ADR MADR référencé depuis 03-design.md
 ```
+
+## Artefacts globaux d'onboarding
+
+`/sdd-onboard` Hermes produit toujours les cinq fichiers globaux dans une seule
+transaction. Ils décrivent le même SHA Git et ne modifient ni le code, ni les
+tests, ni les manifests ou configurations du projet.
+
+- `_stack.json` et `_baseline.json` ont `schema_version: 1` et le même
+  `git_sha`.
+- `_stack.json` conserve les modules, stacks, versions et limites de confiance
+  avec des chemins relatifs.
+- `_baseline.json` conserve les commandes configurées mais porte
+  `heavy_gates_executed: false` et `status: not-run` : l'onboarding ne lance
+  aucun gate lourd.
+- `_starter-design.md` décrit uniquement les patterns observés.
+- `_known-debt.md` sépare la dette prouvée des inconnues.
+
+Les rôles Hermes spécialisés analysent en lecture seule. L'agent principal est
+l'unique écrivain et passe par le garde transactionnel embarqué. Le câblage ou
+l'exécution du harness appartient à `/sdd-wire-harness`, pas à l'onboarding.
 
 ## Règles de nommage
 

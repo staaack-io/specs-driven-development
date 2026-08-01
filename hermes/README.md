@@ -9,6 +9,8 @@ migration progressive et des comparaisons fiables.
 Les skills suivants sont prêts à être copiés dans la distribution
 `staaack-io/hermes-agent-profile-staaack` :
 
+- `sdd-onboard` — inspection statique, délégation en lecture seule et
+  publication transactionnelle des cinq artefacts globaux ;
 - `sdd-help` — aide en lecture seule ;
 - `sdd-status` — état des fonctionnalités en lecture seule ;
 - `sdd-spec` — création guidée de `01-spec.md` ;
@@ -61,6 +63,13 @@ dans les références du skill. Les sous-agents analysent en lecture seule ;
 l'agent principal reste l'unique auteur de `03-design.md`, `04-tasks.md` et
 `.tdd-state.json`.
 
+Pour `/sdd-onboard`, les rôles `spring-onboarding` et
+`react-nextjs-onboarding` décrivent chacun leur stack en lecture seule. Ils
+retournent `files_modified: []`. L'agent principal consolide les résultats puis
+un garde atomique publie ensemble `_onboarding.md`, `_stack.json`,
+`_baseline.json`, `_starter-design.md` et `_known-debt.md`. Le câblage du
+harness reste une étape séparée.
+
 ## Publication dans le profil
 
 Le contenu de `hermes/skills/<nom>/` devient
@@ -90,11 +99,14 @@ version Codex et ses chemins ne sont pas tous portables vers Hermes.
 Depuis la racine du dépôt :
 
 ```bash
+python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-onboard
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-help
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-status
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-spec
 python3 /chemin/vers/skill-creator/scripts/quick_validate.py hermes/skills/sdd-spec-review
 python3 -m unittest -v \
+  hermes/skills/sdd-onboard/scripts/test_onboarding_guard.py \
+  hermes/skills/sdd-onboard/scripts/test_skill_contract.py \
   hermes/skills/sdd-spec-review/scripts/test_review_decision_guard.py
 ```
 
@@ -105,3 +117,34 @@ contient pas cette preuve.
 
 La validation avec Hermes sur le VPS reste obligatoire avant publication d'une
 version stable du profil.
+
+Le runner CI `hermes/scripts/run_python_tests.py` isole les fichiers de test et
+échoue en cas de timeout ou de protocole incomplet. Sous Linux, le mécanisme
+`child-subreaper` du noyau permet aussi de retrouver les descendants détachés.
+Sous les autres systèmes POSIX, le nettoyage des descendants ordinaires repose
+sur un marqueur privé hérité par `fork` et `exec` : c'est une protection contre
+les fuites accidentelles, pas une sandbox. Un programme exécuté avec le même
+utilisateur peut volontairement effacer ce marqueur et sortir de ce périmètre ;
+les tests hostiles exigent alors une sandbox ou un contrôle de jobs fourni par
+le système d'exploitation.
+
+Avant chaque fichier de test, le runner vérifie que l'énumérateur requis est
+disponible (`/proc` sous Linux, `ps` sur les autres POSIX). Il refuse de démarrer
+le fichier si cette porte échoue, plutôt que d'exécuter un descendant qu'il ne
+pourrait ensuite garantir de nettoyer.
+
+Le registre de secours ne considère jamais un PID comme une identité suffisante.
+Le worker transmet aussi le temps de naissance du processus (`/proc` sous Linux,
+`libproc` sous Darwin). L'outer le revalide avant tout signal ; sous Linux, il
+ouvre en plus un `pidfd` et signale ce handle stable. Si l'identité ne correspond
+plus, le PID a disparu ou a été réutilisé et aucun signal ne lui est envoyé.
+Ce nettoyage est appliqué aux timeouts comme à toute sortie worker non nulle ou
+à tout protocole de résultat incomplet.
+
+La même règle s'applique aux descendants énumérés. Linux recoupe deux snapshots
+d'ascendance et de temps de naissance autour de l'ouverture du `pidfd`, puis ne
+signale que ce handle. Les descendants POSIX marqués sont revalidés par token et
+temps de naissance immédiatement avant chaque `SIGSTOP` ou `SIGKILL`.
+Sous Linux, cette énumération reste obligatoire après la mort du worker :
+l'outer `child-subreaper` récupère et nettoie aussi les daemons que le subreaper
+intermédiaire avait adoptés avant de disparaître.

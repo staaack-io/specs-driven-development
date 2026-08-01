@@ -20,6 +20,7 @@ Les commandes actuellement disponibles sont :
 | --- | --- | --- |
 | Méta | `/sdd-help [commande]` | Afficher cette aide ou le détail d'une commande. |
 | Méta | `/sdd-status [feature-id]` | Résumer l'état du workflow sans écrire. |
+| 0 | `/sdd-onboard` | Analyser un projet existant sans modifier le produit. |
 | 1 | `/sdd-spec <demande ou ticket>` | Créer une spécification EARS-lite. |
 | 2 | `/sdd-spec-review [feature-id]` | Relire et approuver la spécification. |
 | 3 | `/sdd-plan <feature-id>` | Concevoir et découper en tâches. |
@@ -29,7 +30,6 @@ route et ne doivent pas être présentées comme installées avant leur conversi
 
 | Étape | Commande prévue | Rôle |
 | --- | --- | --- |
-| 0 | `/sdd-onboard` | Analyser un projet existant. |
 | 0 | `/sdd-wire-harness` | Brancher le harness de validation. |
 | 3a, Epic uniquement | `/sdd-epic-plan` | Concevoir l'Epic et sa roadmap. |
 | 4 | `/sdd-build <T-NNN>` | Implémenter une tâche en TDD. |

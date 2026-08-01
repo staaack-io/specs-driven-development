@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "git_sha": "<git_sha>",
+  "status": "not-run",
+  "heavy_gates_executed": false,
+  "validation_commands": []
+}
