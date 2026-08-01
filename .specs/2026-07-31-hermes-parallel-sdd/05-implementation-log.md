@@ -198,3 +198,26 @@
 - Aucun statut de gate externe ne change : ces preuves restent locales.
 
 ---
+
+## T-003 — Gate de publication du profil 0.4.8
+
+### T-003 · done · 2026-08-01T23:00:29Z
+
+- Issue profil : `staaack-io/hermes-agent-profile-staaack#45`.
+- PR profil : `staaack-io/hermes-agent-profile-staaack#46`, tête
+  `903ce4cfca4a80ab270c43f7ba44a4f7f8f8bd93`.
+- CI : **2/2 checks verts** — Skills en 8 s et Distribution en 1 min 19 s.
+- Preuves locales : **42/42** tests skills, **159/159** tests distribution,
+  Markdownlint sans erreur et parité canonique exacte.
+- Fils de review : **0** ; état avant fusion : `MERGEABLE/CLEAN`.
+- Review GitHub formelle : absente. Le nouvel `AGENTS.md` rend `$review`
+  facultatif et l'utilisateur a explicitement autorisé le 2026-08-02 la
+  fusion malgré cette absence ; cette dérogation est consignée sans revendiquer
+  une review inexistante.
+- Go humain reçu après présentation des preuves et avant la fusion.
+- Fusion confirmée à `2026-08-01T23:00:29Z`, commit
+  `96ee0fb697d48bf49d80639a00a83aea34fce2ff`.
+- Aucun déploiement ni changement VPS n'a été effectué.
+- État final : `T-003 = done`, `active_task = null`.
+
+---
