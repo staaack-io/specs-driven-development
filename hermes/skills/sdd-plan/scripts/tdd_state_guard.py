@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import stat
 import sys
 import tempfile
@@ -23,7 +24,8 @@ if str(REPOSITORY_ROOT) not in sys.path:
 from hermes.runtime.sdd_runtime_guard import (  # noqa: E402
     GuardError as RuntimeGuardError,
     assert_state_matches_tasks,
-    git_common_dir,
+    repository_root,
+    runtime_directory,
     validate_state,
 )
 
@@ -138,14 +140,42 @@ def path_mode(path: Path, fallback: int) -> int:
         return fallback
 
 
-def feature_paths(feature_dir: str) -> tuple[Path, Path, Path, Path, Path]:
-    directory = Path(feature_dir).resolve()
-    try:
-        lock_path = git_common_dir(directory) / "sdd-runtime" / "writer.lock"
-    except RuntimeGuardError:
-        # Backward-compatible fallback for isolated fixtures that are not Git
-        # repositories. Real SDD projects always use the common Git directory.
+def feature_paths(
+    feature_dir: str, *, allow_non_git_test_fixture: bool = False
+) -> tuple[Path, Path, Path, Path, Path]:
+    supplied = Path(feature_dir)
+    if supplied.is_symlink():
+        raise GuardError(f"feature directory is a symlink: {supplied}")
+    if allow_non_git_test_fixture:
+        directory = supplied.resolve()
+        if not directory.is_dir():
+            raise GuardError(f"test fixture feature directory is invalid: {directory}")
         lock_path = directory / ".tdd-state.lock"
+    else:
+        try:
+            root = repository_root(Path.cwd())
+        except RuntimeGuardError as error:
+            raise GuardError("SDD state guard requires a Git repository") from error
+        absolute = supplied if supplied.is_absolute() else Path.cwd() / supplied
+        # Resolve platform aliases such as macOS /var -> /private/var only
+        # after rejecting a symlink supplied as the feature directory itself.
+        absolute = absolute.resolve(strict=False)
+        feature_id = absolute.name
+        if re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}", feature_id) is None:
+            raise GuardError(f"invalid canonical feature ID: {feature_id!r}")
+        directory = root / ".specs" / feature_id
+        if absolute != directory:
+            raise GuardError(
+                "feature directory must be canonical .specs/<feature-id> under Git root"
+            )
+        for component in (root / ".specs", directory):
+            try:
+                metadata = component.lstat()
+            except FileNotFoundError as error:
+                raise GuardError(f"canonical feature directory is missing: {component}") from error
+            if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+                raise GuardError(f"canonical feature directory chain is unsafe: {component}")
+        lock_path = runtime_directory(root) / "writer.lock"
     return (
         lock_path,
         directory / ".tdd-state.json",
@@ -297,7 +327,10 @@ def recover_transaction(
 
 def snapshot(args: argparse.Namespace) -> None:
     lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
-        args.feature_dir
+        args.feature_dir,
+        allow_non_git_test_fixture=getattr(
+            args, "allow_non_git_test_fixture", False
+        ),
     )
     with state_lock(lock_path):
         recovery_outcome = recover_transaction(
@@ -423,7 +456,10 @@ def resume_completed_commit(
 
 def commit_plan(args: argparse.Namespace) -> None:
     lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
-        args.feature_dir
+        args.feature_dir,
+        allow_non_git_test_fixture=getattr(
+            args, "allow_non_git_test_fixture", False
+        ),
     )
     design_candidate = Path(args.design_candidate).resolve()
     tasks_candidate = Path(args.tasks_candidate).resolve()
@@ -623,7 +659,10 @@ def commit_plan(args: argparse.Namespace) -> None:
 
 def write_state(args: argparse.Namespace) -> None:
     lock_path, state_path, design_path, tasks_path, transaction_path = feature_paths(
-        args.feature_dir
+        args.feature_dir,
+        allow_non_git_test_fixture=getattr(
+            args, "allow_non_git_test_fixture", False
+        ),
     )
     candidate_path = Path(args.state_candidate).resolve()
     candidate_data = candidate_path.read_bytes()
@@ -651,6 +690,9 @@ def parser() -> argparse.ArgumentParser:
 
     snapshot_command = commands.add_parser("snapshot")
     snapshot_command.add_argument("--feature-dir", required=True)
+    snapshot_command.add_argument(
+        "--allow-non-git-test-fixture", action="store_true", help=argparse.SUPPRESS
+    )
     snapshot_command.set_defaults(handler=snapshot)
 
     commit_command = commands.add_parser("commit-plan")
@@ -659,12 +701,18 @@ def parser() -> argparse.ArgumentParser:
     commit_command.add_argument("--design-candidate", required=True)
     commit_command.add_argument("--tasks-candidate", required=True)
     commit_command.add_argument("--state-candidate", required=True)
+    commit_command.add_argument(
+        "--allow-non-git-test-fixture", action="store_true", help=argparse.SUPPRESS
+    )
     commit_command.set_defaults(handler=commit_plan)
 
     write_command = commands.add_parser("write-state")
     write_command.add_argument("--feature-dir", required=True)
     write_command.add_argument("--expected-token", required=True)
     write_command.add_argument("--state-candidate", required=True)
+    write_command.add_argument(
+        "--allow-non-git-test-fixture", action="store_true", help=argparse.SUPPRESS
+    )
     write_command.set_defaults(handler=write_state)
     return root
 

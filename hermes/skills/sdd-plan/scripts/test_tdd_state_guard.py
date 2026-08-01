@@ -78,7 +78,12 @@ def state(feature_id: str, phase: str = "pending") -> dict:
 class GuardTest(unittest.TestCase):
     def run_guard(self, *arguments: str, expected: int = 0) -> dict:
         result = subprocess.run(
-            [sys.executable, str(SCRIPT), *arguments],
+            [
+                sys.executable,
+                str(SCRIPT),
+                *arguments,
+                "--allow-non-git-test-fixture",
+            ],
             check=False,
             capture_output=True,
             text=True,
@@ -506,6 +511,7 @@ class GuardTest(unittest.TestCase):
             candidate.write_text(json.dumps(state(feature.name)), encoding="utf-8")
             arguments = SimpleNamespace(
                 feature_dir=str(feature),
+                allow_non_git_test_fixture=True,
                 expected_token="absent",
                 design_candidate=str(design),
                 tasks_candidate=str(tasks),
@@ -728,6 +734,67 @@ class GuardTest(unittest.TestCase):
                 "snapshot", "--feature-dir", str(feature), expected=2
             )
             self.assertIn("not a regular file", rejected["error"])
+
+    def test_git_mode_accepts_only_canonical_feature_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "repository"
+            root.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            feature = root / ".specs" / "feature-one"
+            feature.mkdir(parents=True)
+
+            accepted = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "snapshot",
+                    "--feature-dir",
+                    str(feature),
+                ],
+                cwd=root,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(0, accepted.returncode, accepted.stderr or accepted.stdout)
+
+            external = root / "external-feature"
+            external.mkdir()
+            rejected = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "snapshot",
+                    "--feature-dir",
+                    str(external),
+                ],
+                cwd=root,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(2, rejected.returncode)
+            self.assertIn("must be canonical", rejected.stdout)
+            self.assertFalse((external / ".tdd-state.lock").exists())
+
+            unsafe = root / ".specs" / "feature-link"
+            unsafe.symlink_to(external, target_is_directory=True)
+            rejected_link = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "snapshot",
+                    "--feature-dir",
+                    str(unsafe),
+                ],
+                cwd=root,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(2, rejected_link.returncode)
+            self.assertIn("is a symlink", rejected_link.stdout)
+            self.assertFalse((external / ".tdd-state.lock").exists())
 
 
 if __name__ == "__main__":

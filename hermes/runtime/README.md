@@ -15,6 +15,8 @@ le Kanban Hermes. Les orchestrateurs l'appellent autour de chaque délégation.
 - les worktrees partagent un verrou et un registre de leases dans le Git common
   dir ; deux scopes disjoints peuvent garder un lease simultanément, un conflit
   attend la libération du premier ;
+- un lease est attribué uniquement à une tâche `pending`/`ready` de la feature
+  demandée, après que toutes ses dépendances sont `done`/`done` ;
 - chaque lease est lié à une session, un PID et son temps de naissance ; son
   heartbeat prolonge un TTL borné et un lease expiré ou orphelin est récupéré ;
 - un worker écrit son code ou ses tests dans son scope et un événement immuable

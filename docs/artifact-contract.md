@@ -144,6 +144,8 @@ Le lease est lié à la session Hermes et à l'identité complète du processus
 (PID et temps de naissance). Un heartbeat prolonge son TTL, borné à 45 minutes.
 Un lease expiré ou dont le processus a disparu est récupéré avant une nouvelle
 attribution. Le nombre de leases actifs ne dépasse jamais `max_workers`.
+L'attribution exige la feature exacte, une tâche en phase `pending` avec le
+statut `pending` ou `ready`, et chaque dépendance en phase et statut `done`.
 
 Chaque événement task-local est couvert par un manifeste dans le Git common
 dir. Une modification, une suppression ou un fichier non manifesté bloque la

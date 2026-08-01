@@ -309,17 +309,6 @@ class StateContractTest(RepositoryTest):
 class LeaseAndJournalTest(RepositoryTest):
     def test_disjoint_writers_overlap_but_conflict_waits_for_release(self) -> None:
         state = self.state()
-        state["tasks"]["T-003"] = copy.deepcopy(state["tasks"]["T-001"])
-        state["tasks"]["T-003"].update(
-            {
-                "dependencies": ["T-001"],
-                "test_ids": ["T-003-T1"],
-                "kanban_id": None,
-                "issue": None,
-                "branch": None,
-                "pr": None,
-            }
-        )
         process_id = os.getpid()
         process_start = guard.process_start_token(process_id)
         first = guard.acquire_scope_lease(
@@ -365,7 +354,7 @@ class LeaseAndJournalTest(RepositoryTest):
             guard.acquire_scope_lease(
                 self.root,
                 feature_id="feature-one",
-                task_id="T-003",
+                task_id="T-001",
                 owner="worker-c",
                 session_id="session-c",
                 files_in_scope=["backend/src/One.java"],
@@ -386,7 +375,7 @@ class LeaseAndJournalTest(RepositoryTest):
         third = guard.acquire_scope_lease(
             self.root,
             feature_id="feature-one",
-            task_id="T-003",
+            task_id="T-001",
             owner="worker-c",
             session_id="session-c",
             files_in_scope=["backend/src/One.java"],
@@ -395,7 +384,56 @@ class LeaseAndJournalTest(RepositoryTest):
             process_start=process_start,
             _now=103.0,
         )
-        self.assertEqual("T-003", third["task_id"])
+        self.assertEqual("T-001", third["task_id"])
+
+    def test_lease_requires_matching_feature_ready_task_and_done_dependencies(
+        self,
+    ) -> None:
+        state = self.state()
+        state["tasks"]["T-003"] = copy.deepcopy(state["tasks"]["T-001"])
+        state["tasks"]["T-003"].update(
+            {
+                "dependencies": ["T-001"],
+                "test_ids": ["T-003-T1"],
+                "files_in_scope": ["docs/three.md"],
+                "kanban_id": None,
+                "issue": None,
+                "branch": None,
+                "pr": None,
+            }
+        )
+        arguments = {
+            "repo_root": self.root,
+            "task_id": "T-003",
+            "owner": "worker-c",
+            "session_id": "session-c",
+            "files_in_scope": ["docs/three.md"],
+            "state": state,
+        }
+
+        with self.assertRaisesRegex(guard.GuardError, "does not match"):
+            guard.acquire_scope_lease(feature_id="other-feature", **arguments)
+
+        with self.assertRaisesRegex(guard.GuardError, "dependencies are not done"):
+            guard.acquire_scope_lease(feature_id="feature-one", **arguments)
+
+        state["tasks"]["T-003"].update({"phase": "blocked", "status": "blocked"})
+        with self.assertRaisesRegex(guard.GuardError, "not lease-ready"):
+            guard.acquire_scope_lease(feature_id="feature-one", **arguments)
+
+        state["tasks"]["T-003"].update({"phase": "pending", "status": "ready"})
+        state["tasks"]["T-001"].update(
+            {
+                "phase": "done",
+                "status": "done",
+                "red_at": "2026-08-01T00:00:00Z",
+                "red_test_signature": "OneTest.red",
+                "red_failure_excerpt": "expected failure before implementation",
+                "green_at": "2026-08-01T00:01:00Z",
+            }
+        )
+        acquired = guard.acquire_scope_lease(feature_id="feature-one", **arguments)
+        self.assertEqual("T-003", acquired["task_id"])
 
     def test_lease_heartbeat_and_stale_reclaim_bind_session_and_process_birth(self) -> None:
         state = self.state()

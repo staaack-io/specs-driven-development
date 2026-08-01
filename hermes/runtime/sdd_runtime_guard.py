@@ -1021,11 +1021,34 @@ def acquire_scope_lease(
     validated_state = validate_state(state, repo_root=root, allow_legacy=False)
     if isinstance(validated_state.get("migration"), dict):
         raise GuardError("incomplete migrated state cannot acquire a worker lease")
+    if validated_state.get("feature_id") != feature_id:
+        raise GuardError("scope lease feature_id does not match validated state")
     tasks = validated_state["tasks"]
     assert isinstance(tasks, dict)
     task = tasks.get(task_id)
     if not isinstance(task, dict):
         raise GuardError(f"state does not contain task {task_id}")
+    if task.get("phase") != "pending" or task.get("status") not in {
+        "pending",
+        "ready",
+    }:
+        raise GuardError(
+            f"task {task_id} is not lease-ready: expected pending phase/status"
+        )
+    dependencies = task.get("dependencies")
+    assert isinstance(dependencies, list)
+    unfinished = [
+        dependency
+        for dependency in dependencies
+        if not isinstance(tasks.get(dependency), dict)
+        or tasks[dependency].get("phase") != "done"
+        or tasks[dependency].get("status") != "done"
+    ]
+    if unfinished:
+        raise GuardError(
+            f"task {task_id} dependencies are not done/merged: "
+            + ", ".join(unfinished)
+        )
     scope = sorted({validate_scope_path(root, path) for path in files_in_scope})
     if len(scope) != len(files_in_scope) or not scope:
         raise GuardError("scope lease requires unique concrete paths")
