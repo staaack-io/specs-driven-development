@@ -1,9 +1,22 @@
 {
+  "schema_version": 2,
   "feature_id": "<FEATURE-ID>",
+  "mode": "sequential",
+  "project": null,
+  "board": null,
+  "max_workers": 1,
+  "revision": 0,
   "active_task": null,
   "tasks": {
     "T-001": {
       "phase": "pending",
+      "status": "pending",
+      "dependencies": [],
+      "test_ids": ["T-001-T1"],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
       "red_at": null,
       "red_test_signature": null,
       "red_failure_excerpt": null,
