@@ -58,11 +58,11 @@
       ]
     },
     "T-004": {
-      "phase": "pending",
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "phase": "done",
+      "red_at": "2026-08-01T23:14:29Z",
+      "red_test_signature": "hermes.runtime.test_sdd_github_bridge.GitHubBridgeLifecycleTest.test_admitted_job_creates_and_records_issue_and_draft_pull_request",
+      "red_failure_excerpt": "FileNotFoundError: hermes/runtime/sdd_github_bridge.py; Ran 1 test in 0.000s; FAILED (errors=1)",
+      "green_at": "2026-08-01T23:20:11Z",
       "files_in_scope": [
         "hermes/runtime/github-bridge-contract.md",
         "hermes/runtime/sdd_github_bridge.py",
