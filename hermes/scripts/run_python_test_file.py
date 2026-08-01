@@ -121,6 +121,33 @@ def process_start_token(process_id: int) -> str:
     raise RuntimeError("stable process identity is unavailable")
 
 
+class HermesTestResult(unittest.TextTestResult):
+    """Track skips for test IDs whose execution actually started."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.started_tests: dict[int, object] = {}
+        self.started_skip_tests: dict[int, object] = {}
+
+    def startTest(self, test: unittest.case.TestCase) -> None:  # noqa: N802
+        self.started_tests[id(test)] = test
+        super().startTest(test)
+
+    def addSkip(  # noqa: N802
+        self,
+        test: unittest.case.TestCase,
+        reason: str,
+    ) -> None:
+        test_identity = id(test)
+        if self.started_tests.get(test_identity) is test:
+            self.started_skip_tests[test_identity] = test
+        super().addSkip(test, reason)
+
+    @property
+    def started_skips(self) -> int:
+        return len(self.started_skip_tests)
+
+
 def failure(detail: str) -> dict[str, object]:
     return {
         "version": PROTOCOL_VERSION,
@@ -174,9 +201,12 @@ def execute_in_child(
             skipped = 0
             outcome = OUTCOME_NO_TESTS
         else:
-            result = unittest.TextTestRunner(verbosity=1).run(suite)
-            skipped = len(result.skipped)
-            executed = result.testsRun - skipped
+            result = unittest.TextTestRunner(
+                verbosity=1,
+                resultclass=HermesTestResult,
+            ).run(suite)
+            executed = result.testsRun - result.started_skips
+            skipped = discovered - executed
             if executed == 0:
                 outcome = OUTCOME_NO_EXECUTED_TESTS
             elif not result.wasSuccessful():
