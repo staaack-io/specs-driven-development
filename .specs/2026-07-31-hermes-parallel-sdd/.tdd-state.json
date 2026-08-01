@@ -1,0 +1,61 @@
+{
+  "feature_id": "2026-07-31-hermes-parallel-sdd",
+  "active_task": null,
+  "tasks": {
+    "T-001": {
+      "phase": "done",
+      "red_at": "2026-08-01T11:50:48Z",
+      "red_test_signature": "hermes/scripts/test_sdd_onboard_profile_contract.py::SddOnboardProfileContractTest::test_distributed_contract_runs_from_profile_skills_layout",
+      "red_failure_excerpt": "AssertionError: 0 != 1; distributed contract: E..E., Ran 5 tests, FAILED (errors=2): docs/artifact-contract.md and docs/codex-migration.md not found outside profile/skills",
+      "green_at": "2026-08-01T11:55:40Z",
+      "files_in_scope": [
+        "hermes/scripts/test_sdd_onboard_profile_contract.py",
+        "hermes/skills/sdd-onboard/scripts/test_skill_contract.py",
+        "skills/sdd-onboard/scripts/test_onboarding_guard.py",
+        "skills/sdd-onboard/scripts/test_skill_contract.py",
+        "skills/sdd-onboard/SKILL.md",
+        "skills/sdd-onboard/references/artifact-contract.md",
+        "skills/sdd-onboard/references/classification.md",
+        "skills/sdd-onboard/references/delegation-contract.md",
+        "skills/sdd-onboard/references/role-react-nextjs-onboarding.md",
+        "skills/sdd-onboard/references/role-spring-onboarding.md",
+        "skills/sdd-onboard/references/transaction-atomicity.md",
+        "skills/sdd-onboard/scripts/onboarding_guard.py",
+        "skills/sdd-onboard/templates/baseline.template.json",
+        "skills/sdd-onboard/templates/known-debt.template.md",
+        "skills/sdd-onboard/templates/onboarding.template.md",
+        "skills/sdd-onboard/templates/stack.template.json",
+        "skills/sdd-onboard/templates/starter-design.template.md"
+      ]
+    },
+    "T-002": {
+      "phase": "done",
+      "red_at": "2026-08-01T12:01:50Z",
+      "red_test_signature": "scripts/test_validate_distribution.py::DistributionValidatorTest::test_release_0_4_8_metadata_is_consistent",
+      "red_failure_excerpt": "AssertionError: '0.4.8' != '0.4.7' in distribution.yaml; release metadata still declares profile version 0.4.7",
+      "green_at": "2026-08-01T12:08:44Z",
+      "files_in_scope": [
+        "scripts/test_validate_distribution.py",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/workflows/ci.yml"
+      ]
+    },
+    "T-003": {
+      "phase": "pending",
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        ".github/workflows/ci.yml",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "skills/sdd-onboard/SKILL.md",
+        "skills/sdd-onboard/scripts/test_onboarding_guard.py",
+        "skills/sdd-onboard/scripts/test_skill_contract.py"
+      ]
+    }
+  }
+}

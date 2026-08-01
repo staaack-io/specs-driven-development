@@ -10,7 +10,6 @@ import unittest
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 HERMES_SKILLS = SKILL_ROOT.parent
-REPOSITORY = SKILL_ROOT.parents[2]
 ARTIFACTS = (
     "_onboarding.md",
     "_stack.json",
@@ -62,7 +61,7 @@ class SkillContractTest(unittest.TestCase):
                 encoding="utf-8"
             ),
             "artifact contract": (
-                REPOSITORY / "docs/artifact-contract.md"
+                SKILL_ROOT / "references/artifact-contract.md"
             ).read_text(encoding="utf-8"),
         }
         for surface, text in surfaces.items():
@@ -86,11 +85,16 @@ class SkillContractTest(unittest.TestCase):
             self.assertEqual("<git_sha>", value["git_sha"])
 
     def test_mapping_marks_only_converted_commands_as_converted(self) -> None:
-        mapping = (REPOSITORY / "docs/codex-migration.md").read_text(
+        help_text = (HERMES_SKILLS / "sdd-help/SKILL.md").read_text(
             encoding="utf-8"
         )
-        self.assertIn("| `$onboard` | `/sdd-onboard` | converti |", mapping)
-        self.assertIn("| `$build` | `/sdd-build` | feuille de route |", mapping)
+        installed, roadmap = help_text.split(
+            "Signaler séparément que les commandes suivantes", maxsplit=1
+        )
+        self.assertIn("/sdd-onboard", installed)
+        self.assertNotIn("/sdd-onboard", roadmap)
+        self.assertNotIn("/sdd-build", installed)
+        self.assertIn("/sdd-build", roadmap)
 
 
 if __name__ == "__main__":
