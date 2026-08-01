@@ -245,7 +245,7 @@ mesure de performance n'est planifiée.
 - [x] Poursuite de la migration autorisée par l'utilisateur le 2026-08-01
   (instruction : « Continue à migrer »).
 
-# Conception détaillée : S-002 — socle parallèle et profil 0.5.0
+## Conception détaillée : S-002 — socle parallèle et profil 0.5.0
 
 > Responsable : `spring-architect` · Phase 3b · Tranche Epic : `S-002`
 >
@@ -253,7 +253,7 @@ mesure de performance n'est planifiée.
 > Les capacités déjà fusionnées sont des preuves de référence ; seules les
 > lacunes observées deviennent de nouvelles tâches.
 
-## S-002 Inputs
+### S-002 Inputs
 
 - Révision de `01-spec.md` : SHA-256
   `71fd818b8d9e30931ac5203bd3099ec5ecceb6475461b4d494e72674f640a7b6`.
@@ -271,7 +271,7 @@ mesure de performance n'est planifiée.
   `AC-101` à `AC-123`, `AC-243` à `AC-249`, `AC-252` à `AC-256` et
   `AC-276` à `AC-280`.
 
-### S-002 Inputs from detect-stack.sh
+#### S-002 Inputs from detect-stack.sh
 
 L'exécution de `.github/scripts/detect-stack.sh` retourne :
 
@@ -283,7 +283,7 @@ Ce résultat confirme que Spring, OpenAPI, base de données, migration,
 Testcontainers, frontend et ArchUnit restent sans objet pour cette tranche
 Python/Hermes, conformément à `Q-006`.
 
-## S-002 Reality Baseline
+### S-002 Reality Baseline
 
 | Preuve fusionnée | SHA de merge | Surface observée | Tests présents | Statut de planification |
 |---|---|---|---:|---|
@@ -292,12 +292,12 @@ Python/Hermes, conformément à `Q-006`.
 | `/sdd-wire-harness`, PR #59 | `a5815b1` | Dry-run sans écriture, writer unique, verrou commun, gates séquentielles et rollback transactionnel | 20 tests de garde | baseline, aucune tâche rétrospective |
 | GitHub Issues du dépôt source | observation du 2026-08-01 | `hasIssuesEnabled: true` pour `staaack-io/specs-driven-development` | preuve GitHub en lecture seule | AC-007 satisfaite |
 
-Les merges prouvent aussi l'ordre historique requis : #61 précède #57 et
-#59 ; les branches de #57 et #59 ont chacune intégré `origin/main` avant leur
+Les merges prouvent aussi l'ordre historique requis : la PR #61 précède les
+PR #57 et #59 ; les branches de #57 et #59 ont chacune intégré `origin/main` avant leur
 merge. Le bridge restant devra reproduire cette resynchronisation avant sa
 fusion pour terminer AC-106, AC-121 et AC-122.
 
-## S-002 Architecture Overview
+### S-002 Architecture Overview
 
 S-002 conserve le Kanban natif Hermes comme unique ordonnanceur durable. Un
 bridge Python sans boucle d'ordonnancement traduit les transitions d'un job
@@ -310,7 +310,7 @@ source unique exécute ensuite le contrat exhaustif des 84 AC avant que le profi
 0.5.0 copie les skills et le runtime partagé, valide leur parité et publie la
 version.
 
-## S-002 ADRs
+### S-002 ADRs
 
 Aucun nouvel ADR n'est requis. Les décisions non évidentes sont déjà
 acceptées :
@@ -324,7 +324,7 @@ acceptées :
 - [ADR-005](adr/005-migrate-state-with-dual-read.md) — lecture v1/v2 et
   écriture v2 compatible.
 
-## S-002 Component Map
+### S-002 Component Map
 
 | Frontière | Composant | Responsabilité S-002 | État |
 |---|---|---|---|
@@ -335,7 +335,7 @@ acceptées :
 | Fan-in source | contrat S-002 | Rejouer la preuve agrégée des 84 AC après bridge et status | à créer, T-007 |
 | Distribution | profil Hermes 0.5.0 | Copier skills et runtime, exécuter les mêmes tests, versionner et conserver le rollback 0.4.8 | à publier, T-008 |
 
-## S-002 Module Boundaries
+### S-002 Module Boundaries
 
 - `hermes/runtime/sdd_runtime_guard.py` reste indépendant de GitHub et ne
   lance aucun job. Le bridge l'appelle ; le runtime n'importe pas le bridge.
@@ -361,7 +361,7 @@ T-005 status (hermes/skills/sdd-status/**) ──────┘
 Les chemins exacts, sans glob, sont déclarés dans `04-tasks.md`. Le schéma
 ci-dessus abrège seulement les familles de fichiers pour la lecture.
 
-## S-002 Interaction Model
+### S-002 Interaction Model
 
 1. Hermes admet une tâche après validation runtime et obtention du lease.
 2. Le bridge crée avec `gh` l'issue enfant, la branche et la PR brouillon, puis
@@ -376,7 +376,7 @@ ci-dessus abrège seulement les familles de fichiers pour la lecture.
 6. Après les merges autorisés, T-007 exécute le fan-in source et le contrat
    exhaustif ; T-008 publie ensuite le profil 0.5.0.
 
-## S-002 Entity Relationship Model
+### S-002 Entity Relationship Model
 
 S-002 ne crée aucune entité persistée par une application. Le modèle
 conceptuel de l'Epic reste applicable : une feature possède plusieurs tâches ;
@@ -385,11 +385,11 @@ session et une PR ; une vague agrège une ou deux tâches et possède au plus un
 fan-in. Les identifiants externes sont des champs de l'état v2, pas une base de
 données supplémentaire.
 
-## S-002 OpenAPI Sketch
+### S-002 OpenAPI Sketch
 
 N/A. Aucun endpoint HTTP n'est ajouté ou modifié.
 
-## S-002 Data Model + Migrations
+### S-002 Data Model + Migrations
 
 - Tables ou collections touchées : aucune.
 - Outil de migration applicatif : N/A.
@@ -399,7 +399,7 @@ N/A. Aucun endpoint HTTP n'est ajouté ou modifié.
 - Réversibilité : réinstaller le profil 0.4.8 ; ne supprimer ni état,
   journal, branche, worktree ou preuve.
 
-## S-002 Security Posture
+### S-002 Security Posture
 
 - Authentification applicative et autorisation HTTP : N/A.
 - Authentification GitHub : contexte `gh` existant ; aucun token n'est ajouté
@@ -410,7 +410,7 @@ N/A. Aucun endpoint HTTP n'est ajouté ou modifié.
   commande `gh pr merge` n'est autorisée.
 - Déploiement et mise à jour VPS : hors S-002.
 
-## S-002 Detailed AC Reconciliation
+### S-002 Detailed AC Reconciliation
 
 | Groupe S-002 | Nombre | Preuve fusionnée | Écart et couverture planifiée |
 |---|---:|---|---|
@@ -428,7 +428,7 @@ et sans AC orphelin. T-007 est le contrat de fan-in qui relie chaque preuve
 fusionnée ou nouvel écart à un test exécutable ; il ne réimplémente pas les
 capacités de #61, #57 ou #59.
 
-## S-002 Audit Finding: Profile Runtime Layout
+### S-002 Audit Finding: Profile Runtime Layout
 
 Le code fusionné de `sdd-plan` calcule aujourd'hui sa racine d'import avec
 `Path(__file__).resolve().parents[4]`, chemin correct sous
@@ -439,7 +439,7 @@ reproduire ce RED dans une disposition profil temporaire, puis rendre la
 résolution explicite et tester la parité de `hermes/runtime`. Aucun autre
 correctif des capacités fusionnées n'est planifié sans nouvel échec prouvé.
 
-## S-002 Risks + Rollback
+### S-002 Risks + Rollback
 
 | Risque | Probabilité | Impact | Réduction du risque | Retour arrière |
 |---|---|---|---|---|
@@ -450,7 +450,7 @@ correctif des capacités fusionnées n'est planifié sans nouvel échec prouvé.
 | Runtime vert en source mais absent du profil | constatée | `/sdd-plan` installé casse | test de disposition profil et parité runtime dans T-006/T-008 | conserver le profil 0.4.8 |
 | Publication 0.5.0 avant fan-in complet | faible | Distribution partielle | dépendance T-008 sur T-007 et contrat 84/84 | fermer la PR profil ; conserver 0.4.8 |
 
-## S-002 Non-Functional Requirements
+### S-002 Non-Functional Requirements
 
 - Deux writers maximum et une gate lourde maximum, conformément aux AC de
   S-002 ; trois analyses internes au plus.
@@ -463,18 +463,18 @@ correctif des capacités fusionnées n'est planifié sans nouvel échec prouvé.
 Aucun autre SLO de performance n'est spécifié ; aucune optimisation n'est
 introduite.
 
-## S-002 Open Questions
+### S-002 Open Questions
 
 - (aucune)
 
-## S-002 Resolved Questions
+### S-002 Resolved Questions
 
 - Les décisions `Q-001` à `Q-010` de `01-spec.md` et les cinq ADR acceptés
   fournissent toutes les décisions nécessaires.
 - Le bridge est une surface runtime interne, pas une nouvelle commande
   utilisateur ni un second ordonnanceur.
 
-## S-002 Design Review
+### S-002 Design Review
 
 - [x] Carte des composants Python/Hermes et frontières source/profil présentes.
 - [x] Spring, OpenAPI, relations persistées, migrations et ArchUnit explicitement N/A.
@@ -486,7 +486,7 @@ introduite.
 - [x] Aucun nouveau comportement absent de `01-spec.md` n'est introduit.
 - [x] Aucun nouvel ADR n'est requis et aucune question ouverte ne subsiste.
 
-## S-002 Sign-off
+### S-002 Sign-off
 
 - [x] Chaque AC S-002 est relié à une preuve fusionnée ou à une tâche.
 - [x] Les tâches S-001 et leur couverture restent inchangées.

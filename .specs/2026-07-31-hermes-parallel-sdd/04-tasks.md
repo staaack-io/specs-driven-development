@@ -186,13 +186,13 @@ T-002 ─┘
 Étape suivante : `$build T-001` dans un checkout du dépôt profil, avec le dépôt
 source fusionné disponible en lecture seule pour la copie et la parité.
 
-# Tâches : S-002 — socle parallèle et profil 0.5.0
+## Tâches : S-002 — socle parallèle et profil 0.5.0
 
 > Cette section prolonge le registre S-001. Les entrées T-001 à T-003
 > ci-dessus restent inchangées. Les capacités fusionnées par #61, #57 et #59
 > sont des preuves auditées, jamais des tâches rétrospectives.
 
-## S-002 Inputs
+### S-002 Inputs
 
 - Révision de `03-design.md` : addendum S-002 du 2026-08-01.
 - Baseline source : `origin/main` à `9607aae`.
@@ -200,7 +200,7 @@ source fusionné disponible en lecture seule pour la copie et la parité.
   `d583bb5`, wire-harness #59 à `a5815b1`.
 - Couverture attendue : exactement 84 AC affectés à S-002.
 
-## S-002 Task Index
+### S-002 Task Index
 
 | ID | Titre | AC-IDs principaux | Dépend de | Estimation | Portes |
 |---|---|---|---|---:|---|
@@ -214,9 +214,9 @@ T-004 et T-005 sont la seule vague de deux writers : leurs fichiers sont
 strictement disjoints. T-006, T-007 et T-008 sont ensuite séquentiels. Une
 seule gate lourde est lancée à la fois.
 
-## S-002 Tasks
+### S-002 Tasks
 
-### T-004 : Relier les jobs Kanban à GitHub sans ordonnanceur concurrent
+#### T-004 : Relier les jobs Kanban à GitHub sans ordonnanceur concurrent
 
 - **Origine qualifiée :** `spring-architect:T-004`
 - **Dépôt d'exécution :** `staaack-io/specs-driven-development`
@@ -257,7 +257,7 @@ seule gate lourde est lancée à la fois.
   factices et une horloge contrôlée ; ils n'appellent pas GitHub réel. Avant sa
   fusion, la branche est resynchronisée avec `main`, comme #57 et #59.
 
-### T-005 : Afficher la carte task-local dans `/sdd-status`
+#### T-005 : Afficher la carte task-local dans `/sdd-status`
 
 - **Origine qualifiée :** `spring-architect:T-005`
 - **Dépôt d'exécution :** `staaack-io/specs-driven-development`
@@ -287,7 +287,7 @@ seule gate lourde est lancée à la fois.
   garde lit uniquement les champs prouvés et affiche `—` lorsqu'une valeur est
   absente ; il ne répare ni la carte ni l'état.
 
-### T-006 : Rendre le runtime partagé portable dans le profil
+#### T-006 : Rendre le runtime partagé portable dans le profil
 
 - **Origine qualifiée :** `spring-architect:T-006`
 - **Dépôt d'exécution :** `staaack-io/specs-driven-development`
@@ -323,7 +323,7 @@ seule gate lourde est lancée à la fois.
   refuse les chemins absolus ou symboliques. AC-278 est prouvée ici comme
   compatibilité technique ; sa procédure de publication appartient à T-008.
 
-### T-007 : Consolider la source et auditer les 84 AC S-002
+#### T-007 : Consolider la source et auditer les 84 AC S-002
 
 - **Origine qualifiée :** `spring-architect:T-007`
 - **Dépôt d'exécution :** `staaack-io/specs-driven-development`
@@ -369,7 +369,7 @@ seule gate lourde est lancée à la fois.
   ici. Le test agrégé relie chaque AC à un test ou à une preuve externe
   explicite ; AC-123 reste en attente de T-008.
 
-### T-008 : Publier le profil 0.5.0 avec parité skills/runtime
+#### T-008 : Publier le profil 0.5.0 avec parité skills/runtime
 
 - **Origine qualifiée :** `spring-architect:T-008`
 - **Dépôt d'exécution :** `staaack-io/hermes-agent-profile-staaack`
@@ -454,7 +454,7 @@ seule gate lourde est lancée à la fois.
   T-008 crée une PR profil séparée et ne la fusionne jamais sans instruction
   humaine explicite.
 
-## S-002 AC Coverage Matrix
+### S-002 AC Coverage Matrix
 
 | AC S-002 | Preuve ou tâche de production | Audit/fan-in |
 |---|---|---|
@@ -477,7 +477,7 @@ seule gate lourde est lancée à la fois.
 La matrice contient **84 identifiants uniques sur 84**. T-007 les énumère
 explicitement et échoue si la liste diverge de la roadmap.
 
-## S-002 Dependency Validation
+### S-002 Dependency Validation
 
 ```text
 T-003 ─> T-004 ─┐
@@ -492,7 +492,7 @@ T-003 ─> T-004 ─┐
 - T-007 est l'unique fan-in source et ne modifie aucun fichier de T-004 à T-006.
 - T-008 est l'unique writer du dépôt profil pour 0.5.0.
 
-## S-002 Cross-cutting Items
+### S-002 Cross-cutting Items
 
 - Aucun test ArchUnit, OpenAPI ou de migration de base : stack non applicable.
 - Les tests d'intégration GitHub réels restent réservés à la tranche S-005 ;
@@ -500,18 +500,18 @@ T-003 ─> T-004 ─┐
 - Les preuves historiques de merge sont auditées, mais aucun commit de #61,
   #57 ou #59 n'est rejoué ni réécrit.
 
-## S-002 Open Questions
+### S-002 Open Questions
 
 - (aucune)
 
-## S-002 Resolved Questions
+### S-002 Resolved Questions
 
 - Le bridge est interne au runtime et n'ajoute aucune commande utilisateur.
 - Le runtime partagé est distribué sous `hermes/runtime`, séparé des skills,
   et sa parité est validée explicitement.
 - La prochaine publication reste 0.5.0 après le fan-in source S-002.
 
-## S-002 Sign-off
+### S-002 Sign-off
 
 - [x] T-001, T-002 et T-003 conservent leurs IDs, textes, preuves et scopes.
 - [x] Le registre progresse sans réutilisation jusqu'à `high_water_mark: 8`.
