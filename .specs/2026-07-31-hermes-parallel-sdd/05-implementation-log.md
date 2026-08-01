@@ -22,6 +22,7 @@
   Ran 5 tests in 0.002s
   FAILED (errors=2)
   ```
+
 - Notes : la disposition temporaire est littéralement `profile/skills/...`; l'échec provient du calcul `SKILL_ROOT.parents[2]`, pas d'une faute de syntaxe ou de chargement du test.
 
 ---
@@ -114,6 +115,7 @@
   Ran 1 test in 0.002s
   FAILED (failures=1)
   ```
+
 - Environnement : `markdown-it-py` n'étant pas installé et le réseau étant
   bloqué, seul ce test de métadonnées a été chargé avec un stub d'import
   temporaire hors dépôt. Cette exécution n'est pas une validation globale.
