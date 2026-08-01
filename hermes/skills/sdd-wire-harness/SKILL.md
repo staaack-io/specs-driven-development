@@ -86,8 +86,11 @@ En mode non sec :
 2. Copier dans ce dossier uniquement les fichiers cibles proposés et appliquer
    les changements minimaux. Ne jamais écrire directement dans le projet.
 3. Préserver toutes les dépendances, versions, scripts, plugins, profils,
-   modules, propriétés, seuils, migrations et règles existants. Demander
-   l'accord explicite de l'utilisateur avant toute nouvelle dépendance.
+   modules, propriétés, workspaces, overrides, exports, seuils, migrations et
+   règles existants. Déclarer chaque clé JSON ajoutée dans
+   `approved_additions` et citer la réponse utilisateur exacte sous
+   `approval_evidence`. Demander l'accord explicite avant toute nouvelle
+   dépendance.
 4. Ne placer aucun secret, chemin absolu, commande de déploiement, téléchargement
    exécutable, `sudo`, suppression récursive ou contournement de tests dans les
    candidats.
@@ -115,12 +118,17 @@ python3 <skill>/scripts/harness_guard.py commit \
   --plan <plan.json> --candidate-dir <dossier>
 ```
 
-Le garde exécute réellement et séquentiellement toutes les gates `pre-commit`
-dans une archive temporaire de `HEAD` contenant les candidats. Il prend ensuite
-le verrou global au dépôt, revérifie le CAS, journalise les versions, remplace
-atomiquement les configurations et exécute les gates `post-commit` dans le
-projet. Un échec postérieur restaure l'ensemble précédent. Deux gates lourdes
-ne s'exécutent jamais simultanément.
+Le garde conserve le verrou global pendant toute validation, y compris un
+replay. Il exécute réellement et séquentiellement les gates `pre-commit` dans
+un bac à sable temporaire de `HEAD` contenant les candidats, les fichiers sûrs
+en attente et une copie des `node_modules` existants. Le gestionnaire Node doit
+être celui prouvé et disponible sur `PATH` ; ne jamais installer ni simuler un
+wrapper. Il revérifie ensuite le CAS, journalise les versions, remplace
+atomiquement les configurations et réexécute les commandes strictement
+identiques en phase `post-commit` dans un nouveau bac à sable. Les empreintes de
+tout le dépôt, fichiers ignorés et métadonnées Git pertinentes comprises,
+doivent rester identiques hors cibles. Un échec restaure l'ensemble précédent.
+Deux gates lourdes ne s'exécutent jamais simultanément.
 
 Sur succès, supprimer uniquement le dossier candidat exact. Sur refus ou
 échec, le préserver et annoncer son chemin. Un replay exact retourne
@@ -146,6 +154,7 @@ publier, pousser, fusionner ou déployer.
 - chaque stack prouvée possède une gate pré et post réussie ;
 - seules les configurations autorisées ont changé ;
 - les empreintes avant/après et sorties de gates sont structurées ;
-- le journal est absent et le reçu global permet reprise et idempotence ;
+- le journal est absent et le reçu namespacé par worktree, branche et HEAD
+  permet reprise et idempotence sans collision ;
 - le résumé précise les fichiers modifiés, les gates exécutées et l'absence de
   déploiement.

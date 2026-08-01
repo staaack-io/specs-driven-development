@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -68,6 +69,11 @@ SENSITIVE_KEY_RE = re.compile(
     re.IGNORECASE,
 )
 PLACEHOLDER_RE = re.compile(r"^(?:\$\{[^}]+\}|<[^>]+>|REDACTED|CHANGEME)$", re.IGNORECASE)
+SCRIPT_SECRET_RE = re.compile(
+    r"(?i)\b(password|passwd|token|api[_-]?key|apikey|secret|client[_-]?secret|"
+    r"private[_-]?key|access[_-]?(?:key|token))\b\s*[:=]\s*[\"']"
+    r"(?!\$\{|<|REDACTED|CHANGEME)([^\"']{8,})[\"']"
+)
 SPRING_FILES = {
     "pom.xml",
     "checkstyle.xml",
@@ -147,11 +153,30 @@ def resolve_project(project_root: str) -> tuple[Path, Path]:
     return root, common
 
 
-def technical_paths(git_dir: Path) -> dict[str, Path]:
+def worktree_namespace(root: Path) -> str:
+    head = run_git(root, "rev-parse", "HEAD").decode().strip()
+    branch_result = subprocess.run(
+        ["git", "-C", str(root), "symbolic-ref", "--quiet", "--short", "HEAD"],
+        check=False,
+        capture_output=True,
+    )
+    branch = (
+        branch_result.stdout.decode("utf-8", "replace").strip()
+        if branch_result.returncode == 0
+        else "detached"
+    )
+    return hashlib.sha256(
+        canonical_json({"root": str(root), "branch": branch, "head": head})
+    ).hexdigest()[:24]
+
+
+def technical_paths(root: Path, git_dir: Path) -> dict[str, Path]:
+    root = root.resolve(strict=True)
+    state = git_dir / "sdd-wire-harness-state" / worktree_namespace(root)
     return {
         "lock": git_dir / "sdd-wire-harness.lock",
-        "journal": git_dir / "sdd-wire-harness.transaction.json",
-        "receipt": git_dir / "sdd-wire-harness.commit.json",
+        "journal": state / "transaction.json",
+        "receipt": state / "commit.json",
     }
 
 
@@ -474,7 +499,11 @@ def onboarding_artifact_token(root: Path) -> str:
 
 
 def onboarding_allowed_changes(root: Path, paths: dict[str, Path]) -> set[str]:
-    receipt_path = paths["lock"].parent / "sdd-onboarding.commit.json"
+    del paths
+    worktree_git_dir = Path(
+        run_git(root, "rev-parse", "--absolute-git-dir").decode().strip()
+    ).resolve(strict=True)
+    receipt_path = worktree_git_dir / "sdd-onboarding.commit.json"
     receipt = load_optional_json(receipt_path, "onboarding receipt")
     if receipt is None:
         return set()
@@ -535,7 +564,45 @@ def check_secrets(data: bytes, label: str) -> str:
     for pattern in SECRET_PATTERNS:
         if pattern.search(text):
             raise GuardError(f"potential secret refused in {label}")
+    if SCRIPT_SECRET_RE.search(text):
+        raise GuardError(f"potential script credential refused in {label}")
     return text
+
+
+def reject_xml_secrets(root: ET.Element, relative: str) -> None:
+    for element in root.iter():
+        tag = element.tag.rsplit("}", 1)[-1]
+        sensitive = bool(SENSITIVE_KEY_RE.fullmatch(tag))
+        for key, value in element.attrib.items():
+            local_key = key.rsplit("}", 1)[-1]
+            if local_key.casefold() in {"name", "key"} and SENSITIVE_KEY_RE.fullmatch(value):
+                sensitive = True
+            elif SENSITIVE_KEY_RE.fullmatch(local_key):
+                if not PLACEHOLDER_RE.fullmatch(value):
+                    raise GuardError(f"potential XML secret refused in {relative}")
+        if sensitive:
+            values = [element.text or ""] + [
+                value
+                for key, value in element.attrib.items()
+                if key.rsplit("}", 1)[-1].casefold() in {"value", "content"}
+            ]
+            for value in values:
+                stripped = value.strip()
+                if stripped and not PLACEHOLDER_RE.fullmatch(stripped):
+                    raise GuardError(f"potential XML secret refused in {relative}")
+
+
+def json_added_paths(previous: object, candidate: object, trail: str = "$") -> list[str]:
+    if not isinstance(previous, dict) or not isinstance(candidate, dict):
+        return []
+    additions: list[str] = []
+    for key, value in candidate.items():
+        path = f"{trail}.{key}"
+        if key not in previous:
+            additions.append(path)
+        else:
+            additions.extend(json_added_paths(previous[key], value, path))
+    return additions
 
 
 def xml_inventory(root: ET.Element) -> dict[str, set[tuple[str, ...]]]:
@@ -675,6 +742,7 @@ def validate_config(relative: str, before: bytes | None, data: bytes) -> None:
             parsed_xml = ET.fromstring(text)
         except ET.ParseError as error:
             raise GuardError(f"invalid XML candidate {relative}: {error}") from error
+        reject_xml_secrets(parsed_xml, relative)
         if before is not None:
             preserve_xml_configuration(relative, before, parsed_xml)
     elif name in {"package.json", "tsconfig.json"}:
@@ -686,6 +754,7 @@ def validate_config(relative: str, before: bytes | None, data: bytes) -> None:
             raise GuardError(f"JSON candidate {relative} must be an object")
         if name == "package.json" and before is not None:
             preserve_package_json(relative, before, parsed)
+            preserve_json_value(relative, json.loads(before), parsed)
         elif name == "tsconfig.json" and before is not None:
             preserve_json_value(relative, json.loads(before), parsed)
         def reject_sensitive(value: object, trail: str = "$") -> None:
@@ -755,7 +824,7 @@ def validate_command(command: object, detected: list[dict[str, Any]]) -> dict[st
             for item in detected
             if item["stack"] == stack and item["module"] == normalized_workdir
         }
-        if executable not in matching_managers:
+        if argv[0] not in matching_managers or executable != argv[0]:
             raise GuardError("React/Next.js validation must use its proved package manager")
         if not any(gate in argv for gate in ("lint", "typecheck", "test", "build")):
             raise GuardError("React/Next.js validation must name a configured gate")
@@ -827,6 +896,19 @@ def validate_plan(
             raise GuardError(f"candidate must be a real file: {candidate_relative}")
         after = candidate.read_bytes()
         validate_config(relative, before, after)
+        if relative.endswith("package.json") and before is not None:
+            additions = sorted(json_added_paths(json.loads(before), json.loads(after)))
+            declared_additions = change.get("approved_additions", [])
+            if not isinstance(declared_additions, list) or not all(
+                isinstance(item, str) for item in declared_additions
+            ):
+                raise GuardError("approved_additions must be a string array")
+            if sorted(declared_additions) != additions:
+                raise GuardError("package.json additions require an exact approved_additions list")
+            if additions:
+                evidence = change.get("approval_evidence")
+                if not isinstance(evidence, str) or not evidence.startswith("user:"):
+                    raise GuardError("package.json additions require explicit user approval evidence")
         if change.get("expected_after_sha256") != sha256(after):
             raise GuardError(f"candidate fingerprint mismatch for {relative}")
         mode = 0o755 if relative == ".github/scripts/harness.sh" else 0o644
@@ -858,6 +940,25 @@ def validate_plan(
     missing_gates = sorted(required_gates - actual_gates)
     if missing_gates:
         raise GuardError(f"missing serialized validation gates: {missing_gates}")
+    for stack_item in inspection["stacks"]:
+        signatures: dict[str, list[tuple[tuple[str, ...], str, int]]] = {
+            "pre-commit": [],
+            "post-commit": [],
+        }
+        for command in normalized_commands:
+            if (
+                command["stack"] == stack_item["stack"]
+                and command["working_directory"] == stack_item["module"]
+            ):
+                signatures[command["phase"]].append(
+                    (
+                        tuple(command["argv"]),
+                        command["working_directory"],
+                        command["timeout_seconds"],
+                    )
+                )
+        if signatures["pre-commit"] != signatures["post-commit"]:
+            raise GuardError("pre-commit and post-commit gate commands must be identical")
     plan_digest = sha256(canonical_json(plan))
     return plan, validated, normalized_commands, plan_digest
 
@@ -968,6 +1069,8 @@ def write_receipt(paths: dict[str, Path], journal: dict[str, Any]) -> None:
             if isinstance(item, dict) and isinstance(item.get("path"), str) and isinstance(item.get("sha256"), str):
                 target_map[item["path"]] = item["sha256"]
     for entry in journal["entries"]:
+        if sha256(read_bytes(Path(entry["absolute_path"]))) != entry["after_sha256"]:
+            raise GuardError(f"cannot receipt mismatched target: {entry['path']}")
         target_map[entry["path"]] = entry["after_sha256"]
     receipt = {
         "version": 1,
@@ -994,18 +1097,34 @@ def recover(root: Path, paths: dict[str, Path], *, dry_run: bool) -> str | None:
     entries = journal.get("entries")
     if not isinstance(entries, list) or not entries:
         raise GuardError("wire-harness journal entries are invalid")
+    _stack, detected = detect_stacks(root)
+    allowed = allowed_targets(detected)
+    seen_targets: set[str] = set()
     for entry in entries:
         if not isinstance(entry, dict):
             raise GuardError("wire-harness journal entry is invalid")
         relative = safe_relative(entry.get("path"), "journal target")
+        stack_name = entry.get("stack")
+        if relative in seen_targets:
+            raise GuardError("duplicate wire-harness journal target")
+        seen_targets.add(relative)
+        if relative not in allowed or stack_name not in allowed[relative]:
+            raise GuardError("wire-harness journal target is outside the current stack allowlist")
         expected_path = reject_symlink_chain(root, relative, allow_missing=True)
         if Path(entry.get("absolute_path", "")) != expected_path:
             raise GuardError("wire-harness journal target does not match this worktree")
         created_parents = entry.get("created_parents", [])
         if not isinstance(created_parents, list):
             raise GuardError("wire-harness journal created_parents is invalid")
+        valid_parents = {
+            parent.as_posix()
+            for parent in PurePosixPath(relative).parents
+            if parent.as_posix() != "."
+        }
         for relative_parent in created_parents:
-            safe_relative(relative_parent, "journal created parent")
+            normalized_parent = safe_relative(relative_parent, "journal created parent")
+            if normalized_parent not in valid_parents:
+                raise GuardError("journal created parent is not an ancestor of its target")
         before_data, _before_mode = decode_payload(entry.get("before"), "journal before")
         after_data, _after_mode = decode_payload(entry.get("after"), "journal after")
         if sha256(before_data) != entry.get("before_sha256"):
@@ -1046,6 +1165,39 @@ def archive_checkout(root: Path, destination: Path) -> None:
             atomic_replace(target, data, stat.S_IMODE(member.mode) or 0o644)
 
 
+def copy_node_dependencies(
+    root: Path, workspace: Path, commands: list[dict[str, Any]]
+) -> None:
+    modules = {
+        command["working_directory"]
+        for command in commands
+        if command["stack"] in {"nextjs", "react"}
+    }
+    for module in modules:
+        source_module = root if module == "." else root / module
+        source = source_module / "node_modules"
+        if source.is_symlink() or not source.is_dir():
+            raise GuardError(
+                f"existing dependencies are required before Node gates: {module}/node_modules"
+            )
+        source_real = source.resolve(strict=True)
+        for directory, directory_names, file_names in os.walk(source, followlinks=False):
+            for name in directory_names + file_names:
+                path = Path(directory) / name
+                if not path.is_symlink():
+                    continue
+                target = path.resolve(strict=True)
+                try:
+                    target.relative_to(source_real)
+                except ValueError as error:
+                    raise GuardError(
+                        f"node_modules symlink escapes dependency tree: {path.relative_to(root)}"
+                    ) from error
+        destination_module = workspace if module == "." else workspace / module
+        destination = destination_module / "node_modules"
+        shutil.copytree(source, destination, symlinks=True, dirs_exist_ok=True)
+
+
 def validate_node_script(workspace: Path, command: dict[str, Any]) -> None:
     if command["stack"] not in {"nextjs", "react"}:
         return
@@ -1060,10 +1212,26 @@ def validate_node_script(workspace: Path, command: dict[str, Any]) -> None:
     scripts = package.get("scripts")
     if not isinstance(scripts, dict) or not isinstance(scripts.get(script_name), str):
         raise GuardError(f"configured Node gate script is absent: {script_name}")
-    script = scripts[script_name]
-    if DEPLOY_WORDS.search(script) or DANGEROUS_HARNESS_RE.search(script):
-        raise GuardError(f"dangerous or network command refused in package script {script_name}")
-    check_secrets(script.encode(), f"package.json#scripts.{script_name}")
+    visited: set[str] = set()
+
+    def inspect_script(name: str) -> None:
+        if name in visited:
+            return
+        visited.add(name)
+        script_value = scripts.get(name)
+        if not isinstance(script_value, str):
+            return
+        if DEPLOY_WORDS.search(script_value) or DANGEROUS_HARNESS_RE.search(script_value):
+            raise GuardError(f"dangerous or network command refused in package script {name}")
+        check_secrets(script_value.encode(), f"package.json#scripts.{name}")
+        for match in re.finditer(
+            r"(?:npm\s+run|pnpm(?:\s+run)?|yarn(?:\s+run)?|bun\s+run)\s+([A-Za-z0-9:._-]+)",
+            script_value,
+        ):
+            inspect_script(match.group(1))
+
+    for lifecycle_name in (f"pre{script_name}", script_name, f"post{script_name}"):
+        inspect_script(lifecycle_name)
 
 
 def execute_gates(
@@ -1093,6 +1261,8 @@ def execute_gates(
                 executable_path = directory / executable[2:]
                 if executable_path.is_symlink() or not executable_path.is_file():
                     raise GuardError(f"gate executable is missing or symbolic: {executable}")
+            elif shutil.which(executable, path=environment.get("PATH")) is None:
+                raise GuardError(f"gate executable is not available on PATH: {executable}")
             before = time.monotonic()
             try:
                 completed = subprocess.run(
@@ -1125,11 +1295,12 @@ def execute_gates(
     return results
 
 
-def run_pre_commit_gates(
+def run_sandbox_gates(
     root: Path,
     paths: dict[str, Path],
     entries: list[dict[str, Any]],
     commands: list[dict[str, Any]],
+    phase: str,
 ) -> list[dict[str, Any]]:
     with tempfile.TemporaryDirectory(prefix="sdd-wire-harness-gate-") as temporary:
         workspace = Path(temporary) / "project"
@@ -1146,7 +1317,62 @@ def run_pre_commit_gates(
         for entry in entries:
             target = reject_symlink_chain(workspace, entry["path"], allow_missing=True)
             atomic_replace(target, entry["after"], entry["after_mode"])
-        return execute_gates(workspace, commands, "pre-commit")
+        copy_node_dependencies(root, workspace, commands)
+        return execute_gates(workspace, commands, phase)
+
+
+def filesystem_snapshot(root: Path, target_paths: set[str]) -> str:
+    excluded_directories = {".git/sdd-wire-harness-state"}
+    excluded_files = {".git/sdd-wire-harness.lock"}
+    excluded = set(target_paths)
+    for target in target_paths:
+        for parent in PurePosixPath(target).parents:
+            if parent.as_posix() != ".":
+                excluded.add(parent.as_posix())
+    digest = hashlib.sha256()
+    for current, directories, files in os.walk(root, topdown=True, followlinks=False):
+        current_path = Path(current)
+        relative_current = current_path.relative_to(root).as_posix()
+        kept_directories: list[str] = []
+        for name in sorted(directories):
+            path = current_path / name
+            relative = path.relative_to(root).as_posix()
+            if any(
+                relative == prefix or relative.startswith(prefix + "/")
+                for prefix in excluded_directories
+            ):
+                continue
+            kept_directories.append(name)
+            if relative not in excluded:
+                digest.update(f"dir\0{relative}\0{stat.S_IMODE(path.lstat().st_mode)}\0".encode())
+        directories[:] = kept_directories
+        for name in sorted(files):
+            path = current_path / name
+            relative = path.relative_to(root).as_posix()
+            if relative in excluded or relative in excluded_files:
+                continue
+            metadata = path.lstat()
+            if stat.S_ISLNK(metadata.st_mode):
+                payload = os.readlink(path).encode("utf-8", "surrogateescape")
+                kind = "symlink"
+            elif stat.S_ISREG(metadata.st_mode):
+                payload = path.read_bytes()
+                kind = "file"
+            else:
+                payload = b""
+                kind = f"special-{stat.S_IFMT(metadata.st_mode)}"
+            digest.update(
+                kind.encode()
+                + b"\0"
+                + relative.encode("utf-8", "surrogateescape")
+                + b"\0"
+                + str(stat.S_IMODE(metadata.st_mode)).encode()
+                + b"\0"
+                + hashlib.sha256(payload).digest()
+            )
+        if relative_current == ".":
+            continue
+    return "sha256:" + digest.hexdigest()
 
 
 def commit_plan(
@@ -1165,7 +1391,12 @@ def commit_plan(
     if snapshot_token(root, stack) != inspection["snapshot_token"]:
         raise GuardError("workspace snapshot changed after inspection")
     validate_workspace(root, paths)
-    pre_gates = run_pre_commit_gates(root, paths, entries, commands)
+    protected_snapshot = filesystem_snapshot(
+        root, {entry["path"] for entry in entries}
+    )
+    pre_gates = run_sandbox_gates(root, paths, entries, commands, "pre-commit")
+    if filesystem_snapshot(root, {entry["path"] for entry in entries}) != protected_snapshot:
+        raise GuardError("pre-commit sandbox escaped into repository content")
     journal = {
         "version": 1,
         "operation": "wire-harness-commit",
@@ -1184,6 +1415,7 @@ def commit_plan(
         journal["entries"].append(
             {
                 "path": entry["path"],
+                "stack": entry["stack"],
                 "absolute_path": str(entry["target"]),
                 "before": encode_payload(entry["before"], entry["before_mode"]),
                 "before_sha256": sha256(entry["before"]),
@@ -1200,12 +1432,12 @@ def commit_plan(
             os._exit(86)
     journal["state"] = "applied"
     atomic_replace(paths["journal"], json.dumps(journal, indent=2).encode() + b"\n", 0o600)
-    status_before_gates = run_git(root, "status", "--porcelain=v1", "-z", "--untracked-files=all")
     try:
-        post_gates = execute_gates(root, commands, "post-commit")
-        status_after_gates = run_git(root, "status", "--porcelain=v1", "-z", "--untracked-files=all")
-        if status_after_gates != status_before_gates:
-            raise GuardError("post-commit gates modified files outside the transaction")
+        post_gates = run_sandbox_gates(
+            root, paths, entries, commands, "post-commit"
+        )
+        if filesystem_snapshot(root, {entry["path"] for entry in entries}) != protected_snapshot:
+            raise GuardError("repository content outside transaction scope changed")
     except GuardError:
         for entry in journal["entries"]:
             restore_entry(entry, "before", root)
@@ -1243,18 +1475,15 @@ def parser() -> argparse.ArgumentParser:
     return root
 
 
-def execute(arguments: argparse.Namespace) -> dict[str, Any]:
-    root, git_dir = resolve_project(arguments.project_root)
-    paths = technical_paths(git_dir)
-    feature_id = validate_feature_id(arguments.feature_id)
-    dry_run = bool(getattr(arguments, "dry_run", False))
-    if dry_run:
-        recovery = recover(root, paths, dry_run=True)
-        inspection = inspect(root, paths, feature_id)
-    else:
-        with exclusive_lock(paths["lock"]):
-            recovery = recover(root, paths, dry_run=False)
-            inspection = inspect(root, paths, feature_id)
+def execute_with_state(
+    arguments: argparse.Namespace,
+    root: Path,
+    paths: dict[str, Path],
+    feature_id: str | None,
+    dry_run: bool,
+) -> dict[str, Any]:
+    recovery = recover(root, paths, dry_run=dry_run)
+    inspection = inspect(root, paths, feature_id)
     if arguments.command == "inspect":
         inspection["dry_run"] = dry_run
         inspection["recovery"] = recovery
@@ -1293,12 +1522,19 @@ def execute(arguments: argparse.Namespace) -> dict[str, Any]:
         "recovery": recovery,
     }
     if arguments.command == "commit":
-        with exclusive_lock(paths["lock"]):
-            recovered = recover(root, paths, dry_run=False)
-            if recovered:
-                result["recovery"] = recovered
-            result.update(commit_plan(root, paths, inspection, entries, commands, plan_digest))
+        result.update(commit_plan(root, paths, inspection, entries, commands, plan_digest))
     return result
+
+
+def execute(arguments: argparse.Namespace) -> dict[str, Any]:
+    root, git_dir = resolve_project(arguments.project_root)
+    paths = technical_paths(root, git_dir)
+    feature_id = validate_feature_id(arguments.feature_id)
+    dry_run = bool(getattr(arguments, "dry_run", False))
+    if dry_run:
+        return execute_with_state(arguments, root, paths, feature_id, True)
+    with exclusive_lock(paths["lock"]):
+        return execute_with_state(arguments, root, paths, feature_id, False)
 
 
 def main(argv: list[str] | None = None) -> int:

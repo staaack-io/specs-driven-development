@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import contextlib
+import fcntl
 import hashlib
 import importlib.util
 import io
@@ -30,6 +31,14 @@ class HarnessGuardTest(unittest.TestCase):
         self.base = Path(self.temporary.name)
         self.root = self.base / "project"
         self.root.mkdir()
+        self.previous_path = os.environ.get("PATH", "")
+        self.tool_bin = self.base / "bin"
+        self.tool_bin.mkdir()
+        (self.tool_bin / "pnpm").write_text(
+            "#!/bin/sh\necho node-gate\nexit 0\n", encoding="utf-8"
+        )
+        (self.tool_bin / "pnpm").chmod(0o755)
+        os.environ["PATH"] = f"{self.tool_bin}{os.pathsep}{self.previous_path}"
         self.git("init", "-q")
         self.git("config", "user.email", "tests@example.invalid")
         self.git("config", "user.name", "SDD tests")
@@ -39,6 +48,7 @@ class HarnessGuardTest(unittest.TestCase):
         self.write_onboarding_artifacts()
 
     def tearDown(self) -> None:
+        os.environ["PATH"] = self.previous_path
         self.temporary.cleanup()
 
     def git(self, *arguments: str) -> str:
@@ -57,6 +67,11 @@ class HarnessGuardTest(unittest.TestCase):
     @property
     def git_dir(self) -> Path:
         return Path(self.git("rev-parse", "--absolute-git-dir"))
+
+    @property
+    def harness_paths(self) -> dict[str, Path]:
+        _root, common = GUARD.resolve_project(str(self.root))
+        return GUARD.technical_paths(self.root, common)
 
     def add_full_stack_fixture(self) -> None:
         backend = self.root / "backend"
@@ -90,15 +105,31 @@ class HarnessGuardTest(unittest.TestCase):
         (frontend / "pnpm-lock.yaml").write_text(
             "lockfileVersion: '9.0'\n", encoding="utf-8"
         )
-        (frontend / "pnpm").write_text("#!/bin/sh\necho node-gate\nexit 0\n", encoding="utf-8")
-        (frontend / "pnpm").chmod(0o755)
+        (frontend / "node_modules").mkdir()
+        (frontend / "node_modules/.ready").write_text("installed\n", encoding="utf-8")
+        (self.root / ".gitignore").write_text("node_modules/\n", encoding="utf-8")
 
-    def write_onboarding_artifacts(self) -> None:
-        specs = self.root / ".specs"
+    def write_onboarding_artifacts(self, project: Path | None = None) -> None:
+        project = project or self.root
+        head = subprocess.run(
+            ["git", "-C", str(project), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        git_dir = Path(
+            subprocess.run(
+                ["git", "-C", str(project), "rev-parse", "--absolute-git-dir"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        )
+        specs = project / ".specs"
         specs.mkdir(exist_ok=True)
         stack = {
             "schema_version": 1,
-            "git_sha": self.head,
+            "git_sha": head,
             "classification": "brownfield",
             "modules": [
                 {
@@ -126,7 +157,7 @@ class HarnessGuardTest(unittest.TestCase):
             "_baseline.json": json.dumps(
                 {
                     "schema_version": 1,
-                    "git_sha": self.head,
+                    "git_sha": head,
                     "status": "not-run",
                     "heavy_gates_executed": False,
                     "validation_commands": [],
@@ -149,10 +180,10 @@ class HarnessGuardTest(unittest.TestCase):
         receipt = {
             "version": 1,
             "operation": "commit-onboarding",
-            "git_sha": self.head,
+            "git_sha": head,
             "target_artifact_token": "sha256:" + digest.hexdigest(),
         }
-        (self.git_dir / "sdd-onboarding.commit.json").write_text(
+        (git_dir / "sdd-onboarding.commit.json").write_text(
             json.dumps(receipt), encoding="utf-8"
         )
 
@@ -198,8 +229,7 @@ class HarnessGuardTest(unittest.TestCase):
             destination = candidates / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(after)
-            changes.append(
-                {
+            change = {
                     "path": relative,
                     "candidate": relative,
                     "action": "replace" if before is not None else "create",
@@ -208,7 +238,10 @@ class HarnessGuardTest(unittest.TestCase):
                     "expected_before_sha256": GUARD.sha256(before),
                     "expected_after_sha256": GUARD.sha256(after),
                 }
-            )
+            if relative.endswith("package.json"):
+                change["approved_additions"] = ["$.scripts.test"]
+                change["approval_evidence"] = "user:test fixture approval"
+            changes.append(change)
         plan = {
             "schema_version": 1,
             "git_sha": inspection["git_sha"],
@@ -222,7 +255,7 @@ class HarnessGuardTest(unittest.TestCase):
                     "argv": ["./mvnw", "verify"]
                     if stack == "spring"
                     else [
-                        "./pnpm",
+                        "pnpm",
                         "test" if "frontend/package.json" in targets else "build",
                     ],
                     "working_directory": "backend" if stack == "spring" else "frontend",
@@ -314,7 +347,20 @@ class HarnessGuardTest(unittest.TestCase):
         self.assertTrue(all(gate["output_sha256"] != GUARD.sha256(b"") for gate in first["gates"]))
         self.assertIn(b"<build", (self.root / "backend/pom.xml").read_bytes())
         self.assertIn("vitest run", (self.root / "frontend/package.json").read_text())
-        self.assertFalse((self.git_dir / "sdd-wire-harness.transaction.json").exists())
+        self.assertFalse(self.harness_paths["journal"].exists())
+
+    def test_idempotent_replay_stays_under_global_lock(self) -> None:
+        inspection = self.inspect()
+        candidates, plan = self.candidates_and_plan(inspection)
+        self.commit(inspection, candidates, plan)
+        lock_path = self.harness_paths["lock"]
+        descriptor = os.open(lock_path, os.O_RDWR)
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            result = self.commit(inspection, candidates, plan, expected=2)
+        finally:
+            os.close(descriptor)
+        self.assertIn("holds the lock", result["error"])
 
     def test_scope_glob_symlink_and_secret_are_refused(self) -> None:
         inspection = self.inspect(dry_run=True)
@@ -388,6 +434,90 @@ class HarnessGuardTest(unittest.TestCase):
         result = self.validate(inspection, candidates, plan_path, expected=2)
         self.assertIn("proved package manager", result["error"])
 
+        candidates, plan_path = self.candidates_and_plan(inspection)
+        plan = json.loads(plan_path.read_text())
+        for gate in plan["validation"]:
+            if gate["stack"] == "nextjs" and gate["phase"] == "post-commit":
+                gate["argv"][1] = "build"
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+        result = self.validate(inspection, candidates, plan_path, expected=2)
+        self.assertIn("must be identical", result["error"])
+
+    def test_package_additions_need_explicit_proof_and_lifecycle_is_scanned(self) -> None:
+        inspection = self.inspect(dry_run=True)
+        candidates, plan_path = self.candidates_and_plan(inspection)
+        plan = json.loads(plan_path.read_text())
+        del plan["changes"][1]["approval_evidence"]
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+        result = self.validate(inspection, candidates, plan_path, expected=2)
+        self.assertIn("explicit user approval", result["error"])
+
+        candidates, plan_path = self.candidates_and_plan(inspection)
+        package_path = candidates / "frontend/package.json"
+        package = json.loads(package_path.read_text())
+        package["scripts"]["pretest"] = "curl https://example.invalid/setup"
+        package_path.write_text(json.dumps(package), encoding="utf-8")
+        plan = json.loads(plan_path.read_text())
+        package_change = plan["changes"][1]
+        package_change["approved_additions"] = ["$.scripts.pretest", "$.scripts.test"]
+        package_change["expected_after_sha256"] = GUARD.sha256(package_path.read_bytes())
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+        result = self.commit(inspection, candidates, plan_path, expected=2)
+        self.assertIn("package script pretest", result["error"])
+
+    def test_xml_and_javascript_secret_forms_are_refused(self) -> None:
+        inspection = self.inspect(dry_run=True)
+        candidates, plan_path = self.candidates_and_plan(
+            inspection, targets=("backend/checkstyle.xml",)
+        )
+        xml_path = candidates / "backend/checkstyle.xml"
+        xml_path.write_text(
+            '<module name="Checker"><property value="supersecretvalue" name="token"/></module>',
+            encoding="utf-8",
+        )
+        plan = json.loads(plan_path.read_text())
+        plan["changes"][0]["expected_after_sha256"] = GUARD.sha256(xml_path.read_bytes())
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+        result = self.validate(inspection, candidates, plan_path, expected=2)
+        self.assertIn("XML secret", result["error"])
+
+        candidates = self.base / "js-candidates"
+        candidate_path = candidates / "frontend/vitest.config.ts"
+        candidate_path.parent.mkdir(parents=True)
+        candidate_path.write_text('const apiKey = "abcdefghijk-secret";\n', encoding="utf-8")
+        plan = {
+            "schema_version": 1,
+            "git_sha": inspection["git_sha"],
+            "snapshot_token": inspection["snapshot_token"],
+            "feature_id": None,
+            "changes": [
+                {
+                    "path": "frontend/vitest.config.ts",
+                    "candidate": "frontend/vitest.config.ts",
+                    "action": "create",
+                    "stack": "nextjs",
+                    "purpose": "configure tests",
+                    "expected_before_sha256": "absent",
+                    "expected_after_sha256": GUARD.sha256(candidate_path.read_bytes()),
+                }
+            ],
+            "validation": [
+                {
+                    "stack": stack,
+                    "phase": phase,
+                    "argv": ["./mvnw", "verify"] if stack == "spring" else ["pnpm", "build"],
+                    "working_directory": "backend" if stack == "spring" else "frontend",
+                    "timeout_seconds": 30,
+                }
+                for phase in ("pre-commit", "post-commit")
+                for stack in ("spring", "nextjs")
+            ],
+        }
+        plan_path = candidates / "plan.json"
+        plan_path.write_text(json.dumps(plan), encoding="utf-8")
+        result = self.validate(inspection, candidates, plan_path, expected=2)
+        self.assertIn("script credential", result["error"])
+
     def test_dangerous_harness_and_symbolic_global_lock_are_refused(self) -> None:
         inspection = self.inspect(dry_run=True)
         candidates, plan_path = self.candidates_and_plan(
@@ -407,15 +537,12 @@ class HarnessGuardTest(unittest.TestCase):
         self.assertIn("symbolic wire-harness lock", result["error"])
 
     def test_failed_post_gate_restores_all_configuration(self) -> None:
-        gate = self.root / "frontend/pnpm"
+        gate = self.tool_bin / "pnpm"
         gate.write_text(
             "#!/bin/sh\nif [ \"$SDD_HARNESS_GATE_PHASE\" = post-commit ]; then exit 9; fi\nexit 0\n",
             encoding="utf-8",
         )
         gate.chmod(0o755)
-        self.git("add", "frontend/pnpm")
-        self.git("commit", "-qm", "post gate failure fixture")
-        self.write_onboarding_artifacts()
         inspection = self.inspect()
         original_pom = (self.root / "backend/pom.xml").read_bytes()
         original_package = (self.root / "frontend/package.json").read_bytes()
@@ -426,13 +553,13 @@ class HarnessGuardTest(unittest.TestCase):
         self.assertIn("post-commit gate failed", result["error"])
         self.assertEqual(original_pom, (self.root / "backend/pom.xml").read_bytes())
         self.assertEqual(original_package, (self.root / "frontend/package.json").read_bytes())
-        self.assertFalse((self.git_dir / "sdd-wire-harness.transaction.json").exists())
+        self.assertFalse(self.harness_paths["journal"].exists())
 
     def test_journal_payload_hash_tampering_blocks_recovery(self) -> None:
         inspection = self.inspect()
         candidates, plan = self.candidates_and_plan(inspection)
         self.assertEqual(86, self.run_crashing_commit(inspection, candidates, plan, 1))
-        journal_path = self.git_dir / "sdd-wire-harness.transaction.json"
+        journal_path = self.harness_paths["journal"]
         journal = json.loads(journal_path.read_text())
         journal["entries"][0]["after"]["data_b64"] = "dGFtcGVyZWQ="
         journal_path.write_text(json.dumps(journal), encoding="utf-8")
@@ -441,6 +568,32 @@ class HarnessGuardTest(unittest.TestCase):
 
         self.assertIn("payload hash is invalid", result["error"])
 
+    def test_recovery_refuses_hash_valid_target_outside_stack_allowlist(self) -> None:
+        inspection = self.inspect()
+        candidates, plan = self.candidates_and_plan(inspection)
+        self.assertEqual(86, self.run_crashing_commit(inspection, candidates, plan, 1))
+        journal_path = self.harness_paths["journal"]
+        journal = json.loads(journal_path.read_text())
+        payload = (self.root / ".gitignore").read_bytes()
+        entry = journal["entries"][0]
+        entry.update(
+            {
+                "path": ".gitignore",
+                "absolute_path": str((self.root / ".gitignore").resolve()),
+                "stack": "spring",
+                "before": GUARD.encode_payload(payload, 0o644),
+                "before_sha256": GUARD.sha256(payload),
+                "after": GUARD.encode_payload(payload, 0o644),
+                "after_sha256": GUARD.sha256(payload),
+                "created_parents": [],
+            }
+        )
+        journal_path.write_text(json.dumps(journal), encoding="utf-8")
+
+        result = self.inspect(expected=2)
+
+        self.assertIn("outside the current stack allowlist", result["error"])
+
     def test_lock_is_shared_by_linked_worktrees(self) -> None:
         linked = self.base / "linked"
         self.git("worktree", "add", "-q", "-b", "linked-test", str(linked), "HEAD")
@@ -448,9 +601,81 @@ class HarnessGuardTest(unittest.TestCase):
         _linked_root, linked_common = GUARD.resolve_project(str(linked))
         self.assertEqual(main_common, linked_common)
         self.assertEqual(
-            GUARD.technical_paths(main_common)["lock"],
-            GUARD.technical_paths(linked_common)["lock"],
+            GUARD.technical_paths(self.root, main_common)["lock"],
+            GUARD.technical_paths(linked, linked_common)["lock"],
         )
+
+    def test_receipts_and_replays_are_isolated_between_two_worktrees(self) -> None:
+        main_inspection = self.inspect()
+        main_candidates, main_plan = self.candidates_and_plan(main_inspection)
+        self.commit(main_inspection, main_candidates, main_plan)
+        main_paths = self.harness_paths
+
+        linked = self.base / "linked-commit"
+        self.git("worktree", "add", "-q", "-b", "linked-commit-test", str(linked), "HEAD")
+        (linked / "frontend/node_modules").mkdir(parents=True)
+        (linked / "frontend/node_modules/.ready").write_text("installed\n", encoding="utf-8")
+        self.write_onboarding_artifacts(linked)
+        linked_inspection = self.invoke(
+            "inspect", "--project-root", str(linked)
+        )
+        candidates = self.base / "linked-candidates"
+        candidate = candidates / "backend/checkstyle.xml"
+        candidate.parent.mkdir(parents=True)
+        candidate.write_text('<module name="Checker"/>\n', encoding="utf-8")
+        linked_plan = {
+            "schema_version": 1,
+            "git_sha": linked_inspection["git_sha"],
+            "snapshot_token": linked_inspection["snapshot_token"],
+            "feature_id": None,
+            "changes": [
+                {
+                    "path": "backend/checkstyle.xml",
+                    "candidate": "backend/checkstyle.xml",
+                    "action": "create",
+                    "stack": "spring",
+                    "purpose": "linked worktree harness",
+                    "expected_before_sha256": "absent",
+                    "expected_after_sha256": GUARD.sha256(candidate.read_bytes()),
+                }
+            ],
+            "validation": [
+                {
+                    "stack": stack,
+                    "phase": phase,
+                    "argv": ["./mvnw", "verify"] if stack == "spring" else ["pnpm", "build"],
+                    "working_directory": "backend" if stack == "spring" else "frontend",
+                    "timeout_seconds": 30,
+                }
+                for phase in ("pre-commit", "post-commit")
+                for stack in ("spring", "nextjs")
+            ],
+        }
+        linked_plan_path = candidates / "plan.json"
+        linked_plan_path.write_text(json.dumps(linked_plan), encoding="utf-8")
+        commit_arguments = (
+            "commit",
+            "--project-root",
+            str(linked),
+            "--expected-head",
+            linked_inspection["git_sha"],
+            "--expected-token",
+            linked_inspection["snapshot_token"],
+            "--plan",
+            str(linked_plan_path),
+            "--candidate-dir",
+            str(candidates),
+        )
+        first = self.invoke(*commit_arguments)
+        replay = self.invoke(*commit_arguments)
+        _linked_root, linked_common = GUARD.resolve_project(str(linked))
+        linked_paths = GUARD.technical_paths(linked, linked_common)
+
+        self.assertFalse(first["unchanged"])
+        self.assertTrue(replay["unchanged"])
+        self.assertNotEqual(main_paths["receipt"], linked_paths["receipt"])
+        self.assertTrue(main_paths["receipt"].is_file())
+        self.assertTrue(linked_paths["receipt"].is_file())
 
     def run_crashing_commit(self, inspection: dict, candidates: Path, plan: Path, crash_after: int) -> int:
         environment = os.environ.copy()

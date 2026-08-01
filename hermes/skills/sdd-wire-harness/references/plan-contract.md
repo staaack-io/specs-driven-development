@@ -18,7 +18,9 @@ absolu.
       "stack": "spring",
       "purpose": "Ajouter les portes Maven absentes",
       "expected_before_sha256": "sha256:<empreinte>",
-      "expected_after_sha256": "sha256:<empreinte>"
+      "expected_after_sha256": "sha256:<empreinte>",
+      "approved_additions": ["$.scripts.test"],
+      "approval_evidence": "user:<réponse exacte>"
     }
   ],
   "validation": [
@@ -50,10 +52,14 @@ absolu.
 - Déclarer exactement des arguments, jamais une chaîne shell. Refuser
   métacaractères, options de contournement et commandes de déploiement.
 - Inclure au moins une gate `pre-commit` et `post-commit` par module prouvé.
-  Le garde les exécute séquentiellement.
-- Conserver les dépendances, scripts, versions, propriétés, plugins, profils,
-  modules, migrations, règles et seuils déjà présents. Un ajout de dépendance
-  exige une décision utilisateur préalable ; le plan ne constitue pas cette
-  décision.
+  Les listes d'arguments, répertoires et timeouts doivent être strictement
+  identiques entre les deux phases. Le garde les exécute séquentiellement.
+- Conserver intégralement chaque valeur JSON existante, dont workspaces,
+  overrides, resolutions, configuration pnpm, exports, Jest et ESLint, ainsi que
+  les dépendances, scripts et versions. Lister exactement chaque nouvelle clé
+  dans `approved_additions` avec une preuve `user:`. Inspecter aussi les scripts
+  lifecycle `pre*` et `post*`.
+- Conserver les propriétés, plugins, profils, modules, migrations, règles et
+  seuils XML déjà présents.
 - Le plan et les candidats restent hors du dépôt. Ils ne contiennent aucun
   secret ni valeur d'environnement.
