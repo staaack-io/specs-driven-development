@@ -244,3 +244,252 @@ mesure de performance n'est planifiée.
 - [x] Revue de conception interne effectuée par `spring-architect` le 2026-08-01.
 - [x] Poursuite de la migration autorisée par l'utilisateur le 2026-08-01
   (instruction : « Continue à migrer »).
+
+# Conception détaillée : S-002 — socle parallèle et profil 0.5.0
+
+> Responsable : `spring-architect` · Phase 3b · Tranche Epic : `S-002`
+>
+> Cette section s'ajoute à la conception S-001 ci-dessus sans la remplacer.
+> Les capacités déjà fusionnées sont des preuves de référence ; seules les
+> lacunes observées deviennent de nouvelles tâches.
+
+## S-002 Inputs
+
+- Révision de `01-spec.md` : SHA-256
+  `71fd818b8d9e30931ac5203bd3099ec5ecceb6475461b4d494e72674f640a7b6`.
+- Révision de `02-spec-review.md` : SHA-256
+  `c64ffd8f8af312a50da04a066ee47874a310654753630224a5184a8d5a0e50f2` ;
+  verdict `approve`, 286 AC conformes et aucune question ouverte.
+- Révision de `03-epic-design.md` : SHA-256
+  `f17fced20d9a0f3dc1c9c82732d1a6cb1cb755ebcf52cf06696d9b552c82430b`.
+- Révision de `03a-epic-roadmap.md` : SHA-256
+  `5bfd79d95e74cee8ae5fedd9e12345214ca040df819bad1b502a4ea15fcee7d1`.
+- Point de référence : `origin/main` à `9607aae`, après les fusions #61,
+  #57, #59 et #62.
+- Couverture primaire de S-002 : exactement 84 AC, soit `AC-001` à
+  `AC-007`, `AC-011`, `AC-012`, `AC-025`, `AC-026`, `AC-048` à `AC-080`,
+  `AC-101` à `AC-123`, `AC-243` à `AC-249`, `AC-252` à `AC-256` et
+  `AC-276` à `AC-280`.
+
+### S-002 Inputs from detect-stack.sh
+
+L'exécution de `.github/scripts/detect-stack.sh` retourne :
+
+```json
+{"error":"pom.xml introuvable","searched":"pom.xml"}
+```
+
+Ce résultat confirme que Spring, OpenAPI, base de données, migration,
+Testcontainers, frontend et ArchUnit restent sans objet pour cette tranche
+Python/Hermes, conformément à `Q-006`.
+
+## S-002 Reality Baseline
+
+| Preuve fusionnée | SHA de merge | Surface observée | Tests présents | Statut de planification |
+|---|---|---|---:|---|
+| Contrat runtime v2, PR #61 | `257ce11` | État v1/v2, DAG, Test-IDs, scopes, leases, journaux locaux, empreintes, CAS, reprise et fan-in | 30 tests runtime, plus tests du garde de plan | baseline, aucune tâche rétrospective |
+| `/sdd-epic-plan`, PR #57 | `d583bb5` | Délégations internes en lecture seule, verdict Hermes `approve`, promotion atomique | 19 tests de garde et 6 contrats | baseline, aucune tâche rétrospective |
+| `/sdd-wire-harness`, PR #59 | `a5815b1` | Dry-run sans écriture, writer unique, verrou commun, gates séquentielles et rollback transactionnel | 20 tests de garde | baseline, aucune tâche rétrospective |
+| GitHub Issues du dépôt source | observation du 2026-08-01 | `hasIssuesEnabled: true` pour `staaack-io/specs-driven-development` | preuve GitHub en lecture seule | AC-007 satisfaite |
+
+Les merges prouvent aussi l'ordre historique requis : #61 précède #57 et
+#59 ; les branches de #57 et #59 ont chacune intégré `origin/main` avant leur
+merge. Le bridge restant devra reproduire cette resynchronisation avant sa
+fusion pour terminer AC-106, AC-121 et AC-122.
+
+## S-002 Architecture Overview
+
+S-002 conserve le Kanban natif Hermes comme unique ordonnanceur durable. Un
+bridge Python sans boucle d'ordonnancement traduit les transitions d'un job
+admis par Hermes vers `gh` et répercute les identifiants GitHub dans la carte
+et l'état SDD ; il n'admet ni ne fusionne lui-même une tâche. Le runtime v2
+fusionné reste l'autorité déterministe pour les contrats d'état, les leases,
+les journaux task-local, les empreintes et le fan-in. `/sdd-status` devient une
+vue strictement en lecture seule de la carte et des champs task-local. Un fan-in
+source unique exécute ensuite le contrat exhaustif des 84 AC avant que le profil
+0.5.0 copie les skills et le runtime partagé, valide leur parité et publie la
+version.
+
+## S-002 ADRs
+
+Aucun nouvel ADR n'est requis. Les décisions non évidentes sont déjà
+acceptées :
+
+- [ADR-001](adr/001-use-hermes-kanban.md) — Kanban Hermes, sans second
+  ordonnanceur Python ;
+- [ADR-002](adr/002-bound-parallel-capacity.md) — deux writers, trois analyses
+  et une gate lourde ;
+- [ADR-003](adr/003-isolate-each-job.md) — enveloppe GitHub/Hermes par job ;
+- [ADR-004](adr/004-use-single-writer-fan-in.md) — fan-in à writer unique ;
+- [ADR-005](adr/005-migrate-state-with-dual-read.md) — lecture v1/v2 et
+  écriture v2 compatible.
+
+## S-002 Component Map
+
+| Frontière | Composant | Responsabilité S-002 | État |
+|---|---|---|---|
+| Runtime partagé | `hermes/runtime/sdd_runtime_guard.py` | Valider état, DAG, scopes, leases, journaux, RED, CAS, empreintes et fan-in | fusionné #61 |
+| Bridge interne | `hermes/runtime/sdd_github_bridge.py` | Appeler `gh`, mettre à jour carte et état, suivre checks/reviews/fils sans fusionner | à créer, T-004 |
+| Vue utilisateur | `hermes/skills/sdd-status` | Afficher carte, issue, branche, PR, checks, review, blocage et prochaine action | à enrichir, T-005 |
+| Portabilité | `sdd-plan` et parité runtime | Faire fonctionner l'import runtime dans les dispositions source et profil | écart audité, T-006 |
+| Fan-in source | contrat S-002 | Rejouer la preuve agrégée des 84 AC après bridge et status | à créer, T-007 |
+| Distribution | profil Hermes 0.5.0 | Copier skills et runtime, exécuter les mêmes tests, versionner et conserver le rollback 0.4.8 | à publier, T-008 |
+
+## S-002 Module Boundaries
+
+- `hermes/runtime/sdd_runtime_guard.py` reste indépendant de GitHub et ne
+  lance aucun job. Le bridge l'appelle ; le runtime n'importe pas le bridge.
+- `hermes/runtime/sdd_github_bridge.py` consomme des adaptateurs Hermes et `gh`
+  explicites. Il ne contient ni ordonnanceur, ni auto-merge, ni secret.
+- `hermes/skills/sdd-status` lit l'état et les sorties structurées ; il
+  n'appelle aucune commande mutante et ne répare aucun artefact.
+- Les workers continuent d'écrire uniquement leurs fichiers en scope et leur
+  journal local. Seul le synthesizer runtime publie les artefacts partagés.
+- La distribution copie les skills sous `skills/` et le runtime partagé sous
+  `hermes/runtime/`. La parité couvre les deux surfaces avant publication.
+
+Deux writers seulement sont admissibles dans la première vague :
+
+```text
+T-004 bridge (hermes/runtime/sdd_github_bridge.*) ─┐
+                                                    ├─> T-007 fan-in source
+T-005 status (hermes/skills/sdd-status/**) ──────┘
+                       T-006 portabilité ───────────┘
+                                                     -> T-008 profil 0.5.0
+```
+
+Les chemins exacts, sans glob, sont déclarés dans `04-tasks.md`. Le schéma
+ci-dessus abrège seulement les familles de fichiers pour la lecture.
+
+## S-002 Interaction Model
+
+1. Hermes admet une tâche après validation runtime et obtention du lease.
+2. Le bridge crée avec `gh` l'issue enfant, la branche et la PR brouillon, puis
+   stocke les identifiants dans la carte et l'état v2 via les gardes existants.
+3. Après tests verts, le bridge rend la PR prête. Il consulte checks, reviews
+   et fils toutes les cinq minutes ; une correction reste sur la même branche
+   et déclenche une nouvelle attente de review.
+4. Sans review après trente minutes, la carte passe à `needs_input`. Le bridge
+   ne fusionne jamais la PR.
+5. `/sdd-status` affiche pour chaque tâche les champs consolidés et sa prochaine
+   action sans écrire.
+6. Après les merges autorisés, T-007 exécute le fan-in source et le contrat
+   exhaustif ; T-008 publie ensuite le profil 0.5.0.
+
+## S-002 Entity Relationship Model
+
+S-002 ne crée aucune entité persistée par une application. Le modèle
+conceptuel de l'Epic reste applicable : une feature possède plusieurs tâches ;
+une tâche possède au plus une carte, une issue, une branche, un worktree, une
+session et une PR ; une vague agrège une ou deux tâches et possède au plus un
+fan-in. Les identifiants externes sont des champs de l'état v2, pas une base de
+données supplémentaire.
+
+## S-002 OpenAPI Sketch
+
+N/A. Aucun endpoint HTTP n'est ajouté ou modifié.
+
+## S-002 Data Model + Migrations
+
+- Tables ou collections touchées : aucune.
+- Outil de migration applicatif : N/A.
+- Migration de fichier : lecture des états v1 et v2, écriture d'un candidat
+  v2 par le runtime fusionné ; l'état actif n'est jamais remplacé
+  silencieusement.
+- Réversibilité : réinstaller le profil 0.4.8 ; ne supprimer ni état,
+  journal, branche, worktree ou preuve.
+
+## S-002 Security Posture
+
+- Authentification applicative et autorisation HTTP : N/A.
+- Authentification GitHub : contexte `gh` existant ; aucun token n'est ajouté
+  à l'état, aux logs ou au profil.
+- Données sensibles : les logs du bridge excluent secrets, tokens, données
+  personnelles, chemins absolus et contenu métier.
+- Commandes externes : arguments structurés, sans shell composé ; aucune
+  commande `gh pr merge` n'est autorisée.
+- Déploiement et mise à jour VPS : hors S-002.
+
+## S-002 Detailed AC Reconciliation
+
+| Groupe S-002 | Nombre | Preuve fusionnée | Écart et couverture planifiée |
+|---|---:|---|---|
+| AC-001–AC-007 | 7 | Runtime sans lancement de job, délégations internes, plafonds et Issues activées | T-004 termine l'usage Kanban sans ordonnanceur ; T-007 audite les sept AC |
+| AC-011–AC-012 | 2 | Skills source fusionnés par #57 et #59 | T-008 les publie dans le profil 0.5.0 |
+| AC-025–AC-026 | 2 | Aucun `sdd-roles` ; rôles embarqués dans epic-plan et wire-harness | T-007 audite, T-008 conserve les références |
+| AC-048–AC-080 | 33 | AC-048–AC-079 : runtime #61 ; AC-080 : verrou et gates #59 | T-006 corrige la portabilité profil ; T-007 rejoue le contrat |
+| AC-101–AC-123 | 23 | AC-101–AC-105 : #61 ; AC-107 : #57 ; AC-108–AC-109 : #59 | T-004 couvre AC-106 et AC-110–AC-122 ; T-008 couvre AC-123 |
+| AC-243–AC-249 | 7 | Le skill status existe mais n'affiche pas encore les champs task-local | T-005 couvre les sept champs |
+| AC-252–AC-256 | 5 | AC-252 : garde DAG #61 | T-004 couvre les identifiants PR et le polling reviews/fils |
+| AC-276–AC-280 | 5 | AC-276, AC-277, AC-279 et AC-280 : migration #61 | T-006 prouve la disposition profil ; T-008 couvre le rollback AC-278 |
+
+Total : **84/84 AC S-002**, sans doublon avec la couverture primaire de S-001
+et sans AC orphelin. T-007 est le contrat de fan-in qui relie chaque preuve
+fusionnée ou nouvel écart à un test exécutable ; il ne réimplémente pas les
+capacités de #61, #57 ou #59.
+
+## S-002 Audit Finding: Profile Runtime Layout
+
+Le code fusionné de `sdd-plan` calcule aujourd'hui sa racine d'import avec
+`Path(__file__).resolve().parents[4]`, chemin correct sous
+`hermes/skills/sdd-plan/scripts/` mais extérieur au dépôt sous
+`skills/sdd-plan/scripts/`. La copie exacte du skill ne suffit donc pas à
+charger `hermes.runtime.sdd_runtime_guard` dans le profil. T-006 doit d'abord
+reproduire ce RED dans une disposition profil temporaire, puis rendre la
+résolution explicite et tester la parité de `hermes/runtime`. Aucun autre
+correctif des capacités fusionnées n'est planifié sans nouvel échec prouvé.
+
+## S-002 Risks + Rollback
+
+| Risque | Probabilité | Impact | Réduction du risque | Retour arrière |
+|---|---|---|---|---|
+| Bridge devenu ordonnanceur concurrent | moyenne | Deux sources de vérité | API de transition sans boucle d'admission ; contrat interdit tout scheduler Python | retirer T-004 ; le runtime fusionné reste passif |
+| Carte, issue et état divergent après crash | moyenne | Reprise ambiguë | clé d'idempotence, écriture croisée des IDs et CAS runtime | rejouer la même transition ; ne supprimer aucun objet |
+| Polling duplique une correction ou une réponse | moyenne | Review incohérente | curseur/idempotence par fil et même branche | mettre la carte `needs_input`, conserver la PR |
+| Status écrit en voulant réparer | faible | Violation du writer unique | garde de lecture seule et tests d'empreinte | retirer T-005 ; conserver l'ancien status |
+| Runtime vert en source mais absent du profil | constatée | `/sdd-plan` installé casse | test de disposition profil et parité runtime dans T-006/T-008 | conserver le profil 0.4.8 |
+| Publication 0.5.0 avant fan-in complet | faible | Distribution partielle | dépendance T-008 sur T-007 et contrat 84/84 | fermer la PR profil ; conserver 0.4.8 |
+
+## S-002 Non-Functional Requirements
+
+- Deux writers maximum et une gate lourde maximum, conformément aux AC de
+  S-002 ; trois analyses internes au plus.
+- Polling GitHub toutes les cinq minutes et passage `needs_input` après trente
+  minutes sans review.
+- Parité exacte des skills et du runtime distribués.
+- Reprise idempotente sans secret, transcript ni chemin absolu dans l'état ou
+  les journaux versionnés.
+
+Aucun autre SLO de performance n'est spécifié ; aucune optimisation n'est
+introduite.
+
+## S-002 Open Questions
+
+- (aucune)
+
+## S-002 Resolved Questions
+
+- Les décisions `Q-001` à `Q-010` de `01-spec.md` et les cinq ADR acceptés
+  fournissent toutes les décisions nécessaires.
+- Le bridge est une surface runtime interne, pas une nouvelle commande
+  utilisateur ni un second ordonnanceur.
+
+## S-002 Design Review
+
+- [x] Carte des composants Python/Hermes et frontières source/profil présentes.
+- [x] Spring, OpenAPI, relations persistées, migrations et ArchUnit explicitement N/A.
+- [x] Posture GitHub, secrets, logs et interdiction d'auto-merge documentées.
+- [x] Les preuves de #61, #57 et #59 sont des baselines, pas du travail recréé.
+- [x] Les cinq nouvelles tâches ciblent uniquement audit ou écarts observés.
+- [x] Les deux writers de la première vague ont des fichiers concrets disjoints.
+- [x] Les 84 AC de S-002 sont réconciliés sans orphelin.
+- [x] Aucun nouveau comportement absent de `01-spec.md` n'est introduit.
+- [x] Aucun nouvel ADR n'est requis et aucune question ouverte ne subsiste.
+
+## S-002 Sign-off
+
+- [x] Chaque AC S-002 est relié à une preuve fusionnée ou à une tâche.
+- [x] Les tâches S-001 et leur couverture restent inchangées.
+- [x] Checklist `design-review.md` relue le 2026-08-01.
+- [x] Exécution de la migration autorisée par l'utilisateur le 2026-08-01
+  (instruction : « ok go »).
