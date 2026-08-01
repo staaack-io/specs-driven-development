@@ -22,6 +22,12 @@ Les skills suivants sont prêts à être copiés dans la distribution
 Les hooks ne font volontairement pas partie de ce lot. Ils seront activés après
 leur conversion au protocole Hermes et la réussite de tests de blocage.
 
+Le socle déterministe partagé vit sous `hermes/runtime/`. Il remplace les
+suppositions liées aux hooks Codex par des appels explicites : validation de
+l'état v2, DAG, Test-IDs, scopes et preuve RED, leases entre worktrees,
+fingerprints, journaux task-local et fan-in transactionnel. Les futurs skills
+d'écriture doivent appeler ce socle ; ils ne réimplémentent pas ces invariants.
+
 ## Étapes du workflow
 
 | Étape | Objectif | Commandes Hermes |

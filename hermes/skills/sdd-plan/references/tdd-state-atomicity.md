@@ -1,9 +1,10 @@
 # Atomicité de l'état TDD
 
 Toutes les commandes qui écrivent `.tdd-state.json` partagent le verrou
-`.specs/<feature-id>/.tdd-state.lock` et utilisent le script
-`scripts/tdd_state_guard.py`. Une lecture suivie d'une écriture directe ne
-constitue jamais une protection suffisante.
+`sdd-runtime/writer.lock` du **Git common dir** et utilisent le script
+`scripts/tdd_state_guard.py`. Le verrou est donc identique dans tous les
+worktrees du dépôt. Une lecture suivie d'une écriture directe ne constitue
+jamais une protection suffisante.
 
 ## Planification
 
@@ -80,6 +81,13 @@ ses liens ou ses métadonnées étendues.
 Toute future commande, notamment `/sdd-build`, `/sdd-test` ou une migration,
 doit appeler `write-state` avec le token de l'état qu'elle a lu. Elle ne doit
 jamais écrire, déplacer ou remplacer `.tdd-state.json` directement.
+
+Le schéma v2 reste additif : les lecteurs v1 retrouvent `feature_id`,
+`active_task`, `tasks`, `phase` et les preuves TDD aux mêmes emplacements. Le
+garde sait lire un état v1 et le migrer explicitement ; il ne réécrit jamais un
+état commencé de façon implicite. Le schéma v2 ajoute `mode`, le projet et le
+board Hermes, `max_workers`, `revision`, puis les identifiants et le statut de
+chaque tâche. Les tokens CAS restent hors de l'état versionné.
 
 Le verrou protège la concurrence ; le token fournit une comparaison-et-échange
 et détecte également une écriture qui n'aurait pas respecté le verrou.
