@@ -404,7 +404,7 @@ class RunPythonTestsTest(unittest.TestCase):
             self.assertEqual(1, status)
             self.assertIn("without normal framework completion", output)
 
-    def test_worker_output_is_disk_backed_and_bounded_to_64_kib(self) -> None:
+    def test_combined_worker_output_is_drained_and_bounded_to_64_kib(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))
             self.add(
@@ -414,14 +414,60 @@ class RunPythonTestsTest(unittest.TestCase):
                 "import unittest\n"
                 "class LargeOutputTest(unittest.TestCase):\n"
                 "    def test_large_output(self):\n"
-                "        os.write(1, b'x' * (8 * 1024 * 1024))\n",
+                "        os.write(1, b'stdout-marker\\n')\n"
+                "        os.write(2, b'stderr-marker\\n')\n"
+                "        for descriptor in (1, 2):\n"
+                "            for _ in range(129):\n"
+                "                os.write(descriptor, b'x' * (64 * 1024))\n",
             )
 
             status, output = self.run_runner(root)
 
             self.assertEqual(0, status, output[-2000:])
+            self.assertIn("stdout-marker", output)
+            self.assertIn("stderr-marker", output)
             self.assertIn("worker output truncated after 65536 bytes", output)
             self.assertLess(len(output), 70_000)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX process groups are required")
+    def test_noisy_worker_timeout_does_not_deadlock_log_drain(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            test_file = self.add(
+                root,
+                "hermes/test_sample.py",
+                "import unittest\n"
+                "class SampleTest(unittest.TestCase):\n"
+                "    def test_passes(self): pass\n",
+            )
+            noisy_worker = root / "noisy_worker.py"
+            noisy_worker.write_text(
+                "import os\n"
+                "import signal\n"
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                "chunk = b'x' * (64 * 1024)\n"
+                "while True:\n"
+                "    os.write(1, chunk)\n"
+                "    os.write(2, chunk)\n",
+                encoding="utf-8",
+            )
+            output = io.StringIO()
+            started = time.monotonic()
+
+            with redirect_stdout(output), redirect_stderr(output):
+                status = runner.run_tests(
+                    [test_file],
+                    root,
+                    timeout_seconds=0.1,
+                    worker=noisy_worker,
+                    worker_grace_seconds=0.2,
+                )
+
+            self.assertEqual(1, status)
+            self.assertLess(time.monotonic() - started, 2.0)
+            self.assertIn("supervisor timed out", output.getvalue())
+            self.assertIn("worker output truncated after 65536 bytes", output.getvalue())
+            self.assertLess(len(output.getvalue()), 70_000)
 
     @unittest.skipUnless(os.name == "posix", "POSIX process groups are required")
     def test_timeout_escalates_from_term_to_kill_and_reaps_child(self) -> None:
