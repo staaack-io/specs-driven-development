@@ -14,7 +14,37 @@ aucun fichier.
 - sans argument, analyser tous les sous-dossiers de `.specs/`, sauf les fichiers
   et dossiers dont le nom commence par `_`.
 
-Si `.specs/` n'existe pas, l'indiquer et recommander `/sdd-spec`.
+Si `.specs/` n'existe pas, l'indiquer et recommander `/sdd-onboard`.
+
+## État de l'onboarding
+
+Avant les fonctionnalités, vérifier en lecture seule l'ensemble global :
+
+- `_onboarding.md` ;
+- `_stack.json` ;
+- `_baseline.json` ;
+- `_starter-design.md` ;
+- `_known-debt.md`.
+
+Si l'ensemble est partiel, si un JSON est invalide ou si les deux JSON ne
+portent pas le même `git_sha`, annoncer « onboarding incomplet » et recommander
+`/sdd-onboard --continue`. Ne jamais réparer ces fichiers depuis `/sdd-status`.
+
+Si l'ensemble est complet, résumer séparément :
+
+- classification ;
+- SHA inspecté ;
+- nombre de modules ;
+- niveau de confiance ;
+- état de baseline, qui peut légitimement valoir `not-run`.
+
+Si les cinq artefacts sont absents mais que des fonctionnalités existent déjà,
+signaler « onboarding non capturé » sans masquer leur état. Recommander
+`/sdd-onboard` comme prochaine action uniquement si aucune phase de
+fonctionnalité plus urgente n'est bloquée.
+
+Lorsque l'onboarding est complet et qu'aucun dossier de fonctionnalité
+n'existe, recommander `/sdd-spec <demande ou ticket>`.
 
 ## Sources
 

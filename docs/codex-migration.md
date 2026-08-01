@@ -103,3 +103,35 @@ dépôt.
 5. Invoquer `$help`, puis effectuer un essai sans écriture avec `$status`.
 6. Tester qu'un patch `src/main/**` sans état TDD rouge est refusé.
 7. Exécuter le harness du projet consommateur avant la première fonctionnalité.
+
+## Correspondance Codex vers Hermes
+
+La migration Hermes conserve les étapes utilisateur, avec un préfixe explicite
+`/sdd-` pour ne pas les confondre avec les commandes natives :
+
+| Codex | Hermes | État |
+| --- | --- | --- |
+| `$onboard` | `/sdd-onboard` | converti |
+| `$spec` | `/sdd-spec` | converti |
+| `$spec-review` | `/sdd-spec-review` | converti |
+| `$plan` | `/sdd-plan` | converti |
+| `$status` | `/sdd-status` | converti |
+| `$help` | `/sdd-help` | converti |
+| `$wire-harness` | `/sdd-wire-harness` | feuille de route |
+| `$epic-plan` | `/sdd-epic-plan` | feuille de route |
+| `$build` | `/sdd-build` | feuille de route |
+| `$test` | `/sdd-test` | feuille de route |
+| `$validate` | `/sdd-validate` | feuille de route |
+| `$review` | `/sdd-review` | feuille de route |
+| `$ship` | `/sdd-ship` | feuille de route |
+
+Les fichiers TOML Codex ne sont pas copiés tels quels dans Hermes. Chaque rôle
+nécessaire devient une référence autonome embarquée dans le skill orchestrateur.
+Hermes transmet cette fiche à `delegate_task`. Le sous-agent spécialisé
+retourne son analyse ; il ne devient pas une commande utilisateur et ne doit pas
+écrire les artefacts partagés.
+
+Pour `/sdd-onboard`, les rôles `spring-onboarding` et
+`react-nextjs-onboarding` sont des lecteurs parallélisables. L'agent principal
+reste le seul écrivain et publie les cinq fichiers globaux avec un verrou, un
+journal, un marqueur de commit et un token de comparaison-et-échange.

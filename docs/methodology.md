@@ -15,6 +15,28 @@ Chaque phase possède :
 4. Implémenter en TDD → 5. Tester → 6. Valider → 7. Relire le code → Commit
 ```
 
+## Phase 0 — Onboarder un dépôt existant
+
+**Commande Hermes :** `/sdd-onboard`
+**Artefacts :** `.specs/_onboarding.md`, `_stack.json`, `_baseline.json`,
+`_starter-design.md`, `_known-debt.md`
+
+L'onboarding capture un snapshot statique du dépôt avant la première
+fonctionnalité :
+
+1. vérifier un worktree Git sûr et capturer son SHA ;
+2. détecter les modules, frameworks, versions et commandes depuis leurs
+   manifests ;
+3. déléguer les analyses Spring et React/Next.js en lecture seule lorsque ces
+   stacks sont prouvées ;
+4. consolider architecture, conventions, dette prouvée et inconnues ;
+5. publier les cinq artefacts dans une transaction récupérable.
+
+L'agent principal est l'unique écrivain. Aucun build, test, lint, téléchargement
+ou script du dépôt n'est exécuté ; aucun code, test, manifeste ou fichier de
+configuration n'est modifié. Le branchement et la mesure du harness appartiennent
+à `/sdd-wire-harness`.
+
 Pour une fonctionnalité volumineuse, ou Epic, la phase 3 se divise en deux
 sous-étapes :
 
