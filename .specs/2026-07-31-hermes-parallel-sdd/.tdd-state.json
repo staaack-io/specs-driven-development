@@ -56,6 +56,114 @@
         "skills/sdd-onboard/scripts/test_onboarding_guard.py",
         "skills/sdd-onboard/scripts/test_skill_contract.py"
       ]
+    },
+    "T-004": {
+      "phase": "pending",
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/runtime/github-bridge-contract.md",
+        "hermes/runtime/sdd_github_bridge.py",
+        "hermes/runtime/test_sdd_github_bridge.py"
+      ]
+    },
+    "T-005": {
+      "phase": "pending",
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/skills/sdd-status/SKILL.md",
+        "hermes/skills/sdd-status/references/kanban-state-contract.md",
+        "hermes/skills/sdd-status/scripts/status_guard.py",
+        "hermes/skills/sdd-status/scripts/test_status_guard.py"
+      ]
+    },
+    "T-006": {
+      "phase": "pending",
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/scripts/check_profile_parity.py",
+        "hermes/scripts/test_check_profile_parity.py",
+        "hermes/scripts/test_sdd_runtime_profile_contract.py",
+        "hermes/skills/sdd-plan/scripts/tdd_state_guard.py",
+        "hermes/skills/sdd-plan/scripts/test_tdd_state_guard.py"
+      ]
+    },
+    "T-007": {
+      "phase": "pending",
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/scripts/test_sdd_s002_contract.py",
+        "hermes/skills/sdd-help/SKILL.md",
+        "hermes/README.md",
+        "docs/artifact-contract.md",
+        "docs/codex-migration.md"
+      ]
+    },
+    "T-008": {
+      "phase": "pending",
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/runtime/README.md",
+        "hermes/runtime/__init__.py",
+        "hermes/runtime/github-bridge-contract.md",
+        "hermes/runtime/sdd_github_bridge.py",
+        "hermes/runtime/sdd_runtime_guard.py",
+        "hermes/runtime/test_sdd_github_bridge.py",
+        "hermes/runtime/test_sdd_runtime_guard.py",
+        "skills/sdd-help/SKILL.md",
+        "skills/sdd-plan/SKILL.md",
+        "skills/sdd-plan/references/tdd-state-atomicity.md",
+        "skills/sdd-plan/scripts/tdd_state_guard.py",
+        "skills/sdd-plan/scripts/test_tdd_state_guard.py",
+        "skills/sdd-plan/templates/tdd-state.template.json",
+        "skills/sdd-status/SKILL.md",
+        "skills/sdd-status/references/kanban-state-contract.md",
+        "skills/sdd-status/scripts/status_guard.py",
+        "skills/sdd-status/scripts/test_status_guard.py",
+        "skills/sdd-epic-plan/SKILL.md",
+        "skills/sdd-epic-plan/references/delegation-contract.md",
+        "skills/sdd-epic-plan/references/epic-contract.md",
+        "skills/sdd-epic-plan/references/role-react-nextjs-architect.md",
+        "skills/sdd-epic-plan/references/role-spring-architect.md",
+        "skills/sdd-epic-plan/references/stack-evidence.md",
+        "skills/sdd-epic-plan/references/transaction-atomicity.md",
+        "skills/sdd-epic-plan/scripts/epic_plan_guard.py",
+        "skills/sdd-epic-plan/scripts/fixtures/valid-epic/01-spec.md",
+        "skills/sdd-epic-plan/scripts/fixtures/valid-epic/03-epic-design.candidate.md",
+        "skills/sdd-epic-plan/scripts/fixtures/valid-epic/03a-epic-roadmap.candidate.md",
+        "skills/sdd-epic-plan/scripts/test_epic_plan_guard.py",
+        "skills/sdd-epic-plan/scripts/test_skill_contract.py",
+        "skills/sdd-epic-plan/templates/epic-design.template.md",
+        "skills/sdd-epic-plan/templates/epic-roadmap.template.md",
+        "skills/sdd-wire-harness/SKILL.md",
+        "skills/sdd-wire-harness/references/plan-contract.md",
+        "skills/sdd-wire-harness/references/role-harness-integrator.md",
+        "skills/sdd-wire-harness/references/transaction-safety.md",
+        "skills/sdd-wire-harness/scripts/harness_guard.py",
+        "skills/sdd-wire-harness/scripts/test_harness_guard.py",
+        "scripts/run_skill_tests.py",
+        "scripts/test_run_skill_tests.py",
+        "scripts/validate_distribution.py",
+        "scripts/test_validate_distribution.py",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/workflows/ci.yml"
+      ]
     }
   }
 }
