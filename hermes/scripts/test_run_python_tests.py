@@ -167,6 +167,29 @@ class RunPythonTestsTest(unittest.TestCase):
             self.assertEqual(1, status)
             self.assertIn("executed no non-skipped unittest cases", output)
 
+    def test_set_up_class_skip_does_not_hide_another_executed_test(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self.repository(Path(temporary))
+            self.add(
+                root,
+                "hermes/test_class_skip.py",
+                "import unittest\n"
+                "class SkippedInSetupTest(unittest.TestCase):\n"
+                "    @classmethod\n"
+                "    def setUpClass(cls): raise unittest.SkipTest('unavailable')\n"
+                "    def test_never_started(self): self.fail('must not run')\n"
+                "class PassingTest(unittest.TestCase):\n"
+                "    def test_passes(self): self.assertTrue(True)\n",
+            )
+
+            status, output = self.run_runner(root)
+
+            self.assertEqual(0, status, output)
+            self.assertIn(
+                "All 1 Hermes test cases executed (1 skipped; 2 discovered)",
+                output,
+            )
+
     def test_symbolic_test_link_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = self.repository(Path(temporary))
