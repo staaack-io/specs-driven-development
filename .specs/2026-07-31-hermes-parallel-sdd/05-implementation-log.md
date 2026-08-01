@@ -221,3 +221,85 @@
 - État final : `T-003 = done`, `active_task = null`.
 
 ---
+
+## T-005 — Afficher la carte task-local dans `/sdd-status`
+
+### T-005 · red · 2026-08-01T23:11:33Z
+
+- Test ajouté : `hermes/skills/sdd-status/scripts/test_status_guard.py::StatusGuardTest::test_v2_task_local_view_exposes_all_proven_fields` (`T-005-T1`, `AC-243` à `AC-249`).
+- Commande ciblée :
+  `PYTHONDONTWRITEBYTECODE=1 python3 hermes/skills/sdd-status/scripts/test_status_guard.py StatusGuardTest.test_v2_task_local_view_exposes_all_proven_fields`.
+- Durée : **0,07 s** (`real`; test : `0.000s`).
+- Résultat : **échec attendu** — la vue task-local et son garde de rendu
+  n'existent pas encore ; le test demande les sept champs prouvés sans les
+  déduire.
+- Extrait :
+
+  ```text
+  FAIL: test_v2_task_local_view_exposes_all_proven_fields
+  T-005-T1 / AC-243, AC-244, AC-245, AC-246, AC-247, AC-248, AC-249.
+  Traceback (most recent call last):
+    File "hermes/skills/sdd-status/scripts/test_status_guard.py", line 23
+      self.fail(
+  AssertionError: T-005-T1: task-local status view is absent because
+  status_guard.py does not exist
+  Ran 1 test in 0.000s
+  FAILED (failures=1)
+  real 0.07
+  ```
+
+- État : `T-005 = red`, `active_task = T-005`. Aucun fichier de production,
+  skill ou référence Markdown n'a été modifié.
+
+---
+
+### T-005 · green · 2026-08-01T23:19:52Z
+
+- Production minimale : `task_local_rows` recopie les sept champs prouvés de
+  chaque tâche v2 et utilise `—` lorsqu'ils sont absents. La lecture JSON
+  dédiée n'écrit aucun fichier.
+- Triangulation ajoutée sans affaiblir T-005-T1 :
+  - T-005-T2 : état v2 complet et ordre déterministe ;
+  - T-005-T3 : compatibilité v1 avec sept valeurs `—` ;
+  - T-005-T4 : empreinte du dépôt identique avant et après lecture ;
+  - T-005-T5 : `next_action` est recopiée si prouvée et jamais déduite.
+- Commande RED puis GREEN ciblée :
+  `PYTHONDONTWRITEBYTECODE=1 python3 hermes/skills/sdd-status/scripts/test_status_guard.py StatusGuardTest.test_v2_task_local_view_exposes_all_proven_fields`.
+- Résultat ciblé : **1/1 test vert**, **0,063 s**.
+- Commande de suite du skill :
+  `PYTHONDONTWRITEBYTECODE=1 python3 hermes/skills/sdd-status/scripts/test_status_guard.py`.
+- Résultat du skill : **5/5 tests verts**, **0,121 s**.
+- Commande de contrat distribué :
+  `.venv-ci/bin/python hermes/scripts/validate_skills.py hermes/skills`.
+- Résultat du contrat : **8/8 skills valides**, **0,256 s**.
+- Régression Hermes lancée une fois avec
+  `PYTHONDONTWRITEBYTECODE=1 python3 hermes/scripts/run_python_tests.py` : la
+  capture prouve **14/14 e2e**, **31/31 runtime** et **3/3 parité** verts avant
+  de s'interrompre à l'en-tête du fichier suivant, sans résumé global. Aucun
+  échec fonctionnel n'est affiché et la gate n'a pas été relancée inchangée.
+- État intermédiaire : `T-005 = green`.
+
+### T-005 · refactor · 2026-08-01T23:20:10Z
+
+- Relecture structurelle : la production conserve deux fonctions publiques
+  consommées par la frontière status, sans interface, option ni helper à
+  appelant unique supplémentaire. Aucun changement de comportement retenu.
+- Commande :
+  `PYTHONDONTWRITEBYTECODE=1 python3 hermes/skills/sdd-status/scripts/test_status_guard.py`.
+- Résultat : **5/5 tests verts**, **0,084 s**.
+
+### T-005 · simplify · 2026-08-01T23:20:36Z
+
+- `clarity-over-cleverness` : la compréhension imbriquée a été remplacée par
+  une boucle explicite sur les sept champs métier ; les assertions longues ont
+  été mises en forme sans changer leur comportement.
+- Le skill et sa référence nomment explicitement l'ordre des champs, la lecture
+  v1/v2, la valeur `—`, l'absence de déduction et l'interdiction d'écriture.
+- Commande :
+  `PYTHONDONTWRITEBYTECODE=1 python3 hermes/skills/sdd-status/scripts/test_status_guard.py`.
+- Résultat : **5/5 tests verts**, **0,077 s**.
+- Couverture : `python3 -m trace --count --summary --module unittest discover`
+  exécute **5/5 tests** et couvre **21/21 lignes de production (100 %)**.
+- État final : `T-005 = done`, `active_task = null`.
+
+---
