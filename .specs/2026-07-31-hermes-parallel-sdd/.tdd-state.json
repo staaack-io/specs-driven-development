@@ -97,11 +97,11 @@
       ]
     },
     "T-007": {
-      "phase": "pending",
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "phase": "done",
+      "red_at": "2026-08-02T12:42:36Z",
+      "red_test_signature": "hermes.scripts.test_sdd_s002_contract.SddS002ContractTest.test_help_and_documentation_publish_converted_s002_commands",
+      "red_failure_excerpt": "AssertionError: 'converti' != 'feuille de route'; /sdd-epic-plan must be marked converted in docs/codex-migration.md; Ran 1 test in 0.001s; FAILED (failures=1)",
+      "green_at": "2026-08-02T12:50:49Z",
       "files_in_scope": [
         "hermes/scripts/test_sdd_s002_contract.py",
         "hermes/skills/sdd-help/SKILL.md",

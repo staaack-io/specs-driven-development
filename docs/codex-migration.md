@@ -123,8 +123,8 @@ La migration Hermes conserve les étapes utilisateur, avec un préfixe explicite
 | `$plan` | `/sdd-plan` | converti |
 | `$status` | `/sdd-status` | converti |
 | `$help` | `/sdd-help` | converti |
-| `$wire-harness` | `/sdd-wire-harness` | feuille de route |
-| `$epic-plan` | `/sdd-epic-plan` | feuille de route |
+| `$wire-harness` | `/sdd-wire-harness` | converti |
+| `$epic-plan` | `/sdd-epic-plan` | converti |
 | `$build` | `/sdd-build` | feuille de route |
 | `$test` | `/sdd-test` | feuille de route |
 | `$validate` | `/sdd-validate` | feuille de route |

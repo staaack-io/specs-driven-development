@@ -21,8 +21,10 @@ Les commandes actuellement disponibles sont :
 | Méta | `/sdd-help [commande]` | Afficher cette aide ou le détail d'une commande. |
 | Méta | `/sdd-status [feature-id]` | Résumer l'état du workflow sans écrire. |
 | 0 | `/sdd-onboard` | Analyser un projet existant sans modifier le produit. |
+| 0 | `/sdd-wire-harness` | Brancher le harness de validation. |
 | 1 | `/sdd-spec <demande ou ticket>` | Créer une spécification EARS-lite. |
 | 2 | `/sdd-spec-review [feature-id]` | Relire et approuver la spécification. |
+| 3a, Epic uniquement | `/sdd-epic-plan` | Concevoir l'Epic et sa roadmap. |
 | 3 | `/sdd-plan <feature-id>` | Concevoir et découper en tâches. |
 
 Signaler séparément que les commandes suivantes font partie de la feuille de
@@ -30,14 +32,15 @@ route et ne doivent pas être présentées comme installées avant leur conversi
 
 | Étape | Commande prévue | Rôle |
 | --- | --- | --- |
-| 0 | `/sdd-wire-harness` | Brancher le harness de validation. |
-| 3a, Epic uniquement | `/sdd-epic-plan` | Concevoir l'Epic et sa roadmap. |
 | 4 | `/sdd-build <T-NNN>` | Implémenter une tâche en TDD. |
 | 4 | `/sdd-code-simplify` | Simplifier après le passage au vert. |
 | 5 | `/sdd-test` | Ajouter les tests transverses. |
 | 6 | `/sdd-validate` | Exécuter le harness et la traçabilité. |
 | 7 | `/sdd-review` | Relire le code avant commit. |
 | 8, facultative | `/sdd-ship` | Préparer la livraison sans déployer. |
+
+Les rôles restent des références internes embarquées dans les skills. Le nom
+interne `sdd-roles` n'est pas une commande publique `/sdd-roles`.
 
 ## Avec un argument
 
