@@ -409,3 +409,105 @@
 - État final : `T-005 = done`, `active_task = null`.
 
 ---
+
+## T-006 — Rendre le runtime partagé portable dans le profil
+
+### T-006 · red · 2026-08-02T00:16:53Z
+
+- Test ajouté :
+  `hermes.scripts.test_sdd_runtime_profile_contract.SddRuntimeProfileContractTest.test_distributed_plan_guard_loads_shared_runtime`
+  (`T-006-T1`, `AC-048`, `AC-101`, `AC-276` à `AC-280`). La fixture copie
+  le skill sous `profile/skills/sdd-plan` et le runtime partagé sous
+  `profile/hermes/runtime`, puis exécute réellement le garde distribué.
+- Commande ciblée :
+  `/usr/bin/time -p env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest hermes.scripts.test_sdd_runtime_profile_contract.SddRuntimeProfileContractTest.test_distributed_plan_guard_loads_shared_runtime`.
+- Résultat : **échec attendu** — le runtime est présent dans le profil, mais
+  le calcul `Path(__file__).resolve().parents[4]` place le parent du profil
+  dans `sys.path`; le garde ne peut donc pas importer `hermes.runtime`.
+- Extrait expurgé :
+
+  ```text
+  FAIL: test_distributed_plan_guard_loads_shared_runtime
+  T-006-T1 / AC-048, AC-101, AC-276-AC-280: profile import works.
+  Traceback (most recent call last):
+    File "<worktree>/hermes/scripts/test_sdd_runtime_profile_contract.py", line 47
+      self.assertEqual(
+  AssertionError: 0 != 1 : Traceback (most recent call last):
+    File "<temporary>/profile/skills/sdd-plan/scripts/tdd_state_guard.py", line 24
+      from hermes.runtime.sdd_runtime_guard import (
+  ModuleNotFoundError: No module named 'hermes'
+  Ran 1 test in 0.110s
+  FAILED (failures=1)
+  ```
+
+- Durée rapportée par `/usr/bin/time` : `real 0.22`, `user 0.11`,
+  `sys 0.05`.
+- État : `T-006 = red`, `active_task = T-006`. Aucun fichier de production
+  ni test existant n’a été modifié.
+
+---
+
+### T-006 · green · 2026-08-02T00:24:06Z
+
+- Production minimale : `tdd_state_guard.py` reconnaît uniquement les layouts
+  distribués source (`<root>/hermes/skills/...`) et profil
+  (`<root>/skills/...`), puis charge le runtime partagé sous
+  `<root>/hermes/runtime` sans le copier dans le skill.
+- Isolation : la racine, `hermes`, `runtime` et le module doivent être réels,
+  réguliers, non symboliques et résolus sous la racine choisie. Un runtime
+  disponible uniquement dans le parent extérieur est refusé sans repli.
+- Parité : `check_profile_parity.py` conserve son argument et ses codes de
+  sortie, compare les skills puis `hermes/runtime`, et distingue les fichiers
+  runtime manquants, inattendus et différents.
+- Triangulation ajoutée : T-006-T2 couvre les deux layouts, T-006-T3 les trois
+  formes de dérive runtime, T-006-T4 les régressions v1/v2, secrets, chemins
+  relatifs et rollback, T-006-T5 les racines/runtime symboliques ou extérieurs.
+- Commandes et résultats :
+  - contrat profil : **4/4 verts**, `real 22,53 s` ;
+  - parité : **4/4 verts**, `real 0,10 s` ;
+  - plan : **17/17 verts**, `real 3,09 s` ;
+  - runtime : **31/31 verts**, `real 18,58 s`.
+- État intermédiaire : `T-006 = green`, `active_task = T-006`.
+
+### T-006 · refactor · 2026-08-02T00:27:08Z
+
+- La détection du layout et la validation du runtime ont été séparées en deux
+  responsabilités nommées ; les chemins `hermes` et `runtime` ne sont calculés
+  qu'une fois.
+- Le test de régression distribué utilise un seul helper d'exécution consommé
+  par les suites plan et runtime, sans changer leurs assertions.
+- Commandes après refactor : contrat profil **4/4 vert** (`real 22,55 s`),
+  parité **4/4 verte** (`real 0,10 s`) et plan **17/17 vert**
+  (`real 3,11 s`).
+- État intermédiaire : `T-006 = refactor`, `active_task = T-006`.
+
+### T-006 · simplify · 2026-08-02T00:36:12Z
+
+- Passe `clarity-over-cleverness` : la sélection du layout utilise un retour
+  anticipé, les chemins métier et diagnostics répétés sont nommés, et les deux
+  exécutions de suites distribuées partagent un helper avec deux consommateurs
+  réels. Aucun fallback ascendant, option morte ou copie du runtime n'existe.
+- Régression finale ciblée : plan **18/18 vert** (`real 2,41 s`), parité
+  **5/5 verte** (`real 0,31 s`), contrat profil **4/4 vert**
+  (`real 18,62 s`) et runtime **31/31 vert** (`real 18,58 s`).
+- La mesure stdlib `trace` atteint **92,8 %** sur le fichier de parité complet
+  et **51,4 %** sur le garde plan complet historique. Ces pourcentages de
+  fichiers ne représentent pas la couverture T-006 parce que les frontières
+  profil et CLI s'exécutent dans des subprocess non agrégés par `trace`.
+  L'inspection des lignes ajoutées et T-006-T1 à T-006-T5 couvre toutes les
+  branches atteignables ; seule la défense contre une substitution de chemin
+  entre `is_symlink` et `resolve` est volontairement non provoquée.
+- Gate Hermes complète locale : deux exécutions distinctes, Python 3.14 puis
+  Python 3.11 (version CI), découvrent **17 fichiers** et prouvent avant
+  l'interruption du superviseur macOS : **14/14 e2e**, **8/8 bridge**,
+  **31/31 runtime**, **5/5 parité**. Les deux s'arrêtent à l'en-tête de
+  `test_run_python_tests.py`, sans échec ni résumé global ; la CI Linux reste
+  la preuve autoritative et cette limite locale n'est pas présentée comme une
+  réussite complète.
+- Validation complémentaire : **8 skills Hermes valides** en `0,25 s`, JSON
+  valide, `git diff --check` vert, aucun secret ni chemin local ajouté. Les
+  deux chemins absolus détectés dans le journal sont des preuves historiques
+  antérieures à T-006.
+- État final : `T-006 = done`, `active_task = null`.
+
+---
