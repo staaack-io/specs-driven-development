@@ -83,11 +83,11 @@
       ]
     },
     "T-006": {
-      "phase": "pending",
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "phase": "done",
+      "red_at": "2026-08-02T00:16:53Z",
+      "red_test_signature": "hermes.scripts.test_sdd_runtime_profile_contract.SddRuntimeProfileContractTest.test_distributed_plan_guard_loads_shared_runtime",
+      "red_failure_excerpt": "ModuleNotFoundError: No module named 'hermes'; the distributed guard cannot load profile/hermes/runtime; Ran 1 test in 0.110s; FAILED (failures=1)",
+      "green_at": "2026-08-02T00:24:06Z",
       "files_in_scope": [
         "hermes/scripts/check_profile_parity.py",
         "hermes/scripts/test_check_profile_parity.py",

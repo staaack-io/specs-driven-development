@@ -36,6 +36,28 @@ def compare_directories(source: Path, published: Path) -> list[str]:
     return differences
 
 
+def compare_profile_trees(source_root: Path, profile_root: Path) -> list[str]:
+    """Compare the canonical skills and shared runtime with a profile checkout."""
+    source_skills = source_root / "skills"
+    profile_skills = profile_root / "skills"
+    differences = compare_directories(source_skills, profile_skills)
+
+    source_runtime = source_root / "runtime"
+    profile_runtime = profile_root / "hermes" / "runtime"
+    if not profile_runtime.is_dir():
+        differences.extend(
+            f"runtime: missing from profile: {relative_path}"
+            for relative_path in sorted(files_below(source_runtime))
+        )
+        return differences
+
+    differences.extend(
+        f"runtime: {difference}"
+        for difference in compare_directories(source_runtime, profile_runtime)
+    )
+    return differences
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Compare canonical Hermes skills with a profile checkout."
@@ -50,10 +72,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    source = Path(__file__).resolve().parents[1] / "skills"
-    published = args.profile_root.resolve() / "skills"
+    source_root = Path(__file__).resolve().parents[1]
+    profile_root = args.profile_root.resolve()
     try:
-        differences = compare_directories(source, published)
+        differences = compare_profile_trees(source_root, profile_root)
     except ValueError as error:
         print(error)
         return 2
@@ -64,7 +86,12 @@ def main() -> int:
             print(f"- {difference}")
         return 1
 
-    print(f"Hermes skill trees are identical ({len(files_below(source))} files).")
+    skill_count = len(files_below(source_root / "skills"))
+    runtime_count = len(files_below(source_root / "runtime"))
+    print(
+        "Hermes skill and runtime trees are identical "
+        f"({skill_count} skill files, {runtime_count} runtime files)."
+    )
     return 0
 
 

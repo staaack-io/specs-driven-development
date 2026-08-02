@@ -91,6 +91,67 @@ class GuardTest(unittest.TestCase):
         self.assertEqual(expected, result.returncode, result.stderr or result.stdout)
         return json.loads(result.stdout)
 
+    def test_distributed_runtime_root_is_limited_to_exact_layouts(self) -> None:
+        """T-006-T2/T5: source/profile roots work and parent fallback is refused."""
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture_root = Path(temporary)
+            profile_root = fixture_root / "profile"
+            profile_guard = profile_root / GUARD.PROFILE_GUARD_PATH
+            profile_runtime = profile_root / GUARD.RUNTIME_MODULE_PATH
+            profile_guard.parent.mkdir(parents=True)
+            profile_runtime.parent.mkdir(parents=True)
+            profile_guard.write_text("# guard\n", encoding="utf-8")
+            profile_runtime.write_text("# runtime\n", encoding="utf-8")
+            self.assertEqual(
+                profile_root.resolve(),
+                GUARD.distributed_root(profile_guard),
+            )
+
+            source_root = fixture_root / "source"
+            source_guard = source_root / GUARD.SOURCE_GUARD_PATH
+            source_runtime = source_root / GUARD.RUNTIME_MODULE_PATH
+            source_guard.parent.mkdir(parents=True)
+            source_runtime.parent.mkdir(parents=True)
+            source_guard.write_text("# guard\n", encoding="utf-8")
+            source_runtime.write_text("# runtime\n", encoding="utf-8")
+            self.assertEqual(
+                source_root.resolve(),
+                GUARD.distributed_root(source_guard),
+            )
+
+            outside_profile = fixture_root / "outside" / "profile"
+            outside_guard = outside_profile / GUARD.PROFILE_GUARD_PATH
+            outside_runtime = fixture_root / "outside" / GUARD.RUNTIME_MODULE_PATH
+            outside_guard.parent.mkdir(parents=True)
+            outside_runtime.parent.mkdir(parents=True)
+            outside_guard.write_text("# guard\n", encoding="utf-8")
+            outside_runtime.write_text("# runtime\n", encoding="utf-8")
+            with self.assertRaisesRegex(
+                GUARD.RuntimeResolutionError,
+                "runtime module is missing from root",
+            ):
+                GUARD.distributed_root(outside_guard)
+
+            shallow_guard = Path("/x")
+            with self.assertRaisesRegex(
+                GUARD.RuntimeResolutionError,
+                "unsupported distributed skill layout",
+            ):
+                GUARD.distributed_root(shallow_guard)
+
+            unsafe_root = fixture_root / "unsafe"
+            unsafe_guard = unsafe_root / GUARD.PROFILE_GUARD_PATH
+            unsafe_runtime = unsafe_root / "hermes" / "runtime"
+            unsafe_guard.parent.mkdir(parents=True)
+            unsafe_runtime.parent.mkdir(parents=True)
+            unsafe_guard.write_text("# guard\n", encoding="utf-8")
+            unsafe_runtime.symlink_to(source_runtime.parent, target_is_directory=True)
+            with self.assertRaisesRegex(
+                GUARD.RuntimeResolutionError,
+                "runtime path must not be symbolic",
+            ):
+                GUARD.distributed_root(unsafe_guard)
+
     def test_commit_plan_from_absent_state(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             feature = Path(temporary) / "feature-one"

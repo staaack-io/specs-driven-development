@@ -17,7 +17,64 @@ import sys
 import tempfile
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+RUNTIME_MODULE_PATH = Path("hermes/runtime/sdd_runtime_guard.py")
+SOURCE_GUARD_PATH = Path("hermes/skills/sdd-plan/scripts/tdd_state_guard.py")
+PROFILE_GUARD_PATH = Path("skills/sdd-plan/scripts/tdd_state_guard.py")
+SUPPORTED_GUARD_PATHS = (SOURCE_GUARD_PATH, PROFILE_GUARD_PATH)
+
+
+class RuntimeResolutionError(RuntimeError):
+    pass
+
+
+def root_for_supported_layout(absolute_script: Path) -> Path:
+    for guard_path in SUPPORTED_GUARD_PATHS:
+        root_index = len(guard_path.parts) - 1
+        if len(absolute_script.parents) <= root_index:
+            continue
+        possible_root = absolute_script.parents[root_index]
+        if possible_root / guard_path == absolute_script:
+            return possible_root
+    raise RuntimeResolutionError(
+        f"unsupported distributed skill layout: {absolute_script}"
+    )
+
+
+def distributed_root(script_path: Path) -> Path:
+    """Find the trusted root shared by the skill and the Hermes runtime."""
+    candidate_root = root_for_supported_layout(script_path.absolute())
+
+    hermes_root = candidate_root / "hermes"
+    runtime_root = hermes_root / "runtime"
+    runtime_module = candidate_root / RUNTIME_MODULE_PATH
+    protected_paths = (
+        candidate_root,
+        hermes_root,
+        runtime_root,
+        runtime_module,
+    )
+    symbolic_path = next((path for path in protected_paths if path.is_symlink()), None)
+    if symbolic_path is not None:
+        raise RuntimeResolutionError(
+            f"distributed runtime path must not be symbolic: {symbolic_path}"
+        )
+    if not runtime_module.is_file():
+        raise RuntimeResolutionError(
+            f"distributed runtime module is missing from root: {candidate_root}"
+        )
+
+    resolved_root = candidate_root.resolve(strict=True)
+    resolved_runtime = runtime_module.resolve(strict=True)
+    try:
+        resolved_runtime.relative_to(resolved_root)
+    except ValueError as error:
+        raise RuntimeResolutionError(
+            "distributed runtime module escapes its profile root"
+        ) from error
+    return resolved_root
+
+
+REPOSITORY_ROOT = distributed_root(Path(__file__))
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
