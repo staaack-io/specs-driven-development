@@ -511,3 +511,107 @@
 - État final : `T-006 = done`, `active_task = null`.
 
 ---
+
+## T-007 — Consolider la source et auditer les 84 AC S-002
+
+### T-007 · red · 2026-08-02T12:42:36Z
+
+- Test ajouté :
+  `hermes.scripts.test_sdd_s002_contract.SddS002ContractTest.test_help_and_documentation_publish_converted_s002_commands`
+  (`T-007-T3`, `AC-011`, `AC-012`, `AC-025`). Le test parse directement les
+  tables Markdown de l'aide et de la documentation source ; aucune fixture ni
+  copie temporaire ne remplace les fichiers suivis.
+- Commande ciblée :
+  `/usr/bin/time -p env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest hermes.scripts.test_sdd_s002_contract.SddS002ContractTest.test_help_and_documentation_publish_converted_s002_commands`.
+- Résultat : **échec attendu** — `/sdd-epic-plan` est encore classée
+  `feuille de route` dans `docs/codex-migration.md`, au lieu de `converti`.
+- Extrait (10 lignes) :
+
+  ```text
+  FAIL: test_help_and_documentation_publish_converted_s002_commands
+  T-007-T3 / AC-011, AC-012, AC-025: commands are public.
+  Traceback (most recent call last):
+    File "hermes/scripts/test_sdd_s002_contract.py", line 67, in test_help_and_documentation_publish_converted_s002_commands
+      self.assertEqual(
+  AssertionError: 'converti' != 'feuille de route'
+  - converti
+  + feuille de route
+   : /sdd-epic-plan must be marked converted in docs/codex-migration.md
+  FAILED (failures=1)
+  ```
+
+- Durée rapportée par `/usr/bin/time` : `real 0.07`, `user 0.04`,
+  `sys 0.01`.
+- État : `T-007 = red`, `active_task = T-007`. Aucun des quatre fichiers
+  d'aide ou de documentation en scope n'a été modifié.
+
+---
+
+### T-007 · green · 2026-08-02T12:50:49Z
+
+- Le RED T-007-T3 a été rejoué avant toute modification : **1/1 en échec**
+  pour la raison consignée (`/sdd-epic-plan` encore en `feuille de route`).
+- Production documentaire minimale : `/sdd-epic-plan` et
+  `/sdd-wire-harness` passent dans la table des commandes disponibles de
+  l'aide, la liste canonique du README et l'état `converti` de la migration.
+  `sdd-roles` reste une bibliothèque interne et aucune commande publique
+  `/sdd-roles` n'est ajoutée.
+- T-007-T1 parse indépendamment la tâche T-007 et la ligne S-002 de la roadmap,
+  puis les compare à 30 groupes de preuves structurées couvrant exactement
+  **84/84 AC**. AC-123 est la seule preuve `pending-external`, explicitement
+  liée à T-008 ; elle n'est pas déclarée satisfaite.
+- T-007-T2 à T-007-T6 vérifient les commits, fichiers, symboles et tests réels
+  des baselines #61/#57/#59, les contrats bridge/status et leurs scopes
+  disjoints, les limites 2 writers/3 analyses/1 gate et les constructions
+  runtime interdites par analyse AST ciblée.
+- Commande ciblée T-007-T3 :
+  `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest hermes.scripts.test_sdd_s002_contract.SddS002ContractTest.test_help_and_documentation_publish_converted_s002_commands`
+  — **1/1 vert** en 0,001 s.
+- Suite source S-002 :
+  `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -v hermes.scripts.test_sdd_s002_contract`
+  — **6/6 verts** en 0,291 s.
+- État intermédiaire : `T-007 = green`, `active_task = T-007`.
+
+---
+
+### T-007 · refactor · 2026-08-02T12:55:32Z
+
+- Refactorisation sans changement de comportement : les helpers génériques
+  `read` et `python_symbols` deviennent `read_repository_file` et
+  `declared_python_symbols`; l'expansion des plages AC porte désormais un nom
+  explicite. La cartographie, les assertions et les surfaces publiques restent
+  inchangées.
+- La preuve des baselines ne dépend plus de l'historique Git disponible : les
+  SHA contractuels versionnés sont recoupés avec les vrais fichiers, symboles
+  et méthodes de test. Le test reste déterministe dans le checkout CI shallow.
+- Commande :
+  `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -v hermes.scripts.test_sdd_s002_contract`
+  — **6/6 verts** en 0,203 s.
+- État intermédiaire : `T-007 = refactor`, `active_task = T-007`.
+
+---
+
+### T-007 · simplify · 2026-08-02T12:59:46Z
+
+- Passe `clarity-over-cleverness` : les 30 groupes de preuve utilisent un
+  constructeur `evidence` nommé, les plages AC restent explicites et aucun
+  helper spéculatif, option morte ou comportement implicite n'est ajouté.
+- Régression finale T-007 : **6/6 verts** en 0,197 s. Validation structurée :
+  **8/8 skills Hermes valides**, JSON valide et `git diff --check` vert.
+- Markdownlint local n'a produit aucun verdict : `npx` a échoué avec
+  `ENOTFOUND registry.npmjs.org`. La porte Markdown CI reste autoritative ;
+  aucun succès local n'est revendiqué.
+- Porte Hermes complète lancée une seule fois effectivement hors sandbox après
+  un premier arrêt pré-test (`ps` interdit). Elle a découvert 18 fichiers et
+  exécuté 9 fichiers : **112 tests recensés, 108 réussis et 4 ignorés**. Les
+  suites E2E 14/14, bridge 8/8, runtime 31/31, parité 5/5, superviseur 37/37
+  (4 ignorés), contrats profil 1/1 et 4/4, S-002 6/6 et docs 6/6 sont vertes.
+  Le chargement du 10e fichier s'est arrêté avant test avec
+  `ModuleNotFoundError: markdown_it`; la dépendance épinglée de CI n'est pas
+  installée globalement dans ce worktree. La porte locale n'est donc pas
+  déclarée verte et n'est pas relancée inchangée.
+- État final : `T-007 = done`, `active_task = null`. AC-123 reste
+  `pending-external` vers T-008. `04-tasks.md` n'est pas modifié car il est hors
+  du scope T-007 confié à ce writer.
+
+---

@@ -133,6 +133,18 @@ Une nouvelle modification de `src/main/**` n’est autorisée que si la phase de
 la tâche active vaut `red`, que `red_at` est renseigné et que
 `red_failure_excerpt` n’est pas vide.
 
+## Contrat de capacité Hermes
+
+Les limites VPS sont des invariants de la source, indépendants du nombre de
+tâches prêtes. Les analyses sont strictement en lecture seule et les gates
+lourdes sont exécutées séquentiellement.
+
+| Ressource | Maximum | Champ de contrat |
+| --- | ---: | --- |
+| `max_writers` | 2 | Leases d'écriture actifs |
+| `max_read_only_analyses` | 3 | Délégations d'analyse simultanées |
+| `max_heavy_gates` | 1 | Gate Maven, Next, PIT ou OWASP active |
+
 ## Écrivains parallèles et fan-in
 
 Chaque worker possède un worktree, un lease de fichiers et un journal propre

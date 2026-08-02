@@ -11,6 +11,8 @@ Les skills suivants sont prêts à être copiés dans la distribution
 
 - `sdd-onboard` — inspection statique, délégation en lecture seule et
   publication transactionnelle des cinq artefacts globaux ;
+- `sdd-wire-harness` — détection et câblage transactionnel du harness ;
+- `sdd-epic-plan` — conception globale et roadmap d'une Epic ;
 - `sdd-help` — aide en lecture seule ;
 - `sdd-status` — état des fonctionnalités en lecture seule ;
 - `sdd-spec` — création guidée de `01-spec.md` ;
@@ -32,7 +34,8 @@ d'écriture doivent appeler ce socle ; ils ne réimplémentent pas ces invariant
 
 | Étape | Objectif | Commandes Hermes |
 | --- | --- | --- |
-| 0 | Intégrer un projet existant | `/sdd-onboard`, `/sdd-wire-harness` |
+| 0 | Intégrer un projet existant | `/sdd-onboard` |
+| 0 | Brancher le harness | `/sdd-wire-harness` |
 | 1 | Spécifier | `/sdd-spec` |
 | 2 | Relire la spécification | `/sdd-spec-review` |
 | 3a | Concevoir une Epic, si nécessaire | `/sdd-epic-plan` |
