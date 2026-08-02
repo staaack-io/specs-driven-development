@@ -325,6 +325,7 @@
 - État final : `T-004 = done`, `active_task = null`. La mise à jour du statut
   partagé dans `04-tasks.md` reste au synthesizer de fan-in ; ce writer ne sort
   pas du scope autorisé.
+
 ---
 
 ## T-005 — Afficher la carte task-local dans `/sdd-status`
@@ -406,4 +407,5 @@
 - Couverture : `python3 -m trace --count --summary --module unittest discover`
   exécute **5/5 tests** et couvre **21/21 lignes de production (100 %)**.
 - État final : `T-005 = done`, `active_task = null`.
+
 ---
