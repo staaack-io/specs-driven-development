@@ -70,11 +70,11 @@
       ]
     },
     "T-005": {
-      "phase": "pending",
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "phase": "done",
+      "red_at": "2026-08-01T23:11:33Z",
+      "red_test_signature": "hermes/skills/sdd-status/scripts/test_status_guard.py::StatusGuardTest::test_v2_task_local_view_exposes_all_proven_fields",
+      "red_failure_excerpt": "AssertionError: T-005-T1: task-local status view is absent because status_guard.py does not exist; Ran 1 test in 0.000s; FAILED (failures=1)",
+      "green_at": "2026-08-01T23:19:52Z",
       "files_in_scope": [
         "hermes/skills/sdd-status/SKILL.md",
         "hermes/skills/sdd-status/references/kanban-state-contract.md",
