@@ -55,8 +55,31 @@ Pour chaque fonctionnalité, lire si présents :
 - `.tdd-state.json` ;
 - `target/harness-summary.json` à la racine du projet.
 
+Pour un état contenant des tâches, appliquer
+`references/kanban-state-contract.md` et utiliser
+`scripts/status_guard.py` pour construire la vue task-local.
+
 Une donnée absente vaut `—`. Ne pas la déduire si les fichiers ne la prouvent
 pas.
+
+## Vue task-local
+
+Pour chaque tâche, afficher une ligne contenant, dans cet ordre :
+
+- l'identifiant de tâche ;
+- l'issue ;
+- la branche ;
+- la pull request ;
+- les checks ;
+- la review ;
+- le blocage ;
+- la prochaine action.
+
+Les états v1 restent lisibles : chacun des sept champs task-local absent vaut
+`—`. Pour un état v2, recopier uniquement les valeurs présentes dans la tâche.
+En particulier, ne jamais fabriquer une prochaine action depuis la phase, le
+statut ou le blocage. La lecture ne lance aucune commande GitHub ou Hermes et
+ne modifie aucun fichier.
 
 ## Détermination de la phase
 
@@ -107,6 +130,9 @@ Afficher un tableau contenant :
 - tâches terminées sur tâches totales ;
 - dernier verdict et son horodatage ;
 - tâche active et phase TDD.
+
+Sous la ligne de la fonctionnalité, afficher le tableau task-local défini
+ci-dessus lorsqu'un état contient des tâches.
 
 Terminer par une seule prochaine action recommandée. Utiliser les commandes
 Hermes préfixées `/sdd-`. Si la commande nécessaire n'est pas encore installée,
