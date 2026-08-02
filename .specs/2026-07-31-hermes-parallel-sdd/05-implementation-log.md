@@ -222,6 +222,112 @@
 
 ---
 
+## T-004 — Relier les jobs Kanban à GitHub sans ordonnanceur concurrent
+
+### T-004 · red · 2026-08-01T23:14:29Z
+
+- Test ajouté :
+  `hermes.runtime.test_sdd_github_bridge.GitHubBridgeLifecycleTest.test_admitted_job_creates_and_records_issue_and_draft_pull_request`
+  (`T-004-T1`, `T-004-T2`, `AC-110` à `AC-113`, `AC-253`, `AC-254`).
+  Le test fournit des adaptateurs factices structurés pour `gh`, Kanban et
+  l'état CAS, puis vérifie la création de l'issue, la création d'une PR
+  brouillon et l'écriture des deux identifiants dans la carte et l'état.
+- Commande ciblée :
+  `/usr/bin/time -p env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest hermes.runtime.test_sdd_github_bridge.GitHubBridgeLifecycleTest.test_admitted_job_creates_and_records_issue_and_draft_pull_request`.
+- Résultat : **échec attendu** en 0,06 s — le module du bridge GitHub n'existe
+  pas encore ; l'erreur survient au chargement de la cible, pas à cause d'une
+  faute de syntaxe ou d'assertion dans le test.
+- Extrait expurgé :
+
+  ```text
+  ERROR: test_admitted_job_creates_and_records_issue_and_draft_pull_request
+  T-004-T1/T-004-T2 / AC-110–AC-113, AC-253–AC-254.
+  Traceback (most recent call last):
+    File "<worktree>/hermes/runtime/test_sdd_github_bridge.py", line 105
+      bridge = load_bridge()
+    File "<worktree>/hermes/runtime/test_sdd_github_bridge.py", line 33
+      module_spec.loader.exec_module(module)
+    File "<frozen importlib._bootstrap_external>", line 953, in get_data
+  FileNotFoundError: [Errno 2] No such file or directory:
+    '<worktree>/hermes/runtime/sdd_github_bridge.py'
+  ```
+
+- Durée rapportée par `/usr/bin/time` : `real 0.06`, `user 0.04`, `sys 0.01`.
+- État : `T-004 = red`, `active_task = T-004`. Aucun fichier de production ni
+  contrat Markdown n'a été modifié.
+
+---
+
+### T-004 · green · 2026-08-01T23:20:11Z
+
+- Le RED renforcé a été rejoué sans modification avant production :
+  `python3 -m unittest hermes.runtime.test_sdd_github_bridge.GitHubBridgeLifecycleTest.test_admitted_job_creates_and_records_issue_and_draft_pull_request`.
+  Résultat attendu : `FileNotFoundError` sur le module absent, **1/1 en échec**
+  en 0,08 s.
+- Production minimale : API de transitions sans boucle pour démarrer/reprendre
+  un job, rendre une PR prête, effectuer un polling dû et appliquer une
+  correction. Les adaptateurs GitHub, Kanban, état, worker et horloge portent
+  seuls les effets externes.
+- Triangulation T-004-T2 à T-004-T8 : identifiants et CAS, passage `ready`,
+  polling checks/reviews/fils à cinq minutes, correction sur la même branche
+  et le fil exact, nouvelle attente, timeout à trente minutes, refus du
+  troisième writer et des préconditions de phase, reprise idempotente après
+  interruption Kanban.
+- Commande bridge :
+  `python3 -m unittest hermes.runtime.test_sdd_github_bridge` — **7/7 verts**
+  en 0,08 s (`real`, 0,006 s unittest).
+- Régression runtime proportionnée :
+  `python3 -m unittest hermes.runtime.test_sdd_runtime_guard` — **31/31 verts**
+  en 15,36 s (`real`, 15,260 s unittest).
+- La suite Hermes complète est réservée à une exécution unique après la passe
+  de simplification, conformément à la coordination de la gate lourde.
+
+---
+
+### T-004 · refactor · 2026-08-01T23:21:42Z
+
+- Refactorisation interne sans changement d'API ni de comportement : les
+  identifiants `task_id`, `card_id`, `pr` et `branch` sont nommés une fois au
+  début de chaque transition longue ; la signature de `start_job` est rendue
+  lisible sans helper ni classe prématurée.
+- Commande : `python3 -m unittest hermes.runtime.test_sdd_github_bridge` —
+  **7/7 verts** en 0,07 s (`real`, 0,008 s unittest).
+- Aucun test, assertion, délai ou invariant n'a été retiré.
+
+---
+
+### T-004 · simplify · 2026-08-01T23:29:54Z
+
+- Passe `clarity-over-cleverness` : les clés de domaine répétées sont des
+  constantes nommées ; les transitions utilisent des variables locales
+  explicites et des retours anticipés. Aucun scheduler, auto-merge, troisième
+  writer, secret ou chemin absolu n'est introduit.
+- La relecture a découvert le cas limite AC-119 « review disponible exactement
+  à trente minutes ». Le nouveau test ciblé a d'abord échoué en 0,07 s avec
+  `KeyError: 'reviews'`, prouvant que le timeout précédait l'observation.
+- Correction minimale : lorsqu'un polling est dû, checks, reviews et fils sont
+  lus et l'instant est enregistré avant d'évaluer le timeout. `needs_input`
+  s'applique uniquement si la liste des reviews est vide à l'échéance.
+- Preuves post-correction : test ciblé **1/1 vert** en 0,06 s ; suite bridge
+  **8/8 verte** en 0,07 s ; runtime ciblé **31/31 vert** en 15,73 s.
+- Runner CI complet post-correction, avec `PYTHONDONTWRITEBYTECODE=1` et les
+  dépendances de `requirements-ci.txt` installées uniquement sous
+  `/private/tmp` : **224 découverts, 220 exécutés verts, 4 ignorés**, 15
+  fichiers en 82,39 s. Le premier essai sandbox avait échoué avant test car
+  `ps` était interdit ; un essai intermédiaire avait ensuite révélé la
+  dépendance CI locale manquante `markdown_it`. Aucun de ces deux arrêts n'est
+  présenté comme une réussite.
+- Validation séparée : **8 skills Hermes valides** en 0,26 s.
+- Couverture `coverage.py 7.15.2`, installée uniquement sous `/private/tmp` :
+  `sdd_github_bridge.py` atteint **100 %** des 68 instructions et **100 %**
+  des 14 branches ; aucun manque.
+- Markdownlint épinglé 0.18.1 : **2 fichiers, 0 erreur**.
+- État final : `T-004 = done`, `active_task = null`. La mise à jour du statut
+  partagé dans `04-tasks.md` reste au synthesizer de fan-in ; ce writer ne sort
+  pas du scope autorisé.
+
+---
+
 ## T-005 — Afficher la carte task-local dans `/sdd-status`
 
 ### T-005 · red · 2026-08-01T23:11:33Z
