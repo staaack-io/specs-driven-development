@@ -1523,3 +1523,168 @@ Git et transaction AC-207 à AC-217, sans les réattribuer à S-007.
 - [x] Le conflit, la dépendance, l'échec, le timeout et le fan-in ont des oracles.
 - [x] Données, sécurité, rollback, Git/Kanban et limites de capacité sont décrits.
 - [x] Aucune question ouverte ni nouvel ADR n'est requis.
+
+## Conception détaillée : S-008 — conformité VPS, pilote Super Lily et profil 1.0.0
+
+> Responsable : `spring-architect` · Phase 3b · Tranche Epic : `S-008`
+>
+> Cette tranche sépare les preuves locales sans accès externe des opérations
+> VPS, GitHub, gateway, pilote et publication, qui restent `pending` jusqu'à un
+> go explicite et la disponibilité des credentials. Aucun reviewer humain n'est
+> sollicité.
+
+### S-008 Inputs and Reality Reconciliation
+
+- `01-spec.md` contient 286 AC approuvés et zéro question ouverte ; S-008 en
+  couvre exactement 57 : `AC-008`, `AC-160` à `AC-194`, `AC-220` à `AC-224`,
+  `AC-229`, `AC-230`, `AC-232`, `AC-238` à `AC-242` et `AC-264` à `AC-271`.
+- `.github/scripts/detect-stack.sh` retourne
+  `{"error":"pom.xml introuvable","searched":"pom.xml"}` : cette tranche
+  Python/Hermes/exploitation n'introduit ni Spring, OpenAPI, base, migration ou
+  ArchUnit, conformément à `Q-006`.
+- Au 2026-08-03, la PR profil #58 est ouverte sur le commit `e4e6bc4` avec ses
+  deux checks CI verts. T-029 est donc un candidat local terminé uniquement :
+  ni fusion, ni publication, ni autorisation VPS n'est prétendue.
+
+### S-008 Architecture Overview
+
+Deux writers locaux disjoints construisent d'abord un validateur de politique
+VPS pur et un générateur de dry-run inerte. Un audit unique vérifie ensuite les
+57 AC S-008, la couverture primaire Epic 286/286, les scopes littéraux, le DAG
+et la barrière anti-mise-à-jour VPS. Ces composants n'importent ni réseau, SSH
+ni subprocess et ne disposent d'aucune primitive d'exécution distante.
+
+Après les portes locales, les tâches externes restent séquentielles et
+`pending` : prérequis GitHub CLI et profil VPS, clones/Issues/boards, deux jobs
+sandbox, gateway utilisateur, pilote Super Lily onboard→ship, puis publication
+1.0.0. Une CI verte ou une PR ouverte ne vaut jamais go. Les deux writers
+sandbox peuvent se chevaucher, mais une seule gate lourde s'exécute à la fois.
+
+### S-008 ADRs
+
+Aucun ADR supplémentaire. La séparation local/externe, les plafonds, le
+gateway utilisateur et l'interdiction de publier avant le pilote sont imposés
+par la spécification et la conception Epic, sans alternative locale à trancher.
+
+### S-008 Component Map
+
+| Frontière | Composant | Responsabilité | Admission |
+|---|---|---|---|
+| Politique locale | `hermes/operations/vps_pilot_policy.py` | Valider interdictions, limites et conservation sur données en mémoire | locale |
+| Prévisualisation | `hermes/operations/vps_pilot_dry_run.py` | Produire un plan borné, explicite et inerte | locale |
+| Audit source | `hermes/scripts/test_sdd_s008_contract.py` | Prouver 57/57, 286/286, DAG, scopes et barrières | locale |
+| Exploitation VPS | journaux T-033 à T-036 | GitHub CLI, profil, config, boards, sandbox et gateway | externe bloquée |
+| Pilote métier | journaux T-037 | Parcours Super Lily sans déploiement | externe bloquée |
+| Distribution | profil et journal T-038 | 1.0.0 après pilote et go distinct | externe bloquée |
+
+### S-008 Module Boundaries
+
+- `vps_pilot_policy` est pur et ne dépend d'aucun client réseau ou processus.
+- `vps_pilot_dry_run` dépend de la politique et retourne seulement des données
+  et commandes à inspecter ; il ne les exécute jamais.
+- `test_sdd_s008_contract` lit uniquement les artefacts versionnés.
+- Les opérations externes écrivent seulement des journaux task-local expurgés.
+  Tokens, credentials, transcripts, chemins absolus et contenu métier restent
+  hors Git et hors `.tdd-state.json`.
+- Le dépôt profil est une frontière distincte ; 1.0.0 reste inadmissible avant
+  preuve complète du pilote.
+
+### S-008 Conceptual Model
+
+Il n'existe aucune entité métier persistée ni endpoint. Les relations
+opérationnelles sont : un profil `staaack` avec version avant/après ; un board
+par clone principal ; zéro à deux jobs par dispatch ; zéro ou une gate lourde
+active ; un parcours pilote onboard→ship ; une release 1.0.0 après ce parcours.
+
+OpenAPI, données, migrations et persistance sont N/A. Le rollback rétablit le
+profil 0.9.0 sans supprimer états, journaux, logs, worktrees, branches ou
+preuves.
+
+### S-008 Security Posture
+
+- GitHub CLI et SSH ne sont utilisés que dans T-033 après go explicite ; le
+  device/web flow, SSH, les scopes requis, le mode batch, l'identité unique et
+  la vérification stricte de clé hôte sont contrôlés sans journaliser de token.
+- `delegation.max_spawn_depth=1`, `subagent_auto_approve=false` et l'interdiction
+  de `--yolo`, `sudo`, gateway système et service système restent invariants.
+- Le gateway utilisateur attend deux jobs sandbox verts. Validate, review et
+  ship du pilote se terminent sans déployer.
+- Aucun reviewer humain n'est demandé ; les audits automatiques ne sont pas une
+  sollicitation de personne.
+
+### S-008 Authority Barrier
+
+| Groupe | Tâches | Condition d'admission |
+|---|---|---|
+| Contrats locaux | T-030, T-031 | candidat T-029 local prouvé ; aucune mutation externe |
+| Audit local | T-032 | contrats verts ; aucune mutation externe |
+| VPS/GitHub/pilote | T-033 à T-037 | go explicite, credentials et dépendances externes prouvées |
+| Publication | T-038 | pilote réussi et go de publication distinct |
+
+Le go n'est ni présent ni supposé dans cette conception. Les tâches externes
+restent `pending` si une seule précondition manque.
+
+### S-008 Test Strategy and Traceability
+
+1. T-030 suit RED→GREEN sur la politique : secrets, limites, gateway, service,
+   archivage, nettoyage et rétention, sans exécution externe.
+2. T-031 suit RED→GREEN sur le dry-run : valeurs Kanban exactes, board
+   explicite, `max-workers=2`, vérification finale et inertie.
+3. T-032 prouve exactement 57/57 pour S-008, 286/286 pour l'Epic, et bloque
+   toute mise à jour VPS sans release fusionnée, gate verte et go.
+4. T-033 à T-038 exécutent un test d'admission local avant l'action autorisée,
+   puis publient seulement des résultats expurgés.
+
+| Producteur primaire | AC couverts |
+|---|---|
+| T-030 | AC-163, AC-169, AC-175–AC-177, AC-181, AC-187, AC-190–AC-194, AC-266–AC-268 |
+| T-031 | AC-170–AC-174, AC-183 |
+| T-032 | AC-232 |
+| T-033 | AC-161, AC-162, AC-164–AC-168, AC-240, AC-264 |
+| T-034 | AC-008, AC-178–AC-180, AC-182, AC-238, AC-239, AC-241, AC-242 |
+| T-035 | AC-184–AC-186, AC-229, AC-230, AC-265 |
+| T-036 | AC-188, AC-189 |
+| T-037 | AC-220–AC-224, AC-269–AC-271 |
+| T-038 | AC-160 |
+
+Cette partition contient exactement 57 identifiants uniques, sans AC d'une
+autre tranche.
+
+### S-008 Risks and Rollback
+
+| Risque | Réduction | Retour arrière |
+|---|---|---|
+| Mutation sans autorisation | admission refusée sans go et credentials | aucune action externe |
+| Profil VPS invalide | versions avant/après, test installé et gate release | réinstaller 0.9.0 |
+| OOM ou contention | deux writers, une gate lourde, diagnostics | arrêter et conserver toutes les preuves |
+| Gateway prématuré | dépendance à deux jobs sandbox verts | désactiver le gateway utilisateur seulement |
+| Perte de travail | aucune archive/suppression avant preuves | conserver carte, branche, worktree, logs et journal |
+| Publication prématurée | T-038 dépend du pilote et d'un go distinct | fermer la PR 1.0.0 |
+
+### S-008 Non-Functional Requirements
+
+- Deux writers maximum, trois analyses en lecture seule maximum et une gate
+  lourde maximum.
+- Zéro OOM, zéro travail perdu et preuves expurgées.
+- Aucun déploiement automatique, reviewer humain ou fusion sans go explicite.
+
+### S-008 Open Questions
+
+- (aucune)
+
+### S-008 Resolved Questions
+
+- **Décision autonome — autorité :** T-030 à T-032 sont locales ; T-033 à
+  T-038 restent `pending` sans déduire de go de l'ordre de continuer.
+- **Décision autonome — T-029 :** PR #58 et CI 2/2 verte prouvent le candidat
+  local uniquement ; `merge_gate` reste externe et `published` reste faux.
+- **Décision autonome — preuves :** chaque opération externe conserve un JSON
+  expurgé et relatif, jamais un transcript ou un credential.
+
+### S-008 Sign-off
+
+- [x] Les 57 AC ont un producteur primaire unique.
+- [x] Le DAG respecte deux writers et une gate lourde.
+- [x] Toutes les opérations externes ont une barrière explicite et restent pending.
+- [x] Aucun endpoint, modèle persistant, ADR nouveau ou question ouverte.
+- [x] Auto-relecture de conception effectuée par `spring-architect` le 2026-08-03.

@@ -17,7 +17,7 @@
 
 ## Task ID Registry
 
-- **high_water_mark :** 29
+- **high_water_mark :** 38
 - **retired_ids :** (aucun)
 
 ## Task Index
@@ -1618,3 +1618,287 @@ critères secondaires AC-207 à AC-217 exercés par les mêmes scénarios.
 
 Première vague : `/sdd-build 2026-07-31-hermes-parallel-sdd --parallel`
 admet T-025 et T-026 lorsque T-024 est terminée.
+
+## Tâches : S-008 — conformité VPS, pilote Super Lily et profil 1.0.0
+
+> T-030 à T-032 sont des tâches locales autorisées sans réseau. T-033 à T-038
+> sont des opérations externes `pending` : elles exigent un go explicite, les
+> credentials nécessaires et la réussite de toutes leurs dépendances. Ce plan
+> ne fournit aucune autorisation de fusion, SSH, mutation GitHub, gateway,
+> pilote, publication ou déploiement et ne demande aucun reviewer humain.
+
+### S-008 Task Index
+
+| ID | Tâche | Producteur primaire de | Dépendances | Estimation | Admission |
+|---|---|---|---|---|---|
+| T-030 | Encoder la politique de conformité VPS | AC-163, AC-169, AC-175–AC-177, AC-181, AC-187, AC-190–AC-194, AC-266–AC-268 | T-029 | 2–4 h | local |
+| T-031 | Générer un dry-run borné du pilote | AC-170–AC-174, AC-183 | T-029 | 2–4 h | local |
+| T-032 | Auditer S-008 et la traçabilité 286/286 | AC-232 | T-030, T-031 | 2–4 h | local |
+| T-033 | Préparer GitHub CLI et mettre à jour le profil VPS | AC-161, AC-162, AC-164–AC-168, AC-240, AC-264 | T-032 | 1–4 h | externe bloqué |
+| T-034 | Préparer les clones, Issues, projets et boards | AC-008, AC-178–AC-180, AC-182, AC-238, AC-239, AC-241, AC-242 | T-033 | 2–4 h | externe bloqué |
+| T-035 | Valider deux jobs sandbox réels | AC-184–AC-186, AC-229, AC-230, AC-265 | T-034 | 2–4 h | externe bloqué |
+| T-036 | Installer le gateway utilisateur | AC-188, AC-189 | T-035 | 1–2 h | externe bloqué |
+| T-037 | Exécuter le pilote Super Lily onboard→ship | AC-220–AC-224, AC-269–AC-271 | T-036 | 3–4 h | externe bloqué |
+| T-038 | Publier le profil 1.0.0 | AC-160 | T-037 | 2–4 h | externe bloqué |
+
+### T-030 : Encoder la politique de conformité VPS
+
+- **Origine qualifiée :** `spring-architect:T-030`
+- **AC-IDs :** AC-163, AC-169, AC-175, AC-176, AC-177, AC-181, AC-187,
+  AC-190, AC-191, AC-192, AC-193, AC-194, AC-266, AC-267, AC-268
+- **Test-IDs :**
+  - T-030-T1 (RED — le validateur de politique VPS est absent)
+  - T-030-T2 (secrets — token, credential, transcript et chemin absolu sont refusés)
+  - T-030-T3 (Hermes — shell de connexion ou binaire absolu distant, board explicite et `--yolo` interdit)
+  - T-030-T4 (capacité — profondeur 1, auto-approve faux et gateway bloqué avant deux succès)
+  - T-030-T5 (service — gateway système et `sudo` sont refusés)
+  - T-030-T6 (rétention — carte, branche, worktree, logs et journal sont conservés tant que les preuves manquent)
+  - T-030-T7 (pureté — aucun import ou appel réseau, SSH ou subprocess)
+- **Files in scope :**
+  - `hermes/operations/vps-pilot-policy-contract.md`
+  - `hermes/operations/vps_pilot_policy.py`
+  - `hermes/operations/test_vps_pilot_policy.py`
+- **Dépendances :** T-029, limité au candidat local 0.9.0 prouvé par PR #58
+- **Phases estimées :** RED 30 min ; GREEN 60–90 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** unit policy, import safety, redaction, scope, toutes les suites Python, `git diff --check`, CI source.
+- **Retour arrière :** retirer ces trois fichiers ; aucune ressource externe n'a été contactée.
+- **Notes :** le module accepte des données structurées et retourne des erreurs ; il ne possède aucune primitive d'exécution. L'identité SSH et la cible de la spécification sont comparées sous forme de valeurs attendues mais ne sont jamais utilisées pour se connecter.
+
+### T-031 : Générer un dry-run borné du pilote
+
+- **Origine qualifiée :** `spring-architect:T-031`
+- **AC-IDs :** AC-170, AC-171, AC-172, AC-173, AC-174, AC-183
+- **Test-IDs :**
+  - T-031-T1 (RED — le générateur de dry-run n'existe pas)
+  - T-031-T2 (config — les trois limites Kanban valent 2 et `failure_limit` vaut 2)
+  - T-031-T3 (validation — le plan termine par une vérification de configuration)
+  - T-031-T4 (dry-run — Super Lily est préparé avec `max-workers=2` sans dispatch réel)
+  - T-031-T5 (inertie — aucune ligne n'est exécutée et aucun client réseau n'est importé)
+  - T-031-T6 (sortie — commandes ordonnées, board explicite et valeurs expurgées)
+- **Files in scope :**
+  - `hermes/operations/vps_pilot_dry_run.py`
+  - `hermes/operations/test_vps_pilot_dry_run.py`
+  - `hermes/operations/templates/vps-pilot-plan.template.json`
+- **Dépendances :** T-029, limité au candidat local 0.9.0 prouvé par PR #58
+- **Phases estimées :** RED 30 min ; GREEN 60–90 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** unit dry-run, config contract, no-exec, JSON schema, toutes les suites Python, `git diff --check`, CI source.
+- **Retour arrière :** retirer les deux modules et le modèle ; aucune configuration VPS n'a été modifiée.
+- **Notes :** T-030 et T-031 ont des scopes disjoints et sont les deux seuls writers de leur vague. Le dry-run prépare aussi les étapes du pilote sans accès au VPS ou à Super Lily.
+
+### T-032 : Auditer S-008 et la traçabilité 286/286
+
+- **Origine qualifiée :** `spring-architect:T-032`
+- **AC-IDs :** AC-232
+- **Test-IDs :**
+  - T-032-T1 (RED — le contrat S-008 et son inventaire exact sont absents)
+  - T-032-T2 (slice — exactement 57 AC S-008 ont un producteur primaire unique)
+  - T-032-T3 (Epic — les huit tranches couvrent exactement 286 AC sans trou ni doublon primaire)
+  - T-032-T4 (DAG — deux writers locaux maximum puis tâches externes séquentielles)
+  - T-032-T5 (barrières — toute mise à jour VPS exige version fusionnée, gate verte et go explicite)
+  - T-032-T6 (scopes — chemins littéraux, relatifs, disjoints dans la vague locale)
+  - T-032-T7 (sécurité — aucun reviewer humain, merge, SSH, gateway ou déploiement exécuté par l'audit)
+- **Files in scope :**
+  - `hermes/scripts/test_sdd_s008_contract.py`
+  - `hermes/operations/vps-pilot-runbook.md`
+  - `hermes/README.md`
+  - `docs/codex-migration.md`
+- **Dépendances :** T-030, T-031
+- **Phases estimées :** RED 30 min ; GREEN 60–90 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** contrat S-008, couverture 57/57, traçabilité 286/286, toutes les suites Python, validation des skills, markdownlint, `git diff --check`, CI source.
+- **Retour arrière :** annuler la PR d'audit ; les opérations externes restent inadmissibles.
+- **Notes :** T-032 réconcilie T-029 comme candidat local `done` seulement parce que PR #58 et CI 2/2 vertes le prouvent. Elle consigne explicitement `merge_gate: external-explicit-go-pending`, PR ouverte et aucune publication.
+
+### T-033 : Préparer GitHub CLI et mettre à jour le profil VPS
+
+- **Origine qualifiée :** `spring-architect:T-033`
+- **Classe d'autorité :** `EXTERNE BLOQUÉE` — go explicite et credentials d'exploitation requis.
+- **AC-IDs :** AC-161, AC-162, AC-164, AC-165, AC-166, AC-167, AC-168, AC-240, AC-264
+- **Test-IDs :**
+  - T-033-T1 (admission — refuse si le profil 0.9.0 n'est pas fusionné, publié et gate verte)
+  - T-033-T2 (GitHub CLI — installation Debian officielle, device/web flow SSH et scopes exacts)
+  - T-033-T3 (secret — aucun token n'est fourni au prompt ou à une preuve)
+  - T-033-T4 (SSH — batch, identité unique, clé hôte stricte et cible exacte)
+  - T-033-T5 (versions — versions avant/après et test de la version installée)
+  - T-033-T6 (preuve — résultat expurgé, sans transcript ni chemin absolu)
+- **Files in scope :**
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/001-vps-prerequisites.json`
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/002-profile-version.json`
+- **Dépendances :** T-032 et preuve externe que la PR #58 est fusionnée et 0.9.0 publiée
+- **Phases estimées :** admission 30 min ; exécution 60–120 min ; vérification et expurgation 30 min.
+- **Portes :** explicit-go, credentials, release-gate, gh-auth-status, installed-version, redaction ; une seule gate lourde.
+- **Retour arrière :** restaurer 0.9.0 et conserver toutes les preuves ; ne supprimer aucun état ou worktree.
+- **Notes :** rester `pending` tant que le go ou les credentials manquent. Aucune review humaine n'est demandée.
+
+### T-034 : Préparer les clones, Issues, projets et boards
+
+- **Origine qualifiée :** `spring-architect:T-034`
+- **Classe d'autorité :** `EXTERNE BLOQUÉE` — go explicite et session GitHub/VPS requise.
+- **AC-IDs :** AC-008, AC-178, AC-179, AC-180, AC-182, AC-238, AC-239, AC-241, AC-242
+- **Test-IDs :**
+  - T-034-T1 (admission — GitHub auth et version VPS prouvées)
+  - T-034-T2 (issues — Issues actif sur Super Lily)
+  - T-034-T3 (clones — deux clones propres avant création ou réutilisation)
+  - T-034-T4 (boards — slugs et workdirs par défaut exacts)
+  - T-034-T5 (projects — clones principaux exacts et isolés)
+  - T-034-T6 (idempotence — inspecte et réutilise board/projet existants)
+- **Files in scope :**
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-034/001-clones.json`
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-034/002-boards.json`
+- **Dépendances :** T-033
+- **Phases estimées :** admission 15 min ; inspection 45–60 min ; création ou réutilisation 60–90 min ; preuves 30 min.
+- **Portes :** explicit-go, repo-clean, issues-enabled, board-isolation, project-workdir, idempotence.
+- **Retour arrière :** conserver les clones propres ; ne retirer qu'une ressource nouvellement créée et vide, jamais une ressource existante ou contenant du travail.
+- **Notes :** les chemins VPS attendus ne sont conservés dans les preuves que sous forme de labels relatifs expurgés.
+
+### T-035 : Valider deux jobs sandbox réels
+
+- **Origine qualifiée :** `spring-architect:T-035`
+- **Classe d'autorité :** `EXTERNE BLOQUÉE` — go explicite requis pour le dispatch réel.
+- **AC-IDs :** AC-184, AC-185, AC-186, AC-229, AC-230, AC-265
+- **Test-IDs :**
+  - T-035-T1 (admission — dry-run T-031 rejoué et boards T-034 valides)
+  - T-035-T2 (dispatch — exactement deux jobs au maximum)
+  - T-035-T3 (monitoring — cartes assignées à `staaack` suivies)
+  - T-035-T4 (diagnostics — statistiques et diagnostics JSON consultés)
+  - T-035-T5 (ressources — aucune OOM et une seule gate lourde active)
+  - T-035-T6 (conservation — zéro travail perdu, worktree/log/journal conservés en échec)
+- **Files in scope :**
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-035/001-sandbox-dispatch.json`
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-035/002-sandbox-diagnostics.json`
+- **Dépendances :** T-034
+- **Phases estimées :** admission et dry-run 30 min ; dispatch 60–120 min ; diagnostics et preuve 60 min.
+- **Portes :** explicit-go, max-two-writers, max-one-heavy-gate, both-jobs-green, no-oom, no-loss.
+- **Retour arrière :** arrêter le dispatch sans archiver les cartes ni supprimer branches, worktrees, logs ou journaux.
+- **Notes :** les writers peuvent se chevaucher ; leurs gates lourdes restent sérialisées. Le gateway permanent reste interdit pendant toute la tâche.
+
+### T-036 : Installer le gateway utilisateur
+
+- **Origine qualifiée :** `spring-architect:T-036`
+- **Classe d'autorité :** `EXTERNE BLOQUÉE` — go explicite requis.
+- **AC-IDs :** AC-188, AC-189
+- **Test-IDs :**
+  - T-036-T1 (admission — deux jobs sandbox verts et preuves T-035 intactes)
+  - T-036-T2 (installation — gateway utilisateur, démarrage immédiat et au login)
+  - T-036-T3 (statut — statut utilisateur vérifié sans `sudo`)
+  - T-036-T4 (négatif — aucun service ou gateway système)
+- **Files in scope :**
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-036/001-user-gateway.json`
+- **Dépendances :** T-035
+- **Phases estimées :** admission 15 min ; installation 30–45 min ; statut et preuves 30 min.
+- **Portes :** explicit-go, sandbox-gate, user-scope-only, status, redaction.
+- **Retour arrière :** arrêter et désinstaller uniquement le gateway utilisateur ; préserver le profil, les boards et les preuves sandbox.
+
+### T-037 : Exécuter le pilote Super Lily onboard→ship
+
+- **Origine qualifiée :** `spring-architect:T-037`
+- **Classe d'autorité :** `EXTERNE BLOQUÉE` — go explicite, accès Super Lily et gateway utilisateur sain requis.
+- **AC-IDs :** AC-220, AC-221, AC-222, AC-223, AC-224, AC-269, AC-270, AC-271
+- **Test-IDs :**
+  - T-037-T1 (onboard — le pilote commence par l'onboarding réel)
+  - T-037-T2 (parallèle — backend et frontend disjoints se chevauchent, pic deux)
+  - T-037-T3 (dépendance — la troisième tâche attend la fusion de sa dépendance)
+  - T-037-T4 (GitHub — une issue et une PR propres par tâche)
+  - T-037-T5 (validate — phase terminée sans déploiement)
+  - T-037-T6 (review — rapport terminé sans reviewer humain ni déploiement)
+  - T-037-T7 (ship — plan terminé sans exécuter de déploiement)
+  - T-037-T8 (rétention — les tâches non fusionnées ou en échec ne sont ni archivées ni supprimées)
+- **Files in scope :**
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-037/001-pilot-lifecycle.json`
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-037/002-pilot-resource-proof.json`
+- **Dépendances :** T-036
+- **Phases estimées :** admission 30 min ; onboard et plan 45 min ; jobs 90–120 min ; validate/review/ship et preuve 60 min.
+- **Portes :** explicit-go, lifecycle-order, overlap, dependency, per-task-issue-pr, no-deploy, no-loss, redaction ; une seule gate lourde.
+- **Retour arrière :** arrêter le pilote, conserver toutes les ressources non fusionnées et désactiver le gateway utilisateur si sa santé est en cause.
+- **Notes :** `/sdd-review` est une commande d'audit automatique ; aucune personne n'est sollicitée pour reviewer.
+
+### T-038 : Publier le profil 1.0.0
+
+- **Origine qualifiée :** `spring-architect:T-038`
+- **Classe d'autorité :** `EXTERNE BLOQUÉE` — go explicite distinct requis après le pilote.
+- **AC-IDs :** AC-160
+- **Test-IDs :**
+  - T-038-T1 (RED release — 1.0.0 refusée tant qu'une preuve pilote manque)
+  - T-038-T2 (distribution — version 1.0.0 et précédent 0.9.0 cohérents)
+  - T-038-T3 (gate — 57/57 S-008, 286/286 Epic, parité, tests, contrats et CI verts)
+  - T-038-T4 (pilot-gate — onboard, parallèle, dépendance, validate, review et ship prouvés)
+  - T-038-T5 (publication — fusion et publication uniquement après go explicite)
+  - T-038-T6 (rollback — 0.9.0 réinstallable sans perte de preuve)
+- **Files in scope :**
+  - `scripts/test_validate_distribution.py`
+  - `scripts/test_sdd_s008_contract.py`
+  - `distribution.yaml`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `.github/workflows/ci.yml`
+  - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-038/001-release-1.0.0.json`
+- **Dépendances :** T-037
+- **Phases estimées :** RED 30 min ; GREEN 60–90 min ; validation 60 min ; fusion/publication après go 30 min.
+- **Portes :** explicit-go, pilot-complete, parity, profile-tests,
+  distribution, frontmatter, markdownlint, CI, automated-audit-clear,
+  rollback-proof.
+- **Retour arrière :** fermer la PR avant fusion ; après publication, restaurer 0.9.0 sans supprimer les preuves du pilote.
+- **Notes :** la tâche reste `pending` même si tous les tests locaux sont verts tant que le go de publication n'est pas explicite. Aucun reviewer humain n'est demandé.
+
+### S-008 Primary AC Coverage Matrix
+
+| Producteur primaire | AC-IDs |
+|---|---|
+| T-030 | AC-163, AC-169, AC-175–AC-177, AC-181, AC-187, AC-190–AC-194, AC-266–AC-268 |
+| T-031 | AC-170–AC-174, AC-183 |
+| T-032 | AC-232 |
+| T-033 | AC-161, AC-162, AC-164–AC-168, AC-240, AC-264 |
+| T-034 | AC-008, AC-178–AC-180, AC-182, AC-238, AC-239, AC-241, AC-242 |
+| T-035 | AC-184–AC-186, AC-229, AC-230, AC-265 |
+| T-036 | AC-188, AC-189 |
+| T-037 | AC-220–AC-224, AC-269–AC-271 |
+| T-038 | AC-160 |
+
+La matrice contient exactement 57 critères uniques. T-030 à T-032 produisent
+les contrats et audits locaux ; T-033 à T-038 produisent les faits externes
+uniquement après autorisation.
+
+### S-008 Dependency and Capacity Validation
+
+```text
+T-029 candidat local
+  ├─> T-030 ─┐
+  └─> T-031 ─┴─> T-032
+                    └─[go + credentials + 0.9.0 fusionnée/publiée]─> T-033
+                         -> T-034 -> T-035 -> T-036 -> T-037
+                         -> [go de publication] -> T-038
+```
+
+- Le graphe est acyclique.
+- T-030 et T-031 ont des scopes disjoints et occupent au plus deux slots.
+- T-032 est l'unique writer de l'audit partagé.
+- T-033 à T-038 sont séquentielles ; une seule gate lourde est active.
+- Les deux jobs de T-035 et les deux writers du pilote peuvent se chevaucher,
+  mais leur capacité reste 2 et leurs gates lourdes sont sérialisées.
+- Une instruction de poursuite locale ne satisfait aucune barrière externe.
+
+### S-008 Open Questions
+
+- (aucune)
+
+### S-008 Resolved Questions
+
+- **Décision autonome — T-029 :** PR #58 ouverte, commit `e4e6bc4` et CI 2/2
+  verte permettent `done` pour le candidat local seulement ;
+  `merge_gate: external-explicit-go-pending` et `published: false` restent vrais.
+- **Décision autonome — autorité externe :** aucune opération VPS, GitHub,
+  gateway, pilote, fusion ou publication n'est implicitement autorisée.
+- **Décision autonome — revue :** aucun reviewer humain n'est sollicité ; les
+  audits automatiques restent des commandes produit, jamais des demandes à une personne.
+
+### S-008 Sign-off
+
+- [x] `high_water_mark: 38`; aucun identifiant antérieur n'est réutilisé.
+- [x] Les 57 AC ont un producteur primaire unique.
+- [x] Chaque tâche possède Test-IDs, scopes littéraux, dépendances, portes et rollback.
+- [x] Le DAG respecte deux writers maximum et une gate lourde.
+- [x] Toutes les tâches externes restent pending derrière une barrière explicite.
+- [x] Aucune question ouverte ni ADR supplémentaire.
+
+Première vague locale : `/sdd-build 2026-07-31-hermes-parallel-sdd --parallel`
+admet T-030 et T-031. T-033 et les suivantes restent inadmissibles sans go
+explicite et sans leurs preuves externes.

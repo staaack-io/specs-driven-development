@@ -825,21 +825,29 @@
       ]
     },
     "T-029": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-024", "T-028"],
       "test_ids": [
         "T-029-T1", "T-029-T2", "T-029-T3", "T-029-T4",
         "T-029-T5", "T-029-T6", "T-029-T7", "T-029-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
-      "pr": null,
+      "issue": 57,
+      "branch": "agent/build-t029-profile-090",
+      "pr": 58,
       "red_at": null,
       "red_test_signature": null,
       "red_failure_excerpt": null,
-      "green_at": null,
+      "green_at": "2026-08-03T16:36:19Z",
+      "refactor_at": "2026-08-03T16:36:19Z",
+      "simplify_at": "2026-08-03T16:36:19Z",
+      "done_at": "2026-08-03T16:36:19Z",
+      "commit": "e4e6bc4d104e9b34dc615a38747e778096509d43",
+      "ci": "2/2 success",
+      "candidate_only": true,
+      "published": false,
+      "merge_gate": "external-explicit-go-pending",
       "files_in_scope": [
         "scripts/run_skill_tests.py",
         "scripts/test_run_skill_tests.py",
@@ -857,6 +865,224 @@
         "CHANGELOG.md",
         "README.md",
         ".github/workflows/ci.yml"
+      ]
+    },
+    "T-030": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-029"],
+      "test_ids": [
+        "T-030-T1", "T-030-T2", "T-030-T3", "T-030-T4",
+        "T-030-T5", "T-030-T6", "T-030-T7"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "local-authorized",
+      "files_in_scope": [
+        "hermes/operations/vps-pilot-policy-contract.md",
+        "hermes/operations/vps_pilot_policy.py",
+        "hermes/operations/test_vps_pilot_policy.py"
+      ]
+    },
+    "T-031": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-029"],
+      "test_ids": [
+        "T-031-T1", "T-031-T2", "T-031-T3",
+        "T-031-T4", "T-031-T5", "T-031-T6"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "local-authorized",
+      "files_in_scope": [
+        "hermes/operations/vps_pilot_dry_run.py",
+        "hermes/operations/test_vps_pilot_dry_run.py",
+        "hermes/operations/templates/vps-pilot-plan.template.json"
+      ]
+    },
+    "T-032": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-030", "T-031"],
+      "test_ids": [
+        "T-032-T1", "T-032-T2", "T-032-T3", "T-032-T4",
+        "T-032-T5", "T-032-T6", "T-032-T7"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "local-after-dependencies",
+      "files_in_scope": [
+        "hermes/scripts/test_sdd_s008_contract.py",
+        "hermes/operations/vps-pilot-runbook.md",
+        "hermes/README.md",
+        "docs/codex-migration.md"
+      ]
+    },
+    "T-033": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-032"],
+      "test_ids": [
+        "T-033-T1", "T-033-T2", "T-033-T3",
+        "T-033-T4", "T-033-T5", "T-033-T6"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "external-blocked",
+      "authorization_status": "explicit-go-and-credentials-pending",
+      "external_preconditions": [
+        "profile-0.9.0-merged", "profile-0.9.0-published",
+        "publication-gate-green", "explicit-go", "credentials-available"
+      ],
+      "files_in_scope": [
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/001-vps-prerequisites.json",
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/002-profile-version.json"
+      ]
+    },
+    "T-034": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-033"],
+      "test_ids": [
+        "T-034-T1", "T-034-T2", "T-034-T3",
+        "T-034-T4", "T-034-T5", "T-034-T6"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "external-blocked",
+      "authorization_status": "explicit-go-and-session-pending",
+      "files_in_scope": [
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-034/001-clones.json",
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-034/002-boards.json"
+      ]
+    },
+    "T-035": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-034"],
+      "test_ids": [
+        "T-035-T1", "T-035-T2", "T-035-T3",
+        "T-035-T4", "T-035-T5", "T-035-T6"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "external-blocked",
+      "authorization_status": "explicit-go-pending",
+      "max_workers": 2,
+      "max_heavy_gates": 1,
+      "files_in_scope": [
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-035/001-sandbox-dispatch.json",
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-035/002-sandbox-diagnostics.json"
+      ]
+    },
+    "T-036": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-035"],
+      "test_ids": ["T-036-T1", "T-036-T2", "T-036-T3", "T-036-T4"],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "external-blocked",
+      "authorization_status": "explicit-go-pending",
+      "files_in_scope": [
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-036/001-user-gateway.json"
+      ]
+    },
+    "T-037": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-036"],
+      "test_ids": [
+        "T-037-T1", "T-037-T2", "T-037-T3", "T-037-T4",
+        "T-037-T5", "T-037-T6", "T-037-T7", "T-037-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "external-blocked",
+      "authorization_status": "explicit-go-and-super-lily-access-pending",
+      "max_workers": 2,
+      "max_heavy_gates": 1,
+      "files_in_scope": [
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-037/001-pilot-lifecycle.json",
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-037/002-pilot-resource-proof.json"
+      ]
+    },
+    "T-038": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-037"],
+      "test_ids": [
+        "T-038-T1", "T-038-T2", "T-038-T3",
+        "T-038-T4", "T-038-T5", "T-038-T6"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "admission": "external-blocked",
+      "authorization_status": "distinct-publication-go-pending",
+      "published": false,
+      "files_in_scope": [
+        "scripts/test_validate_distribution.py",
+        "scripts/test_sdd_s008_contract.py",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/workflows/ci.yml",
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-038/001-release-1.0.0.json"
       ]
     }
   }
