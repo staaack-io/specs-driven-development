@@ -2239,3 +2239,10 @@
 - État final : `T-031 = done`, `active_task = null`.
 
 ---
+
+### T-031 · publication · 2026-08-03T17:02:00Z
+
+- PR empilée créée : `#120`, base `agent/plan-s008-vps-pilot-100`, sans
+  reviewer. Commit de production : `97cc119` ; CI en attente.
+
+---
