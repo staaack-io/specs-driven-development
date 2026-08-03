@@ -464,21 +464,24 @@
       ]
     },
     "T-017": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-003", "T-009"],
       "test_ids": [
         "T-017-T1", "T-017-T2", "T-017-T3", "T-017-T4",
         "T-017-T5", "T-017-T6", "T-017-T7", "T-017-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 92,
+      "branch": "agent/build-t017-sdd-test",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T13:23:05Z",
+      "red_test_signature": "hermes.skills.sdd-test.scripts.test_test_guard.TestGuardTest.test_t017_t1_guard_is_published",
+      "red_failure_excerpt": "AssertionError: T-017-T1: test_guard.py must publish /sdd-test; Ran 1 test in 0.000s; FAILED (failures=1)",
+      "green_at": "2026-08-03T13:27:27Z",
+      "refactor_at": "2026-08-03T13:28:37Z",
+      "simplify_at": "2026-08-03T13:31:06Z",
+      "done_at": "2026-08-03T13:32:10Z",
       "files_in_scope": [
         "hermes/skills/sdd-test/SKILL.md",
         "hermes/skills/sdd-test/references/delegation-contract.md",
