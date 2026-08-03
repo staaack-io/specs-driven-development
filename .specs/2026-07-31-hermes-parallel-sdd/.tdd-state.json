@@ -553,21 +553,27 @@
       ]
     },
     "T-020": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-016", "T-019"],
       "test_ids": [
         "T-020-T1", "T-020-T2", "T-020-T3", "T-020-T4",
         "T-020-T5", "T-020-T6", "T-020-T7", "T-020-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
-      "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "issue": 53,
+      "branch": "agent/build-t020-profile-070",
+      "pr": 54,
+      "red_at": "2026-08-03T14:13:50Z",
+      "red_test_signature": "scripts.test_validate_distribution.DistributionValidatorTest.test_release_0_7_0_includes_test_validate_and_release_barriers",
+      "red_failure_excerpt": "AssertionError: expected profile version 0.7.0 but previous candidate was 0.6.1",
+      "green_at": "2026-08-03T14:13:56Z",
+      "refactor_at": "2026-08-03T14:14:46Z",
+      "simplify_at": "2026-08-03T14:16:22Z",
+      "done_at": "2026-08-03T14:16:22Z",
+      "commit": "66f6e18e855d26a38c926af66eff4927ca10a691",
+      "ci": "2/2 success",
+      "merge_gate": "external-explicit-go-pending",
       "files_in_scope": [
         "scripts/test_validate_distribution.py",
         "scripts/test_sdd_s005_contract.py",
@@ -655,7 +661,6 @@
     "T-023": {
       "phase": "done",
       "status": "done",
-      "status": "in_progress",
       "dependencies": ["T-021", "T-022"],
       "test_ids": [
         "T-023-T1", "T-023-T2", "T-023-T3",
@@ -664,7 +669,7 @@
       "kanban_id": null,
       "issue": 104,
       "branch": "agent/build-t023-s006-audit",
-      "pr": null,
+      "pr": 105,
       "red_at": "2026-08-03T14:48:48Z",
       "red_test_signature": "hermes.scripts.test_sdd_s006_contract.SddS006ContractTest.test_t023_t5_help_and_docs_publish_both_commands_as_installed",
       "red_failure_excerpt": "AssertionError: /sdd-review [<feature-id>] [--base <ref>] absent from installed help; Ran 6 tests, FAILED (failures=1)",
@@ -681,21 +686,27 @@
       ]
     },
     "T-024": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-020", "T-023"],
       "test_ids": [
         "T-024-T1", "T-024-T2", "T-024-T3", "T-024-T4",
         "T-024-T5", "T-024-T6", "T-024-T7", "T-024-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
-      "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "issue": 55,
+      "branch": "agent/build-t024-profile-080",
+      "pr": 56,
+      "red_at": "2026-08-03T15:06:43Z",
+      "red_test_signature": "scripts.test_validate_distribution.DistributionValidatorTest.test_release_0_8_0_includes_review_ship_and_release_barriers",
+      "red_failure_excerpt": "AssertionError: expected profile version 0.8.0 but previous candidate was 0.7.0",
+      "green_at": "2026-08-03T15:06:57Z",
+      "refactor_at": "2026-08-03T15:07:52Z",
+      "simplify_at": "2026-08-03T15:09:05Z",
+      "done_at": "2026-08-03T15:09:05Z",
+      "commit": "855f41a2f6d5bdd8ad8e35cef8d608a91bcb9071",
+      "ci": "2/2 success",
+      "merge_gate": "external-explicit-go-pending",
       "files_in_scope": [
         "scripts/test_validate_distribution.py",
         "scripts/test_sdd_s006_contract.py",
@@ -715,6 +726,129 @@
         "skills/sdd-ship/scripts/ship_guard.py",
         "skills/sdd-ship/scripts/test_ship_guard.py",
         "skills/sdd-ship/scripts/test_skill_contract.py",
+        "skills/sdd-help/SKILL.md",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/workflows/ci.yml"
+      ]
+    },
+    "T-025": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-024"],
+      "test_ids": [
+        "T-025-T1", "T-025-T2", "T-025-T3", "T-025-T4",
+        "T-025-T5", "T-025-T6", "T-025-T7"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/e2e/parallel_scenario.py",
+        "hermes/e2e/test_parallel_scenario.py"
+      ]
+    },
+    "T-026": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-024"],
+      "test_ids": [
+        "T-026-T1", "T-026-T2", "T-026-T3", "T-026-T4",
+        "T-026-T5", "T-026-T6", "T-026-T7", "T-026-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/e2e/recovery_scenario.py",
+        "hermes/e2e/test_recovery_scenario.py"
+      ]
+    },
+    "T-027": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-025", "T-026"],
+      "test_ids": [
+        "T-027-T1", "T-027-T2", "T-027-T3", "T-027-T4",
+        "T-027-T5", "T-027-T6", "T-027-T7", "T-027-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/e2e/run_sdd_e2e.py",
+        "hermes/e2e/test_run_sdd_e2e.py",
+        "hermes/e2e/README.md"
+      ]
+    },
+    "T-028": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-027"],
+      "test_ids": [
+        "T-028-T1", "T-028-T2", "T-028-T3",
+        "T-028-T4", "T-028-T5", "T-028-T6"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/scripts/test_sdd_s007_contract.py",
+        "hermes/skills/sdd-help/SKILL.md",
+        "hermes/README.md",
+        "docs/artifact-contract.md",
+        "docs/codex-migration.md"
+      ]
+    },
+    "T-029": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-024", "T-028"],
+      "test_ids": [
+        "T-029-T1", "T-029-T2", "T-029-T3", "T-029-T4",
+        "T-029-T5", "T-029-T6", "T-029-T7", "T-029-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "scripts/run_skill_tests.py",
+        "scripts/test_run_skill_tests.py",
+        "scripts/test_validate_distribution.py",
+        "scripts/test_sdd_s007_contract.py",
+        "hermes/e2e/parallel_scenario.py",
+        "hermes/e2e/test_parallel_scenario.py",
+        "hermes/e2e/recovery_scenario.py",
+        "hermes/e2e/test_recovery_scenario.py",
+        "hermes/e2e/run_sdd_e2e.py",
+        "hermes/e2e/test_run_sdd_e2e.py",
+        "hermes/e2e/README.md",
         "skills/sdd-help/SKILL.md",
         "distribution.yaml",
         "CHANGELOG.md",
