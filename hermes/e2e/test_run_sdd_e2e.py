@@ -88,6 +88,14 @@ if "chat" in args:
     elif prompt == "approve":
         review = feature / "02-spec-review.md"
         review.write_text("""# Review\n\n## Summary\n\n- verdict: approve\n- acs_total: 2\n- acs_failed: 0\n- open_questions: 0\n- reviewer: automated-e2e\n- reviewed_at: 2026-07-30T12:00:00Z\n- decision_evidence: approve\n- decision_evidence_mode: direct-response\n""", encoding="utf-8")
+    elif prompt.startswith("/sdd-epic-plan "):
+        feature.mkdir(parents=True, exist_ok=True)
+        (feature / "03-epic-design.md").write_text("# Epic design\n", encoding="utf-8")
+        (feature / "03a-epic-roadmap.md").write_text("# Epic roadmap\n", encoding="utf-8")
+    elif prompt.startswith("/sdd-"):
+        feature.mkdir(parents=True, exist_ok=True)
+        command = prompt.split(maxsplit=1)[0].removeprefix("/sdd-")
+        (feature / f"e2e-{command}.proof").write_text("passed\n", encoding="utf-8")
     print("fake response")
     print("\nsession_id: fake-chat-1", file=sys.stderr)
     raise SystemExit(0)
@@ -146,7 +154,7 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual("passed", result["status"])
         self.assertFalse(result["approval_is_human"])
         self.assertTrue(result["checks"]["full_stack_delegation_proved"])
-        run_dir = Path(result["run_dir"])
+        run_dir = self.root / result["run_dir"]
         self.assertTrue((run_dir / "logs/result.json").is_file())
         self.assertTrue((run_dir / "project/.specs" / FEATURE_ID / "03-design.candidate.md").is_file())
 
@@ -156,6 +164,91 @@ class RunnerTest(unittest.TestCase):
         resumed = [call[call.index("--resume") + 1] for call in calls if "--resume" in call]
         self.assertTrue(resumed)
         self.assertEqual({"fake-chat-1"}, set(resumed))
+
+    def test_t027_t1_runner_no_longer_stops_after_plan(self):
+        code, stdout, stderr = self.invoke()
+        self.assertEqual(0, code, stderr)
+        result = json.loads(stdout)
+        self.assertEqual("ship", result["lifecycle"][-1])
+
+    def test_t027_t2_traverses_the_complete_sdd_lifecycle(self):
+        code, stdout, stderr = self.invoke()
+        self.assertEqual(0, code, stderr)
+        self.assertEqual(
+            [
+                "onboard", "wire-harness", "spec", "spec-review",
+                "epic-plan", "plan", "build", "code-simplify", "test",
+                "validate", "review", "ship",
+            ],
+            json.loads(stdout)["lifecycle"],
+        )
+
+    def test_t027_t3_run_is_sentinelled_and_disposable(self):
+        code, stdout, stderr = self.invoke()
+        self.assertEqual(0, code, stderr)
+        run_dir = self.root / json.loads(stdout)["run_dir"]
+        self.assertTrue((run_dir / RUNNER.SENTINEL).is_file())
+        self.assertEqual(
+            run_dir.resolve(), RUNNER.validate_cleanup_target(run_dir, self.root)
+        )
+
+    def test_t027_t4_parallel_and_recovery_proofs_precede_dependents(self):
+        code, stdout, stderr = self.invoke()
+        self.assertEqual(0, code, stderr)
+        sequence = json.loads(stdout)["evidence_order"]
+        fan_in = sequence.index("parallel-and-recovery")
+        self.assertLess(fan_in, sequence.index("build"))
+        self.assertLess(fan_in, sequence.index("ship"))
+
+    def test_t027_t5_each_task_has_a_distinct_execution_envelope(self):
+        code, stdout, stderr = self.invoke()
+        self.assertEqual(0, code, stderr)
+        envelopes = json.loads(stdout)["task_envelopes"]
+        self.assertGreaterEqual(len(envelopes), 4)
+        for field in ("issue", "card", "branch", "worktree", "session", "pr"):
+            values = [envelope[field] for envelope in envelopes.values()]
+            self.assertEqual(len(values), len(set(values)), field)
+
+    def test_t027_t6_observes_merge_and_go_without_merging(self):
+        code, stdout, stderr = self.invoke()
+        self.assertEqual(0, code, stderr)
+        barrier = json.loads(stdout)["barrier"]
+        self.assertFalse(barrier["before_observed_fan_in"])
+        self.assertFalse(barrier["observed_without_go"])
+        self.assertTrue(barrier["observed_with_go"])
+        self.assertEqual([], barrier["merge_commands"])
+
+    def test_t027_t7_failure_exposes_explicit_preserved_run_resume(self):
+        with mock.patch.dict(os.environ, {"FAKE_MUTATE_APP": "1"}, clear=False):
+            code, _stdout, stderr = self.invoke()
+        self.assertEqual(1, code)
+        failure = json.loads(stderr)
+        self.assertTrue(failure["preserved"])
+        self.assertEqual(
+            ["--resume-run", failure["run_dir"]], failure["resume"]
+        )
+        resume_code, resume_stdout, resume_stderr = self.invoke(*failure["resume"])
+        self.assertEqual(0, resume_code, resume_stderr)
+        resumed = json.loads(resume_stdout)
+        self.assertEqual("preserved-for-retry", resumed["status"])
+        self.assertEqual(0, resumed["llm_calls"])
+
+    def test_t027_t8_result_is_redacted_and_contains_only_relative_evidence(self):
+        with mock.patch.dict(
+            os.environ,
+            {"E2E_SECRET_PROBE": "ghp_sensitive", "E2E_EMAIL_PROBE": "a@example.test"},
+            clear=False,
+        ):
+            code, stdout, stderr = self.invoke()
+        self.assertEqual(0, code, stderr)
+        result = json.loads(stdout)
+        encoded = json.dumps(result)
+        self.assertNotIn(str(self.root), encoded)
+        self.assertNotIn("/Users/", encoded)
+        self.assertNotIn("ghp_sensitive", encoded)
+        self.assertNotIn("a@example.test", encoded)
+        self.assertTrue(result["evidence"])
+        self.assertTrue(all(not Path(path).is_absolute() for path in result["evidence"]))
 
     def test_dry_run_neither_invokes_hermes_nor_creates_sandbox(self):
         code, stdout, stderr = self.invoke("--dry-run")
@@ -172,14 +265,14 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(1, code)
         failure = json.loads(stderr)
         self.assertIn("hors de .specs", failure["error"])
-        run_dir = Path(failure["run_dir"])
+        run_dir = self.root / failure["run_dir"]
         self.assertTrue(run_dir.is_dir())
         self.assertTrue((run_dir / "logs/failure.json").is_file())
 
     def test_cleanup_occurs_only_after_success_and_explicit_flag(self):
         code, stdout, stderr = self.invoke("--cleanup-on-success")
         self.assertEqual(0, code, stderr)
-        run_dir = Path(json.loads(stdout)["run_dir"])
+        run_dir = self.root / json.loads(stdout)["run_dir"]
         self.assertFalse(run_dir.exists())
 
     def test_profile_below_047_fails_and_preserves_logs(self):
@@ -188,7 +281,7 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(1, code)
         failure = json.loads(stderr)
         self.assertIn("Profil 0.4.6 < 0.4.7", failure["error"])
-        self.assertTrue(Path(failure["run_dir"]).is_dir())
+        self.assertTrue((self.root / failure["run_dir"]).is_dir())
 
     def test_timeout_terminates_process_group_and_preserves_run(self):
         argv = [
@@ -205,7 +298,7 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(1, code)
         failure = json.loads(stderr.getvalue())
         self.assertIn("Délai de 0.2s dépassé", failure["error"])
-        self.assertTrue(Path(failure["run_dir"]).is_dir())
+        self.assertTrue((self.root / failure["run_dir"]).is_dir())
 
     def test_cleanup_validator_rejects_unmarked_directory(self):
         unmarked = self.root / "sdd-hermes-e2e-unmarked"

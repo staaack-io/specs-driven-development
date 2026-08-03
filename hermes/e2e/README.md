@@ -1,27 +1,29 @@
 # Test E2E SDD avec Hermes 0.19.0
 
-`run_sdd_e2e.py` reproduit le début du workflow SDD dans un projet full-stack
-jetable. Il ne remplace pas une approbation humaine et ne lance ni build, ni
-test applicatif, ni déploiement.
+`run_sdd_e2e.py` reproduit le workflow SDD complet dans un projet full-stack
+jetable. Il n'appelle aucun réseau, VPS ou déploiement et ne sollicite aucun
+reviewer humain.
 
 ## Périmètre vérifié
 
 Le runner exécute dans cet ordre :
 
-1. `/sdd-help` ;
-2. `/sdd-status` ;
-3. `/sdd-spec` sur une fixture Spring Boot + React/Next.js ;
-4. `/sdd-spec-review` et vérification du verdict provisoire
+1. `/sdd-help`, `/sdd-status`, `/sdd-onboard` et `/sdd-wire-harness` ;
+2. `/sdd-spec` sur une fixture Spring Boot + React/Next.js ;
+3. `/sdd-spec-review` et vérification du verdict provisoire
    `ready-for-approval` ;
-5. `approve` dans un processus et un tour séparés ;
-6. `/sdd-plan` avec les deux rôles `spring-architect` et
+4. `approve` dans un processus et un tour séparés ;
+5. `/sdd-epic-plan` puis `/sdd-plan` avec les deux rôles `spring-architect` et
    `react-nextjs-architect` ;
-7. export redacted des sessions et validation déterministe des artefacts.
+6. les scénarios locaux T-025 et T-026 avant leurs commandes dépendantes ;
+7. `/sdd-build`, `/sdd-code-simplify`, `/sdd-test`, `/sdd-validate`,
+   `/sdd-review` et `/sdd-ship` ;
+8. export redacted des sessions et agrégation des preuves relatives.
 
-Le test s'arrête aux candidats `03-design.candidate.md` et
-`04-tasks.candidate.md`. Il refuse la création de `.tdd-state.json` ou des
-artefacts approuvés : l'approbation du plan reste une décision humaine hors du
-test.
+La réponse `approve` est celle de l'acteur synthétique `automated-e2e`. Elle
+prouve uniquement la porte de décision du bac à sable et ne représente jamais
+une approbation humaine. Le runner observe aussi la fusion et le go du fan-in
+comme des données locales, sans exécuter de merge.
 
 ## Pourquoi deux modes Hermes
 
@@ -56,6 +58,9 @@ Références de compatibilité : release Hermes 0.19.0, commit
 - suppression possible uniquement avec `--cleanup-on-success`, après succès,
   et après validation du chemin réel, du préfixe et d'une sentinelle UUID ;
 - export de session avec `--redact` ;
+- rapport final limité au nom relatif du run et à des chemins de preuve relatifs ;
+- enveloppes distinctes issue, carte, branche, worktree, session et PR ;
+- reprise explicite d'un run conservé, sans nouvel appel LLM ;
 - preuve `delegate_task`, présence des deux rôles, couverture des AC et unicité
   des Task-IDs/Test-IDs.
 
@@ -85,9 +90,10 @@ python3 hermes/e2e/run_sdd_e2e.py \
   --hermes-bin hermes
 ```
 
-Le JSON final contient les chemins `run_dir` et `project`, les IDs de session et
-les validations. En cas d'échec, consulter `run_dir/logs/failure.json` puis les
-logs de chaque étape. Pour supprimer automatiquement un bac à sable uniquement
+Le JSON final contient le nom relatif `run_dir`, les IDs de session, les
+enveloppes et les validations. En cas d'échec, consulter
+`<temp-root>/<run_dir>/logs/failure.json` puis les logs de chaque étape. Pour
+supprimer automatiquement un bac à sable uniquement
 après un succès complet :
 
 ```bash
@@ -102,6 +108,8 @@ Options utiles :
 - `--timeout 900` : délai maximal de chaque processus Hermes ;
 - `--temp-root /chemin/temporaire` : racine autorisée pour `mktemp` ;
 - `--feature-id YYYY-MM-DD-slug` : identifiant stable, au plus 40 caractères.
+- `--resume-run sdd-hermes-e2e-xxxxxxxx` : inspecter explicitement un run
+  conservé sous `--temp-root`, sans LLM et sans mutation.
 
 ## Tests unitaires
 
