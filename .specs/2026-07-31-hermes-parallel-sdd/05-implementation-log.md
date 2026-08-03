@@ -980,7 +980,8 @@
   écart d'environnement identique à T-009. Aucun runtime local fourni ne porte
   ce module et aucune dépendance n'a été ajoutée.
 - Issue d'exécution créée : `#78`. Branche :
-  `agent/build-t010-parallel-admission`.
+  `agent/build-t010-parallel-admission`. PR empilée : `#79`, basée sur la
+  branche de T-009 jusqu'à sa fusion.
 - État : `T-010 = simplify`, `active_task = T-010`.
 
 ---
