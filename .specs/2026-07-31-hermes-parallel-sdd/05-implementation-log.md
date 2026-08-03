@@ -1084,3 +1084,71 @@
 - État final : `T-011 = done`, `active_task = null`.
 
 ---
+
+## T-012 — Appliquer le go humain et le fan-in de vague
+
+### T-012 · red · 2026-08-03T11:43:56Z
+
+- Tests ajoutés : `hermes/runtime/test_sdd_wave_synthesizer.py`, couvrant
+  T-012-T1 à T-012-T8 et AC-045 à AC-047, AC-134 à AC-137 et AC-231.
+- Commande :
+  `python3 -m unittest hermes.runtime.test_sdd_wave_synthesizer.WaveSynthesizerTest.test_t012_t1_completed_wave_has_one_synthesis_surface`.
+- Résultat : **échec attendu** —
+  `AssertionError: T-012-T1: sdd_wave_synthesizer.py must implement wave synthesis` ;
+  **1 test exécuté, 1 échec**.
+- La branche T-012 est empilée sur le commit T-011 `a8f9b46`, sans fusion ni
+  demande de review.
+- État : `T-012 = red`, `active_task = T-012`.
+
+---
+
+### T-012 · green · 2026-08-03T11:45:39Z
+
+- Production minimale : observation séparée des gates techniques, du go humain
+  et de la fusion déjà réalisée ; vérification des journaux ; appel unique au
+  fan-in transactionnel ; création idempotente d'une PR brouillon de fan-in.
+- `next_wave_admissible` reste faux tant que la fusion humaine de la PR de
+  fan-in n'est pas observée.
+- Le test de reprise réel injecte un crash avant marqueur et prouve la
+  restauration de l'ancien ensemble complet des trois artefacts.
+- Vérification : **8/8 T-012 verts en 0,877 s**.
+- État : `T-012 = green`, `active_task = T-012`.
+
+---
+
+### T-012 · refactor · 2026-08-03T11:46:59Z
+
+- `_ensure_fan_in_pr` isole la récupération/création idempotente de la PR et
+  garde `synthesize_wave` centré sur l'ordre journal → transaction → PR → gate.
+- T-012-T8 prouve maintenant les deux côtés du marqueur : rollback complet
+  avant marqueur et roll-forward complet après marqueur.
+- Vérification après refactor : **8/8 T-012 en 1,738 s** et
+  `git diff --check` vert.
+- État : `T-012 = refactor`, `active_task = T-012`.
+
+---
+
+### T-012 · simplify · 2026-08-03T11:48:01Z
+
+- Passe `clarity-over-cleverness` : fonctions courtes par transition, constantes
+  de statuts, retours anticipés et zéro ligne Python supérieure à 100 caractères.
+- Aucune demande de review, fusion, boucle concurrente, suppression ou commande
+  Git destructive n'est exposée.
+- Issue d'exécution créée : `#82`. Branche :
+  `agent/build-t012-wave-fan-in`.
+- État : `T-012 = simplify`, `active_task = T-012`.
+
+---
+
+### T-012 · done · 2026-08-03T11:48:53Z
+
+- Les huit Test-IDs T-012-T1 à T-012-T8 couvrent les huit AC de la tâche dans
+  huit tests, dont deux récupérations transactionnelles réelles.
+- Vérification finale : **8/8 T-012 en 1,710 s**, **31/31 runtime en 15,949 s**,
+  **8/8 bridge en 0,009 s**, **7/7 enveloppe job en 0,015 s** et **6/6
+  documentation en 1,881 s** ; `git diff --check` est vert.
+- Le synthesizer n'infère jamais le go, ne fusionne rien et bloque la vague
+  suivante jusqu'à observation de la PR de fan-in fusionnée ailleurs.
+- État final : `T-012 = done`, `active_task = null`.
+
+---
