@@ -17,7 +17,7 @@
 
 ## Task ID Registry
 
-- **high_water_mark :** 8
+- **high_water_mark :** 14
 - **retired_ids :** (aucun)
 
 ## Task Index
@@ -524,3 +524,342 @@ T-003 ─> T-004 ─┐
 
 Prochaine tâche S-002 après livraison de S-001 : `$build T-004`, en parallèle
 avec `$build T-005` dans deux worktrees aux scopes disjoints.
+
+## Tâches : S-003 — `/sdd-build` mono-tâche et parallèle, profil 0.6.0
+
+> Cette section prolonge le registre S-001/S-002. T-001 à T-008, leurs
+> preuves, scopes et états restent inchangés. Chaque nouveau chemin est un
+> littéral relatif au dépôt nommé ; aucun glob ni dossier n'est autorisé.
+
+### S-003 Inputs
+
+- Révision de `03-design.md` : addendum S-003 du 2026-08-03.
+- Source de tranche : issue GitHub #74.
+- Baseline source : `main` à `0f5932a`, T-001 à T-008 `done`.
+- Couverture primaire : exactement 51 AC de S-003.
+- Barrière : T-009 mono-tâche doit être `done` et fusionnée avant T-010 ;
+  T-011 attend T-010 afin de laisser le second slot global au writer S-004.
+- Capacité : deux writers, trois analyses internes en lecture seule et une gate
+  lourde au maximum.
+
+### S-003 Task Index
+
+| ID | Titre | AC-IDs primaires | Dépend de | Estimation | Portes |
+|---|---|---|---|---:|---|
+| T-009 | Orchestrer `/sdd-build` mono-tâche et ses preuves | AC-019, AC-037–AC-044, AC-124–AC-127, AC-257–AC-259 | T-008 | 3–4 h | unit, skill-contract, runtime, diff |
+| T-010 | Admettre et créer les cartes du build parallèle | AC-020–AC-023, AC-027–AC-029, AC-031, AC-128–AC-133, AC-236, AC-260 | T-009 | 3–4 h | unit, orchestrator-contract, runtime, diff |
+| T-011 | Isoler l'enveloppe Git, Hermes et GitHub d'un job | AC-030, AC-032–AC-036, AC-233–AC-234 | T-010 | 3–4 h | unit, job-contract, bridge, runtime, diff |
+| T-012 | Appliquer le go humain et le fan-in de vague | AC-045–AC-047, AC-134–AC-137, AC-231 | T-010, T-011 | 3–4 h | unit, fan-in-contract, runtime, diff |
+| T-013 | Auditer la source S-003 sur exactement 51 AC | AC-024 | T-012 | 2–4 h | s003-contract, python, skills, markdown, diff, CI |
+| T-014 | Publier le profil 0.6.0 avec parité et rollback | AC-013, AC-138 | T-013 | 3–4 h | profile-layout, parity, distribution, python, markdown, diff, CI, review |
+
+Après T-009, T-010 est le writer S-003 qui peut progresser avec le writer S-004
+hors périmètre. T-011 attend T-010 ; leurs scopes restent strictement disjoints
+mais ils ne sont pas planifiés comme writers concurrents. Toutes les tâches
+S-003 utilisent donc un seul slot de développement à la fois après T-009.
+
+### S-003 Tasks
+
+### T-009 : Orchestrer `/sdd-build` mono-tâche et ses preuves
+
+- **Origine qualifiée :** `spring-architect:T-009`
+- **Dépôt d'exécution :** `staaack-io/specs-driven-development`
+- **AC-IDs :** AC-019, AC-037, AC-038, AC-039, AC-040, AC-041, AC-042,
+  AC-043, AC-044, AC-124, AC-125, AC-126, AC-127, AC-257, AC-258, AC-259
+- **Test-IDs :**
+  - T-009-T1 (RED arguments — l'absence actuelle de `/sdd-build <feature-id> <T-NNN>` échoue avant toute mutation)
+  - T-009-T2 (stack routing — les preuves Spring chargent test-engineer puis implementer Spring ; les preuves React/Next chargent les deux rôles React)
+  - T-009-T3 (RED ownership — le test-engineer reçoit seulement Test-IDs et fichiers de test, écrit le test rouge et ne reçoit aucun handle d'artefact partagé)
+  - T-009-T4 (RED proof gate — une production sans signature, commande, échec attendu ou événement RED durable est refusée)
+  - T-009-T5 (GREEN ownership — l'implementer intervient après la preuve RED et écrit uniquement le minimum de production en scope)
+  - T-009-T6 (cycle order — le même job observe strictement RED, GREEN, REFACTOR puis SIMPLIFY sans phase sautée)
+  - T-009-T7 (evidence — chaque transition conserve Test-IDs, argv structurés, sortie expurgée et liste des fichiers concernés)
+  - T-009-T8 (shared-artifact safety — les rôles et le worker ne peuvent modifier `04-tasks.md`, `.tdd-state.json` ou `05-implementation-log.md`)
+  - T-009-T9 (journal recovery — une reprise avec le même event-id et le même contenu est idempotente ; une preuve différente est refusée)
+- **Files in scope :**
+  - `hermes/skills/sdd-build/scripts/test_build_guard.py`
+  - `hermes/skills/sdd-build/scripts/test_skill_contract.py`
+  - `hermes/skills/sdd-build/scripts/build_guard.py`
+  - `hermes/skills/sdd-build/SKILL.md`
+  - `hermes/skills/sdd-build/references/delegation-contract.md`
+  - `hermes/skills/sdd-build/references/tdd-cycle-contract.md`
+  - `hermes/skills/sdd-build/references/role-spring-test-engineer.md`
+  - `hermes/skills/sdd-build/references/role-spring-implementer.md`
+  - `hermes/skills/sdd-build/references/role-react-nextjs-test-engineer.md`
+  - `hermes/skills/sdd-build/references/role-react-nextjs-implementer.md`
+- **Dépendances :** T-008
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30–45 min ; SIMPLIFY 20–30 min.
+- **Portes à exécuter après green :** `python-unit-build`, `skill-contract`,
+  `runtime-regression`, `git-diff-check`
+- **Retour arrière :** retirer uniquement le nouveau dossier
+  `hermes/skills/sdd-build` de la branche ; le profil 0.5.0 et le runtime S-002
+  restent inchangés.
+- **Notes :** écrire les tests avant le garde. Le garde appelle les primitives
+  runtime existantes pour état, lease, RED, journal et fingerprint ; il ne les
+  recopie pas. Chaque rôle reçoit un contexte autonome minimal et aucun chemin
+  vers les artefacts partagés. Les commandes sont des listes d'arguments, et
+  la sortie est expurgée avant `append_job_event`. T-009 doit être fusionnée
+  avant toute tâche d'orchestration parallèle.
+
+### T-010 : Admettre et créer les cartes du build parallèle
+
+- **Origine qualifiée :** `spring-architect:T-010`
+- **Dépôt d'exécution :** `staaack-io/specs-driven-development`
+- **AC-IDs :** AC-020, AC-021, AC-022, AC-023, AC-027, AC-028, AC-029,
+  AC-031, AC-128, AC-129, AC-130, AC-131, AC-132, AC-133, AC-236, AC-260
+- **Test-IDs :**
+  - T-010-T1 (RED parallel CLI — `--parallel` est absent et `--max-workers` n'a pas encore de validation structurée)
+  - T-010-T2 (worker bounds — seules les valeurs 1 et 2 sont acceptées ; l'absence sur VPS vaut 2 et le plafond reste 2)
+  - T-010-T3 (admission — toutes les tâches `pending`/`ready` dont les dépendances sont `done`/`done` et les scopes mutuellement disjoints reçoivent une carte dans la vague)
+  - T-010-T4 (scope wave — deux scopes disjoints sont admis ensemble ; tout chevauchement est sérialisé)
+  - T-010-T5 (card metadata — chaque carte porte projet parent, carte parente, branche, clé d'idempotence, skill, max-runtime 45 minutes et deux retries)
+  - T-010-T6 (capacity — toutes les cartes admissibles sont lancées dans la vague, mais deux leases writers au plus sont actifs et les suivantes attendent sans mutation)
+  - T-010-T7 (mono barrier — T-010 refuse de démarrer tant que T-009 n'est pas fusionnée ; ensuite l'orchestrateur S-003 et le chantier S-004 peuvent avoir des scopes disjoints sans intégrer AC-014/AC-139)
+  - T-010-T8 (Hermes authority — l'adaptateur Kanban est l'unique surface de dispatch ; aucune boucle scheduler Python ni utilisation de `delegate_task` pour un job)
+  - T-010-T9 (failure isolation — timeout ou échec d'une carte ne révoque pas le lease ni la progression d'un autre job)
+- **Files in scope :**
+  - `hermes/runtime/test_sdd_build_orchestrator.py`
+  - `hermes/skills/sdd-build/scripts/test_build_guard.py`
+  - `hermes/runtime/build-orchestrator-contract.md`
+  - `hermes/runtime/sdd_build_orchestrator.py`
+  - `hermes/skills/sdd-build/scripts/build_guard.py`
+  - `hermes/skills/sdd-build/SKILL.md`
+- **Dépendances :** T-009
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30–45 min ; SIMPLIFY 20–30 min.
+- **Portes à exécuter après green :** `python-unit-orchestrator`,
+  `orchestrator-contract`, `runtime-regression`, `skill-contract`,
+  `git-diff-check`
+- **Retour arrière :** rétablir les trois fichiers du skill à leur version
+  mono-tâche et retirer les trois fichiers d'orchestrateur ; `/sdd-build`
+  séquentiel reste utilisable.
+- **Notes :** le test T-010-T7 est la preuve explicite d'AC-128. La tâche ne
+  crée ni issue, worktree, session ou PR ; elle fournit à T-011 une enveloppe
+  admise par adaptateur. La sélection réutilise `validate_state` et
+  `acquire_scope_lease`. Les timers utilisent une horloge injectée, sans attente
+  bloquante.
+
+### T-011 : Isoler l'enveloppe Git, Hermes et GitHub d'un job
+
+- **Origine qualifiée :** `spring-architect:T-011`
+- **Dépôt d'exécution :** `staaack-io/specs-driven-development`
+- **AC-IDs :** AC-030, AC-032, AC-033, AC-034, AC-035, AC-036, AC-233, AC-234
+- **Test-IDs :**
+  - T-011-T1 (RED envelope — un job admis ne sait pas encore créer son issue enfant, sa branche, son worktree, sa session et sa PR brouillon)
+  - T-011-T2 (Git isolation — la branche vaut `sdd/<feature-id>/<task-id>-<slug>` et le worktree Hermes natif reste sous `.worktrees/`)
+  - T-011-T3 (Hermes/GitHub isolation — une session, une issue enfant liée et une PR brouillon uniques sont associées au job)
+  - T-011-T4 (redaction — logs et erreurs excluent secrets, tokens, données personnelles, chemins absolus et contenu métier)
+  - T-011-T5 (idempotent recovery — rejouer la clé du job réutilise branche, worktree, session, issue et PR sans doublon)
+  - T-011-T6 (failure preservation — timeout ou échec conserve logs, journal, branche, worktree et PR du job sans endommager l'autre job)
+  - T-011-T7 (Git safety — aucun adaptateur n'expose force-push, reset destructif, suppression de worktree ou fusion)
+- **Files in scope :**
+  - `hermes/runtime/test_sdd_job_execution.py`
+  - `hermes/runtime/job-execution-contract.md`
+  - `hermes/runtime/sdd_job_execution.py`
+- **Dépendances :** T-010
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30–45 min ; SIMPLIFY 20–30 min.
+- **Portes à exécuter après green :** `python-unit-job`, `job-contract`,
+  `github-bridge-regression`, `runtime-regression`, `git-diff-check`
+- **Retour arrière :** retirer les trois fichiers de la branche ; conserver
+  tous les objets GitHub/Hermes et worktrees déjà créés pour diagnostic, sans
+  nettoyage automatique.
+- **Notes :** utiliser des adaptateurs structurés pour Git, worktree, session et
+  logs, puis appeler le bridge S-002 pour issue/PR. La tâche ne crée pas la
+  carte, n'admet aucun job et ne modifie aucun artefact partagé. Les tests
+  emploient des doubles sans réseau ni GitHub réel.
+
+### T-012 : Appliquer le go humain et le fan-in de vague
+
+- **Origine qualifiée :** `spring-architect:T-012`
+- **Dépôt d'exécution :** `staaack-io/specs-driven-development`
+- **AC-IDs :** AC-045, AC-046, AC-047, AC-134, AC-135, AC-136, AC-137, AC-231
+- **Test-IDs :**
+  - T-012-T1 (RED wave — aucune surface S-003 ne sait encore consolider une vague terminée)
+  - T-012-T2 (awaiting-go — PR prête, checks verts et review approve placent seulement la carte en `awaiting_go`)
+  - T-012-T3 (human merge gate — sans go explicite aucune fusion ni carte `done` ; après go et merge humain observé, seule la carte concernée devient `done`)
+  - T-012-T4 (fan-in eligibility — le synthesizer attend que toutes les cartes de la vague soient `done` et vérifie chaque journal immuable)
+  - T-012-T5 (single writer — seul l'acteur `synthesizer` actualise transactionnellement `04-tasks.md`, `.tdd-state.json` et `05-implementation-log.md`)
+  - T-012-T6 (fan-in PR — le synthesizer crée une seule PR de fan-in idempotente et n'appelle aucune fusion)
+  - T-012-T7 (wave barrier — aucune tâche de la vague suivante n'est admise avant observation de la fusion humaine de la PR de fan-in)
+  - T-012-T8 (crash recovery — interruption avant/après marqueur rend l'ancien ou le nouvel ensemble complet, jamais un mélange)
+- **Files in scope :**
+  - `hermes/runtime/test_sdd_wave_synthesizer.py`
+  - `hermes/runtime/wave-synthesizer-contract.md`
+  - `hermes/runtime/sdd_wave_synthesizer.py`
+- **Dépendances :** T-010, T-011
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30–45 min ; SIMPLIFY 20–30 min.
+- **Portes à exécuter après green :** `python-unit-fan-in`,
+  `fan-in-contract`, `runtime-regression`, `github-bridge-regression`,
+  `git-diff-check`
+- **Retour arrière :** retirer les trois fichiers de la branche avant fusion ;
+  en interruption, appeler la reprise transactionnelle existante et conserver
+  cartes, PR et journaux. Ne jamais nettoyer une vague non consolidée.
+- **Notes :** composer `verify_job_journal` et `transactional_fan_in` au lieu
+  de les dupliquer. La PR de fan-in est créée sur une branche propre du
+  synthesizer. La présence d'un go est une donnée fournie par l'adaptateur
+  humain, jamais déduite d'une review ou de checks verts.
+
+### T-013 : Auditer la source S-003 sur exactement 51 AC
+
+- **Origine qualifiée :** `spring-architect:T-013`
+- **Dépôt d'exécution :** `staaack-io/specs-driven-development`
+- **AC-IDs :** AC-024
+- **Test-IDs :**
+  - T-013-T1 (RED manifest — le contrat agrégé manque et la liste de commandes marque encore `/sdd-build` comme prévue)
+  - T-013-T2 (coverage — le manifeste contient exactement les 51 AC S-003, chacun avec un producteur primaire unique et une preuve exécutable)
+  - T-013-T3 (DAG/scopes — T-009 précède T-010, T-010 précède T-011, leurs scopes sont disjoints, T-012 est le fan-in et le graphe est acyclique)
+  - T-013-T4 (status — la carte créée par T-010 est visible par le contrat `/sdd-status` sans écriture ni valeur déduite)
+  - T-013-T5 (capacity — les contrats prouvent deux writers, trois analyses internes et une gate lourde au plus)
+  - T-013-T6 (source regression — toutes les suites build, runtime, bridge, status et skill passent depuis la source)
+  - T-013-T7 (safety audit — aucun auto-merge, force-push, reset destructif, secret, chemin absolu versionné ou ordonnanceur Python concurrent)
+- **Files in scope :**
+  - `hermes/scripts/test_sdd_s003_contract.py`
+  - `hermes/runtime/README.md`
+  - `hermes/skills/sdd-help/SKILL.md`
+  - `hermes/README.md`
+  - `docs/artifact-contract.md`
+  - `docs/codex-migration.md`
+- **Dépendances :** T-012
+- **Phases estimées :** RED 30–45 min ; GREEN 60–90 min ; REFACTOR 30–45 min ; SIMPLIFY 20–30 min.
+- **Portes à exécuter après green :** `s003-source-contract`, `python-all`,
+  `skill-contracts`, `markdownlint`, `git-diff-check`, `ci`
+- **Retour arrière :** rétablir les cinq documents et retirer le contrat agrégé ;
+  conserver les capacités T-009 à T-012 mais bloquer la publication T-014.
+- **Notes :** T-013 est l'unique fan-in d'audit source ; il ne modifie aucun
+  fichier détenu par T-009 à T-012. Son manifeste énumère les 51 AC et échoue
+  sur tout manque, ajout ou doublon primaire. `/sdd-help` déplace `/sdd-build`
+  des commandes prévues vers les commandes installées ; `/sdd-code-simplify`
+  reste prévu pour S-004.
+
+### T-014 : Publier le profil 0.6.0 avec parité et rollback
+
+- **Origine qualifiée :** `spring-architect:T-014`
+- **Dépôt d'exécution :** `staaack-io/hermes-agent-profile-staaack`
+- **AC-IDs :** AC-013, AC-138
+- **Test-IDs :**
+  - T-014-T1 (RED release — le contrat refuse une distribution encore en 0.5.0 ou sans `/sdd-build` et ses modules runtime)
+  - T-014-T2 (skills parity — `skills/sdd-build` et `skills/sdd-help` sont identiques à leurs sources canoniques)
+  - T-014-T3 (runtime parity — orchestrateur, enveloppe, synthesizer, contrats, README et tests sont identiques à la source)
+  - T-014-T4 (profile tests — les tests build et runtime s'exécutent depuis la disposition profil avec les mêmes résultats)
+  - T-014-T5 (distribution — version 0.6.0, changelog, frontmatters, documentation et découverte des tests sont valides)
+  - T-014-T6 (rollback — la note de release nomme le retour au profil 0.5.0 sans suppression d'états, journaux, logs ou worktrees)
+  - T-014-T7 (publication gate — CI, tests et contrats verts, review approve, zéro fil actionnable et go explicite précèdent la fusion)
+  - T-014-T8 (no VPS — aucune mise à jour ou action VPS n'est exécutée par cette tâche)
+- **Files in scope :**
+  - `scripts/test_validate_distribution.py`
+  - `skills/sdd-build/scripts/test_build_guard.py`
+  - `skills/sdd-build/scripts/test_skill_contract.py`
+  - `hermes/runtime/test_sdd_build_orchestrator.py`
+  - `hermes/runtime/test_sdd_job_execution.py`
+  - `hermes/runtime/test_sdd_wave_synthesizer.py`
+  - `skills/sdd-build/scripts/build_guard.py`
+  - `skills/sdd-build/SKILL.md`
+  - `skills/sdd-build/references/delegation-contract.md`
+  - `skills/sdd-build/references/tdd-cycle-contract.md`
+  - `skills/sdd-build/references/role-spring-test-engineer.md`
+  - `skills/sdd-build/references/role-spring-implementer.md`
+  - `skills/sdd-build/references/role-react-nextjs-test-engineer.md`
+  - `skills/sdd-build/references/role-react-nextjs-implementer.md`
+  - `skills/sdd-help/SKILL.md`
+  - `hermes/runtime/README.md`
+  - `hermes/runtime/build-orchestrator-contract.md`
+  - `hermes/runtime/sdd_build_orchestrator.py`
+  - `hermes/runtime/job-execution-contract.md`
+  - `hermes/runtime/sdd_job_execution.py`
+  - `hermes/runtime/wave-synthesizer-contract.md`
+  - `hermes/runtime/sdd_wave_synthesizer.py`
+  - `distribution.yaml`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `.github/workflows/ci.yml`
+- **Dépendances :** T-013
+- **Phases estimées :** RED 30–45 min ; GREEN copie et packaging 90–120 min ; REFACTOR 30–45 min ; SIMPLIFY 15–30 min.
+- **Portes à exécuter après green :** `profile-layout`, `skills-parity`,
+  `runtime-parity`, `python-all-profile`, `distribution`, `frontmatter`,
+  `markdownlint`, `git-diff-check`, `ci`, `review-approve`,
+  `actionable-threads-zero`, `human-approval`
+- **Retour arrière :** fermer ou annuler la PR profil et conserver la version
+  0.5.0 ; si 0.6.0 est installée ultérieurement, réinstaller 0.5.0 sans
+  supprimer ni convertir états, journaux, logs, branches ou worktrees.
+- **Notes :** copier les fichiers canoniques sans transformation et exécuter
+  les tests depuis la disposition profil. Cette tâche prépare une PR séparée,
+  ne la fusionne jamais automatiquement et n'accède à aucun VPS.
+
+### S-003 Primary AC Coverage Matrix
+
+| AC S-003 | Producteur primaire | Test-ID principal |
+|---|---|---|
+| AC-013 | T-014 | T-014-T1, T-014-T5, T-014-T7 |
+| AC-019 | T-009 | T-009-T1, T-009-T6 |
+| AC-020–AC-023 | T-010 | T-010-T1, T-010-T2, T-010-T6 |
+| AC-024 | T-013 | T-013-T4 |
+| AC-027–AC-029 | T-010 | T-010-T3, T-010-T4 |
+| AC-030 | T-011 | T-011-T3 |
+| AC-031 | T-010 | T-010-T5 |
+| AC-032–AC-036 | T-011 | T-011-T2, T-011-T3, T-011-T4 |
+| AC-037–AC-044 | T-009 | T-009-T3–T-009-T9 |
+| AC-045–AC-047 | T-012 | T-012-T4–T-012-T7 |
+| AC-124–AC-127 | T-009 | T-009-T2–T-009-T8 |
+| AC-128 | T-010 | T-010-T7 |
+| AC-129–AC-133 | T-010 | T-010-T5 |
+| AC-134–AC-137 | T-012 | T-012-T2–T-012-T6 |
+| AC-138 | T-014 | T-014-T5, T-014-T7 |
+| AC-231 | T-012 | T-012-T3, T-012-T6 |
+| AC-233–AC-234 | T-011 | T-011-T7 |
+| AC-236 | T-010 | T-010-T5 |
+| AC-257–AC-259 | T-009 | T-009-T7 |
+| AC-260 | T-010 | T-010-T5 |
+
+La matrice contient **51 identifiants uniques sur 51**. T-013-T2 audite
+secondairement la liste complète et refuse tout AC S-004 ou doublon primaire.
+
+### S-003 Dependency and Capacity Validation
+
+```text
+T-008 done -> T-009 -> T-010 -> T-011 -> T-012 -> T-013 -> T-014
+                         ||
+                         └-> writer S-004 hors périmètre après T-009
+```
+
+- Le graphe est acyclique et l'index suit son ordre topologique.
+- T-010 peut progresser avec le writer S-004 après T-009 `done`, qui représente
+  le mono fusionné. T-011 dépend de T-010 et attend le prochain slot ; T-010 et
+  T-011 ne partagent néanmoins aucun fichier.
+- T-012 est le seul writer de synthèse de vague ; T-013 est le seul writer de
+  l'audit source ; T-014 est le seul writer du profil.
+- Le plafond est de deux leases writers. Les trois analyses internes sont en
+  lecture seule et ne consomment aucun lease. Une seule gate lourde est active.
+- `/sdd-code-simplify` peut progresser dans un autre worktree après T-009, mais
+  ne partage aucun AC ni fichier avec cette tranche planifiée.
+
+### S-003 Cross-cutting Items
+
+- Aucun test ArchUnit, OpenAPI ou migration de base : stack non applicable.
+- Les tests GitHub réels et l'E2E complet restent dans les tranches S-005 et
+  S-007 ; S-003 utilise des adaptateurs déterministes pour ses contrats directs.
+- Les artefacts partagés sont écrits uniquement par T-012 via le runtime v2 ;
+  les tâches de production n'élargissent jamais leur scope vers ces fichiers.
+
+### S-003 Open Questions
+
+- (aucune)
+
+### S-003 Resolved Questions
+
+- Les ADR-001, ADR-003 et ADR-004 couvrent respectivement le Kanban, l'isolation
+  et le fan-in ; aucun ADR-006 n'est nécessaire.
+- Le rollback de publication est le profil 0.5.0 et aucune opération VPS
+  n'appartient à S-003.
+
+### S-003 Sign-off
+
+- [x] Le registre progresse sans réutilisation jusqu'à `high_water_mark: 14`.
+- [x] T-001 à T-008 conservent leurs textes, preuves et scopes.
+- [x] Chaque nouvelle tâche possède des Test-IDs et des chemins littéraux.
+- [x] Chaque nouvelle tâche tient dans une plage de 1 à 4 heures.
+- [x] Le DAG est acyclique ; T-011 attend T-010 et le second slot reste disponible pour S-004.
+- [x] La capacité 2 writers / 3 analyses / 1 gate est respectée.
+- [x] Les 51 AC S-003 ont un producteur primaire unique et une preuve.
+- [x] Aucune question ouverte ne subsiste et aucun nouvel ADR n'est requis.
+- [x] Checklist `design-review.md` relue le 2026-08-03.
+
+Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-009`.
