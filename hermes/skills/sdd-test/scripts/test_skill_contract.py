@@ -34,7 +34,7 @@ class SkillContractTest(unittest.TestCase):
 
     def test_t017_t6_guard_composes_canonical_global_lock(self) -> None:
         tree = ast.parse(
-            (SKILL_ROOT / "scripts" / "test_guard.py").read_text(encoding="utf-8")
+            (SKILL_ROOT / "scripts" / "guard.py").read_text(encoding="utf-8")
         )
         calls = {
             node.func.attr

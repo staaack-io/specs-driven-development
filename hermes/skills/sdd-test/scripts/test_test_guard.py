@@ -11,12 +11,12 @@ import tempfile
 import unittest
 
 
-MODULE_PATH = Path(__file__).with_name("test_guard.py")
+MODULE_PATH = Path(__file__).with_name("guard.py")
 
 
 def load_guard():
     if not MODULE_PATH.is_file():
-        raise AssertionError("T-017-T1: test_guard.py must publish /sdd-test")
+        raise AssertionError("T-017-T1: guard.py must publish /sdd-test")
     spec = importlib.util.spec_from_file_location("sdd_test_guard", MODULE_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)

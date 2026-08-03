@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Deterministic safety boundary for ``/sdd-test``."""
+"""Deterministic safety boundary for ``/sdd-test``.
+
+The production module deliberately does not use a ``test_`` prefix so the
+repository-wide unittest runner cannot mistake it for a test suite.
+"""
 
 from __future__ import annotations
 

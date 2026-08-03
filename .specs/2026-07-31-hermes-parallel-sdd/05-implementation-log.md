@@ -76,6 +76,16 @@
 
 ---
 
+### T-017 · correction CI · 2026-08-03T13:52:35Z
+
+- Le runner officiel a correctement refusé le module de production
+  `test_guard.py`, découvert à tort comme suite sans cas `unittest`.
+- Le garde est renommé `guard.py`; ses tests et contrats suivent ce chemin.
+  Aucun filtre ni contournement n'est ajouté au runner fail-closed.
+- La correction est reportée à T-017 afin que chaque PR empilée reste verte.
+
+---
+
 ## T-015 — Convertir `/sdd-code-simplify` dans la source Hermes
 
 ### T-015 · red · 2026-08-03T12:43:39Z
