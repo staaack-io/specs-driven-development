@@ -4,6 +4,89 @@
 
 ---
 
+## T-019 — Auditer exactement les 32 AC source S-005
+
+### T-019 · red · 2026-08-03T13:41:55Z
+
+- Le manifeste exécutable couvre exactement AC-015, AC-016, AC-140 à AC-147
+  et AC-196 à AC-217 avec un producteur primaire unique.
+- Commande : `python3 hermes/scripts/test_sdd_s005_contract.py`.
+- Résultat attendu : **6 tests exécutés, 1 échec** ; les deux commandes sont
+  prouvées dans la source mais `/sdd-test` et `/sdd-validate` ne sont pas encore
+  publiées parmi les commandes installées.
+- État : `T-019 = red`, `active_task = T-019`.
+
+---
+
+### T-019 · green · 2026-08-03T13:43:04Z
+
+- Le manifeste relie les 32 AC S-005 à T-017, T-018, T-019 ou T-020 et
+  vérifie les catalogues exécutables AC-196 à AC-217.
+- L'audit prouve les scopes disjoints, l'ordre de fusion, le verrou runtime
+  canonique et l'absence de scheduler, merge, VPS, secret ou chemin local.
+- L'aide et les documents publient désormais `/sdd-test` et `/sdd-validate`
+  avec leurs frontières d'écriture et leurs résultats `PASS|FAIL`.
+- Vérification ciblée : **6/6 contrat S-005** verts.
+- État : `T-019 = green`, `active_task = T-019`.
+
+---
+
+### T-019 · red transversal · 2026-08-03T13:46:31Z
+
+- Le runner complet a découvert **33 fichiers**, puis a refusé
+  `hermes/skills/sdd-test/scripts/test_guard.py` : ce module de production au
+  préfixe `test_` ne contenait légitimement aucun cas `unittest`.
+- Le périmètre T-019 inclut explicitement le renommage du garde et ses deux
+  contrats ; le runner reste fail-closed et n'est pas assoupli.
+- Résultat attendu : échec d'intégration
+  `contains no unittest cases; pytest-only files are unsupported`.
+- État : `T-019 = red`, `active_task = T-019`.
+
+---
+
+### T-019 · green transversal · 2026-08-03T13:47:07Z
+
+- Le module de production est renommé `guard.py`; ses chargeurs, contrats et
+  la future copie du profil 0.7.0 suivent ce nom non ambigu.
+- Vérification ciblée : **18/18 tests** du garde, du skill et du contrat S-005
+  sont verts.
+- État : `T-019 = green`, `active_task = T-019`.
+
+---
+
+### T-019 · refactor · 2026-08-03T13:47:07Z
+
+- Le garde `/sdd-test` porte désormais un nom de module de production clair et
+  le runner conserve son inventaire fail-closed sans exception spéciale.
+- Le contrat S-005 centralise le manifeste exact des 32 AC et leurs producteurs
+  primaires, sans recopier les comportements des deux skills.
+- Vérifications : **18/18 tests ciblés** et `git diff --check` verts.
+- État : `T-019 = refactor`, `active_task = T-019`.
+
+---
+
+### T-019 · simplify · 2026-08-03T13:49:58Z
+
+- Passe de clarté : chemins et ensembles métier nommés, assertions groupées par
+  Test-ID, documentation limitée aux frontières d'écriture et aux sorties.
+- Vérifications : **12/12 skills embarqués**, JSON, markdownlint sur six
+  documents et `git diff --check` verts.
+- État : `T-019 = simplify`, `active_task = T-019`.
+
+---
+
+### T-019 · done · 2026-08-03T13:50:40Z
+
+- Le runner complet exécute **332 tests sur 336 découverts**, avec quatre skips
+  historiques explicitement rapportés et aucun échec.
+- Les sept Test-IDs couvrent le manifeste, les commandes, le DAG, les scopes,
+  la capacité, la publication et les interdictions de sécurité.
+- Issue d'exécution : `#96`. Branche : `agent/build-t019-s005-audit`.
+- Aucun reviewer n'est demandé ; aucune fusion ni opération VPS n'est exécutée.
+- État final : `T-019 = done`, `active_task = null`.
+
+---
+
 ## T-017 — Convertir `/sdd-test` et publier le catalogue AC-196 à AC-209
 
 ### T-017 · red · 2026-08-03T13:23:05Z

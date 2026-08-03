@@ -53,6 +53,9 @@ lieu de réimplémenter ces invariants.
 `/sdd-code-simplify <path> [--dry-run]` applique maintenant la passe de clarté
 fichier par fichier, avec baseline verte, lease exact et restauration locale en
 cas de régression.
+`/sdd-test <feature-id> [--gap]` renforce ensuite uniquement les tests et le
+plan de test. `/sdd-validate [<feature-id>]` sérialise les gates lourdes, agrège
+les validateurs spécialisés et publie seulement les deux rapports communs.
 
 ## Rôles internes et délégation
 

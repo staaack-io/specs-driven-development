@@ -80,6 +80,11 @@ Chaque artefact part du modèle correspondant sous `.codex/templates/` :
 | `09-ship-plan.md` | `ship-plan.template.md` |
 | `adr/NNN-<slug>.md` | `adr.template.md` |
 
+`/sdd-test` est l'unique writer de `06-test-plan.md` et des fichiers
+`src/test/**` qu'il reçoit explicitement. `/sdd-validate` attend les tâches
+`done`; ses validateurs spécialisés restent lecteurs et son fan-in est l'unique
+writer de `07-validation-report.md` et `07a-traceability.md`.
+
 ## Fichier `.tdd-state.json`
 
 `$build` maintient ce fichier d’exécution. Le hook Codex historique

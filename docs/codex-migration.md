@@ -127,8 +127,8 @@ La migration Hermes conserve les étapes utilisateur, avec un préfixe explicite
 | `$epic-plan` | `/sdd-epic-plan` | converti |
 | `$build` | `/sdd-build` | converti |
 | `$code-simplify` | `/sdd-code-simplify` | converti |
-| `$test` | `/sdd-test` | feuille de route |
-| `$validate` | `/sdd-validate` | feuille de route |
+| `$test` | `/sdd-test` | converti |
+| `$validate` | `/sdd-validate` | converti |
 | `$review` | `/sdd-review` | feuille de route |
 | `$ship` | `/sdd-ship` | feuille de route |
 
@@ -145,6 +145,11 @@ aucune PR : il observe le go explicite et les fusions réalisées ailleurs avant
 le fan-in transactionnel. `/sdd-code-simplify <path> [--dry-run]` conserve
 ensuite une baseline verte et restaure seulement le fichier dont la
 simplification régresse.
+
+`/sdd-test <feature-id> [--gap]` écrit uniquement les tests et
+`06-test-plan.md`. `/sdd-validate [<feature-id>]` attend le harness et les
+tâches terminées, sérialise les gates lourdes, puis un fan-in unique écrit les
+rapports de validation et de traçabilité avec un résultat `PASS` ou `FAIL`.
 
 Pour `/sdd-onboard`, les rôles `spring-onboarding` et
 `react-nextjs-onboarding` sont des lecteurs parallélisables. L'agent principal
