@@ -2170,6 +2170,8 @@
 ### T-031 · publication · 2026-08-03T17:02:00Z
 
 - PR empilée créée : `#120`, base `agent/plan-s008-vps-pilot-100`, sans
-  reviewer. Commit de production : `97cc119` ; CI en attente.
+  reviewer. Commit de production : `97cc119` ; CI finale **2/2 success**.
+- Correction de traçabilité : `pr: 120` appartient uniquement à T-031 ; les
+  champs `pr` de T-014 et T-027 sont restaurés à `null`.
 
 ---
