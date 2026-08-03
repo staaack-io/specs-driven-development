@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "profile": "staaack",
+  "mode": "dry-run",
+  "configuration": {
+    "kanban": {
+      "max_spawn": 2,
+      "max_in_progress": 2,
+      "max_in_progress_per_profile": 2,
+      "failure_limit": 2
+    },
+    "delegation": {
+      "max_spawn_depth": 1
+    },
+    "subagent_auto_approve": false
+  },
+  "dry_run": {
+    "board": "{{BOARD_SLUG}}",
+    "max_workers": 2,
+    "requested": true,
+    "dispatched": false
+  },
+  "commands": [
+    {
+      "order": 1,
+      "id": "set-max-spawn",
+      "argv": ["hermes", "config", "set", "kanban.max_spawn", "2"],
+      "execute": false
+    },
+    {
+      "order": 2,
+      "id": "set-max-in-progress",
+      "argv": ["hermes", "config", "set", "kanban.max_in_progress", "2"],
+      "execute": false
+    },
+    {
+      "order": 3,
+      "id": "set-max-in-progress-per-profile",
+      "argv": ["hermes", "config", "set", "kanban.max_in_progress_per_profile", "2"],
+      "execute": false
+    },
+    {
+      "order": 4,
+      "id": "set-failure-limit",
+      "argv": ["hermes", "config", "set", "kanban.failure_limit", "2"],
+      "execute": false
+    },
+    {
+      "order": 5,
+      "id": "set-delegation-depth",
+      "argv": ["hermes", "config", "set", "delegation.max_spawn_depth", "1"],
+      "execute": false
+    },
+    {
+      "order": 6,
+      "id": "disable-subagent-auto-approve",
+      "argv": ["hermes", "config", "set", "subagent_auto_approve", "false"],
+      "execute": false
+    },
+    {
+      "order": 7,
+      "id": "dry-run-dispatch",
+      "argv": [
+        "hermes",
+        "kanban",
+        "dispatch",
+        "--board",
+        "{{BOARD_SLUG}}",
+        "--dry-run",
+        "--max",
+        "2",
+        "--max-workers",
+        "2"
+      ],
+      "execute": false
+    },
+    {
+      "order": 8,
+      "id": "verify-configuration",
+      "argv": ["hermes", "config", "check"],
+      "execute": false
+    }
+  ],
+  "execution": {
+    "performed": false,
+    "external_access": false
+  },
+  "evidence": "redacted"
+}
