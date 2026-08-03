@@ -4,6 +4,78 @@
 
 ---
 
+## T-026 — Prouver attente, échec isolé et reprise transactionnelle
+
+### T-026 · red · 2026-08-03T17:23:00Z
+
+- **Command:** `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python hermes/e2e/test_recovery_scenario.py`
+- **Result:** FAIL (expected), 8 tests exécutés et 9 échecs observés.
+- **Excerpt:** `AssertionError: T-026-T1: recovery_scenario.py must implement interruption recovery`.
+- Le test rouge exige les huit preuves T-026 : attente fusion/go, injections
+  locales d'échec et timeout, conservation du pair vert, reprise idempotente,
+  fan-in ancien ou nouveau complet et absence d'opération de fusion.
+- État : `T-026 = red`, `active_task = T-026`. Branche :
+  `agent/build-t026-e2e-recovery`.
+
+---
+
+### T-026 · green · 2026-08-03T17:28:30Z
+
+- Le scénario matérialise les deux enveloppes avec le job wrapper canonique,
+  injecte un échec ou timeout local, puis rejoue exactement la même identité.
+- Les preuves du pair vert sont écrites dans le journal immuable canonique et
+  restent intactes pendant l'injection et la reprise.
+- Le runtime CAS et le synthesizer canoniques prouvent un rollback complet
+  avant marker puis un commit complet après marker. La tâche dépendante attend
+  l'intégration observée et le go explicite ; aucune opération de fusion n'est
+  exposée.
+- **Command:** `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python hermes/e2e/test_recovery_scenario.py`
+- **Result:** PASS, 8/8 tests en 24,891 s.
+- État : `T-026 = green`, `active_task = T-026`.
+
+---
+
+### T-026 · refactor · 2026-08-03T17:30:00Z
+
+- Les deux injections sont préparées une seule fois par classe de test : les
+  huit oracles restent indépendants tout en réduisant la suite ciblée de
+  24,891 s à 6,260 s.
+- La classification ancien/nouveau du fan-in utilise des branches explicites ;
+  les commandes de préparation Git et les lectures des artefacts partagés sont
+  formatées par étape reconnaissable.
+- **Command:** `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python hermes/e2e/test_recovery_scenario.py`
+- **Result:** PASS, 8/8 tests en 6,260 s.
+- État : `T-026 = refactor`, `active_task = T-026`.
+
+---
+
+### T-026 · simplify · 2026-08-03T17:31:30Z
+
+- Passe `clarity-over-cleverness` : les phases matérialisation, injection,
+  reprise, journal, crash avant/après marker et admission sont séquentielles et
+  nommées. Aucun mode spéculatif, option morte ou abstraction à implémentation
+  unique n'est conservé.
+- Les littéraux métier répétés sont centralisés en constantes et la génération
+  du snapshot utilise des retours explicites plutôt qu'un ternaire imbriqué.
+- L'issue d'exécution `#108` trace AC-157, AC-158 et AC-228 sur la branche
+  `agent/build-t026-e2e-recovery`, sans reviewer sollicité.
+- État : `T-026 = simplify`, `active_task = T-026`.
+
+---
+
+### T-026 · done · 2026-08-03T17:35:00Z
+
+- T-026-T1 à T-026-T8 couvrent AC-157, AC-158 et AC-228 : attente du fan-in
+  observé et du go, injections locales, conservation, reprise identique,
+  générations atomiques ancien/nouveau et absence d'opération de fusion.
+- Preuves finales : **8/8 tests ciblés**, **372 cas Hermes exécutés sur 376
+  découverts**, 4 skips historiques, zéro échec ; **14 skills Hermes** validés.
+- JSON d'état, Markdown et `git diff --check` sont verts. Aucun reviewer,
+  merge, VPS ou déploiement n'a été sollicité ou exécuté.
+- État final : `T-026 = done`, `active_task = null`. Issue `#108`.
+
+---
+
 ## T-023 — Auditer la tranche S-006 dans la source Hermes
 
 ### T-023 · red · 2026-08-03T14:48:48Z
