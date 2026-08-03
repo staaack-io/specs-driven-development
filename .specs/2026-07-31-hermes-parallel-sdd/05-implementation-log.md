@@ -4,6 +4,81 @@
 
 ---
 
+## T-025 — Prouver deux writers full-stack réellement concurrents
+
+### T-025 · red · 2026-08-03T15:22:52Z
+
+**Command:** `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python hermes/e2e/test_parallel_scenario.py`
+
+**Result:** FAIL (expected) — 7 tests exécutés, 6 échecs et 1 erreur.
+
+**Excerpt:** `AssertionError: T-025-T1: parallel_scenario.py must run local full-stack writers`
+
+- Les sept tests T-025-T1 à T-025-T7 sont présents avant la production.
+- L'échec provient de l'absence intentionnelle de
+  `hermes/e2e/parallel_scenario.py`, et non d'une faute de compilation.
+- La prochaine étape minimale consiste à réutiliser les leases du runtime et
+  l'enveloppe canonique pour exécuter deux vrais processus locaux disjoints.
+
+---
+
+### T-025 · green · 2026-08-03T15:27:31Z
+
+- Le scénario lance deux vrais processus Python locaux pour les writers backend
+  et frontend après acquisition de deux leases disjoints du runtime canonique.
+- Le départ synchronisé permet de mesurer des intervalles monotones ayant un
+  overlap strict ; le pic calculé vaut exactement deux, soit le plafond Hermes.
+- `sdd_job_execution.materialize_job` produit les enveloppes isolées issue,
+  carte, branche, worktree, session et PR via des adaptateurs locaux.
+- Un second lease sur le scope partagé est refusé tant que le premier est actif,
+  puis le second writer s'exécute après libération.
+- Vérification ciblée : **7/7 tests verts** en 15,239 s.
+
+---
+
+### T-025 · refactor · 2026-08-03T15:28:28Z
+
+- La fixture jetable et son scénario réel sont partagés au niveau de la classe
+  de test ; chaque oracle reste indépendant, mais les quatre processus ne sont
+  plus relancés six fois sans nécessité.
+- Le cleanup explicite du dépôt temporaire supprime les avertissements de
+  ressources et réduit la suite ciblée de 15,239 s à 3,673 s.
+- Vérification après refactorisation : **7/7 tests verts**, mêmes assertions et
+  mêmes frontières publiques.
+
+---
+
+### T-025 · simplify · 2026-08-03T15:29:15Z
+
+- Passe `clarity-over-cleverness` : les identifiants des trois tâches E2E sont
+  nommés, et les six adaptateurs canoniques remplacent l'ancien tuple indexé par
+  des variables explicites.
+- Aucun ordonnanceur, option spéculative, API réseau, merge, déploiement ou
+  chemin absolu n'est introduit dans la preuve persistable.
+- Vérification après simplification : **7/7 tests verts** en 3,523 s et
+  compilation Python des deux fichiers sans erreur.
+
+---
+
+### T-025 · done · 2026-08-03T15:32:54Z
+
+- T-025-T1 à T-025-T7 couvrent AC-156, AC-219 et AC-227 avec de vrais
+  processus locaux, des scopes disjoints, un overlap monotone strict et un pic
+  exactement égal à deux sans dépassement.
+- Le conflit est sérialisé par `acquire_scope_lease`/`release_scope_lease` et
+  les enveloppes proviennent de `sdd_job_execution.materialize_job` ; aucun
+  second ordonnanceur n'est présent.
+- Preuves finales : **371 tests Hermes exécutés sur 375 découverts**, quatre
+  skips historiques déclarés, zéro échec ; **14 skills** validés ; Markdown
+  linté sans erreur ; JSON valide et `git diff --check` vert.
+- Le cache Python généré sous `hermes/e2e/__pycache__/` a été supprimé.
+- Issue d'exécution : `#110`. Branche :
+  `agent/build-t025-e2e-parallel`. PR empilée : `#111`, base
+  `agent/plan-s007-e2e-090`. Aucun reviewer, merge, VPS ou déploiement.
+- État final : `T-025 = done`, `active_task = null`.
+
+---
+
 ## T-026 — Prouver attente, échec isolé et reprise transactionnelle
 
 ### T-026 · red · 2026-08-03T17:23:00Z

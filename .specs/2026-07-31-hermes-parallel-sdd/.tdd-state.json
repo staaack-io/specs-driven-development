@@ -734,21 +734,21 @@
       ]
     },
     "T-025": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-024"],
       "test_ids": [
         "T-025-T1", "T-025-T2", "T-025-T3", "T-025-T4",
         "T-025-T5", "T-025-T6", "T-025-T7"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
-      "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "issue": 110,
+      "branch": "agent/build-t025-e2e-parallel",
+      "pr": 111,
+      "red_at": "2026-08-03T15:22:52Z",
+      "red_test_signature": "hermes/e2e/test_parallel_scenario.py::ParallelScenarioTest::test_t025_t1_and_t2_launch_distinct_backend_and_frontend_processes",
+      "red_failure_excerpt": "AssertionError: T-025-T1: parallel_scenario.py must run local full-stack writers; Ran 7 tests, FAILED (failures=6, errors=1)",
+      "green_at": "2026-08-03T15:27:31Z",
       "files_in_scope": [
         "hermes/e2e/parallel_scenario.py",
         "hermes/e2e/test_parallel_scenario.py"
