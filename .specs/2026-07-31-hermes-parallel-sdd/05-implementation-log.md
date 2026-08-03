@@ -72,7 +72,8 @@
   découverts**, 4 skips historiques, zéro échec ; **14 skills Hermes** validés.
 - JSON d'état, Markdown et `git diff --check` sont verts. Aucun reviewer,
   merge, VPS ou déploiement n'a été sollicité ou exécuté.
-- État final : `T-026 = done`, `active_task = null`. Issue `#108`.
+- État final : `T-026 = done`, `active_task = null`. Issue `#108`, commit
+  `076ed21` et PR empilée `#109` sur `agent/plan-s007-e2e-090`, sans reviewer.
 
 ---
 

@@ -765,7 +765,7 @@
       "kanban_id": null,
       "issue": 108,
       "branch": "agent/build-t026-e2e-recovery",
-      "pr": null,
+      "pr": 109,
       "red_at": "2026-08-03T17:23:00Z",
       "red_test_signature": "hermes/e2e/test_recovery_scenario.py::RecoveryScenarioTest::test_t026_t1_exposes_the_recovery_scenario",
       "red_failure_excerpt": "AssertionError: T-026-T1: recovery_scenario.py must implement interruption recovery; Ran 8 tests, FAILED (failures=9)",
