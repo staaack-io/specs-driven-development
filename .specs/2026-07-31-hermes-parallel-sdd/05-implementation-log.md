@@ -191,6 +191,8 @@
   historiques et aucun échec après les deux corrections de capacité.
 - Issue `#101`; branche `agent/build-t022-sdd-ship`; aucun reviewer, merge,
   réseau, VPS ou déploiement.
+- PR `#103`, empilée sur `agent/build-t021-sdd-review` pour imposer l'ordre de
+  fusion ; aucun reviewer n'est demandé.
 - État final : `T-022 = done`, `active_task = null`.
 
 ---
