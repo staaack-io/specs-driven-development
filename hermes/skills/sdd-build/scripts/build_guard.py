@@ -13,6 +13,7 @@ from typing import Callable, Mapping, Sequence, TypedDict
 
 
 RUNTIME_PATH = Path("hermes/runtime/sdd_runtime_guard.py")
+ORCHESTRATOR_PATH = Path("hermes/runtime/sdd_build_orchestrator.py")
 
 
 def _load_runtime():
@@ -49,6 +50,40 @@ def _load_runtime():
 runtime = _load_runtime()
 
 
+def _load_orchestrator():
+    """Load parallel admission from the same verified source/profile root."""
+
+    script = Path(__file__).resolve(strict=True)
+    for root in script.parents:
+        orchestrator_path = root / ORCHESTRATOR_PATH
+        protected = (root / "hermes", root / "hermes/runtime", orchestrator_path)
+        symbolic_path = next((path for path in protected if path.is_symlink()), None)
+        if not orchestrator_path.is_file() or symbolic_path is not None:
+            continue
+        resolved_root = root.resolve(strict=True)
+        resolved_orchestrator = orchestrator_path.resolve(strict=True)
+        try:
+            resolved_orchestrator.relative_to(resolved_root)
+        except ValueError:
+            continue
+        module_name = "_sdd_build_orchestrator"
+        existing = sys.modules.get(module_name)
+        existing_file = getattr(existing, "__file__", None)
+        if existing_file and Path(existing_file).resolve() == resolved_orchestrator:
+            return existing
+        spec = importlib.util.spec_from_file_location(module_name, resolved_orchestrator)
+        if spec is None or spec.loader is None:
+            continue
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
+    raise ImportError("parallel build orchestrator is missing from the skill layout")
+
+
+orchestrator = _load_orchestrator()
+
+
 RED_PHASE = "RED"
 PHASES = (RED_PHASE, "GREEN", "REFACTOR", "SIMPLIFY")
 SPRING_ROLES = ("spring-test-engineer", "spring-implementer")
@@ -72,6 +107,27 @@ class TaskContract(TypedDict):
 
 
 BuildGuardError = runtime.GuardError
+
+
+def parse_build_arguments(argv: Sequence[str]) -> dict[str, object]:
+    """Select the sequential task or parallel admission command contract."""
+
+    if not isinstance(argv, (str, bytes)) and len(argv) >= 2 and argv[1] == "--parallel":
+        return {"mode": "parallel", **orchestrator.parse_parallel_arguments(argv)}
+    if isinstance(argv, (str, bytes)) or len(argv) != 2:
+        raise BuildGuardError(
+            "usage: /sdd-build <feature-id> <T-NNN> | "
+            "<feature-id> --parallel [--max-workers 1|2]"
+        )
+    feature_id = _identifier(argv[0], runtime.FEATURE_ID, "feature ID")
+    task_id = _identifier(argv[1], runtime.TASK_ID, "task ID")
+    return {"mode": "sequential", "feature_id": feature_id, "task_id": task_id}
+
+
+def run_parallel_build(**arguments: object) -> dict[str, object]:
+    """Hand one admission pass to the canonical Hermes orchestrator."""
+
+    return orchestrator.admit_parallel_wave(**arguments)
 
 
 def _identifier(value: object, pattern: re.Pattern[str], label: str) -> str:

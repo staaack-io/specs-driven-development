@@ -204,8 +204,8 @@
       ]
     },
     "T-010": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": [
         "T-009"
       ],
@@ -221,13 +221,13 @@
         "T-010-T9"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 78,
+      "branch": "agent/build-t010-parallel-admission",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T11:12:21Z",
+      "red_test_signature": "hermes.runtime.test_sdd_build_orchestrator.ParallelBuildOrchestratorTest.test_t010_t1_parallel_cli_requires_structured_parallel_arguments",
+      "red_failure_excerpt": "AssertionError: T-010-T1: sdd_build_orchestrator.py must implement parallel admission; Ran 1 test in 0.001s; FAILED (failures=1)",
+      "green_at": "2026-08-03T11:17:41Z",
       "files_in_scope": [
         "hermes/runtime/test_sdd_build_orchestrator.py",
         "hermes/skills/sdd-build/scripts/test_build_guard.py",
