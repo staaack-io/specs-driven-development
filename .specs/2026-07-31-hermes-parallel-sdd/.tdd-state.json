@@ -868,21 +868,24 @@
       ]
     },
     "T-030": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-029"],
       "test_ids": [
         "T-030-T1", "T-030-T2", "T-030-T3", "T-030-T4",
         "T-030-T5", "T-030-T6", "T-030-T7"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 119,
+      "branch": "agent/build-t030-vps-policy",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T16:49:25Z",
+      "red_test_signature": "hermes.operations.test_vps_pilot_policy.VpsPilotPolicyTest.test_t030_t1_accepts_a_compliant_structured_policy",
+      "red_failure_excerpt": "ModuleNotFoundError: No module named 'hermes.operations.vps_pilot_policy'; Ran 1 test; FAILED (errors=1)",
+      "green_at": "2026-08-03T16:53:58Z",
+      "refactor_at": "2026-08-03T16:54:46Z",
+      "simplify_at": "2026-08-03T16:55:25Z",
+      "done_at": "2026-08-03T17:00:22Z",
       "admission": "local-authorized",
       "files_in_scope": [
         "hermes/operations/vps-pilot-policy-contract.md",
