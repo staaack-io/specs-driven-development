@@ -4,6 +4,20 @@
 Hermes qui exécuteront le workflow. Il ne lance aucun agent et ne remplace pas
 le Kanban Hermes. Les orchestrateurs l'appellent autour de chaque délégation.
 
+## Surfaces `/sdd-build`
+
+- `sdd_build_orchestrator.py` valide la forme mono ou parallèle, admet toutes
+  les cartes prêtes et maintient au plus deux leases writers ;
+- `sdd_job_execution.py` matérialise pour chaque carte une branche, un worktree,
+  une session, une issue enfant et une PR brouillon réutilisables ;
+- `sdd_wave_synthesizer.py` observe le go et la fusion réalisés hors runtime,
+  vérifie les journaux puis publie les trois artefacts partagés atomiquement.
+
+La capacité globale reste de deux writers, trois analyses en lecture seule et
+une gate lourde. Hermes Kanban est l'unique surface de dispatch : aucun second
+ordonnanceur Python, aucune fusion et aucun nettoyage destructif ne sont
+exposés par ces modules.
+
 ## Invariants
 
 - l'état v2 reste lisible par les consommateurs v1 et ne contient aucun secret,
