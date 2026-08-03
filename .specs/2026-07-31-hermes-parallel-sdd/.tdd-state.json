@@ -786,7 +786,7 @@
       "kanban_id": null,
       "issue": 112,
       "branch": "agent/build-t027-e2e-full-flow",
-      "pr": null,
+      "pr": 120,
       "red_at": "2026-08-03T15:42:22Z",
       "red_test_signature": "hermes/e2e/test_run_sdd_e2e.py::RunnerTest::test_t027_t1_runner_no_longer_stops_after_plan",
       "red_failure_excerpt": "T-027-T1..T8: lifecycle, evidence_order, task_envelopes, barrier, resume and redacted relative evidence are absent; Ran 8 tests, FAILED (failures=1, errors=6)",
@@ -909,6 +909,8 @@
       "refactor_at": "2026-08-03T16:52:27Z",
       "simplify_at": "2026-08-03T16:53:56Z",
       "done_at": "2026-08-03T17:00:04Z",
+      "commit": "97cc119e476e4014e529146ea75f901541215a37",
+      "ci": "pending",
       "admission": "local-authorized",
       "files_in_scope": [
         "hermes/operations/vps_pilot_dry_run.py",
