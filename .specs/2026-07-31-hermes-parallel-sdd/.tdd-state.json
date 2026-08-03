@@ -267,8 +267,8 @@
       ]
     },
     "T-012": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": [
         "T-010",
         "T-011"
@@ -284,13 +284,13 @@
         "T-012-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
-      "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "issue": 82,
+      "branch": "agent/build-t012-wave-fan-in",
+      "pr": 83,
+      "red_at": "2026-08-03T11:43:56Z",
+      "red_test_signature": "hermes.runtime.test_sdd_wave_synthesizer.WaveSynthesizerTest.test_t012_t1_completed_wave_has_one_synthesis_surface",
+      "red_failure_excerpt": "AssertionError: T-012-T1: sdd_wave_synthesizer.py must implement wave synthesis; Ran 1 test in 0.000s; FAILED (failures=1)",
+      "green_at": "2026-08-03T11:45:39Z",
       "files_in_scope": [
         "hermes/runtime/test_sdd_wave_synthesizer.py",
         "hermes/runtime/wave-synthesizer-contract.md",
