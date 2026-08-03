@@ -347,8 +347,8 @@
         "T-014-T8"
       ],
       "kanban_id": null,
-      "issue": 88,
-      "branch": "agent/build-t015-code-simplify",
+      "issue": null,
+      "branch": null,
       "pr": null,
       "red_at": null,
       "red_test_signature": null,
@@ -400,8 +400,8 @@
         "T-015-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 88,
+      "branch": "agent/build-t015-code-simplify",
       "pr": 89,
       "red_at": "2026-08-03T12:43:39Z",
       "red_test_signature": "hermes.skills.sdd-code-simplify.scripts.test_code_simplify_guard.CodeSimplifyGuardTest.test_t015_t2_accepts_exact_arguments_and_rejects_unsafe_targets",
