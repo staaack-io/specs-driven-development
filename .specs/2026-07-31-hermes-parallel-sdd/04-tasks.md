@@ -1113,6 +1113,11 @@ Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-015`.
   - T-019-T7 (sécurité — aucun scheduler, merge, secret, chemin absolu ou VPS)
 - **Files in scope :**
   - `hermes/scripts/test_sdd_s005_contract.py`
+  - `hermes/skills/sdd-test/scripts/test_guard.py` (suppression du nom
+    découvert à tort comme suite)
+  - `hermes/skills/sdd-test/scripts/guard.py`
+  - `hermes/skills/sdd-test/scripts/test_test_guard.py`
+  - `hermes/skills/sdd-test/scripts/test_skill_contract.py`
   - `hermes/skills/sdd-help/SKILL.md`
   - `hermes/README.md`
   - `docs/artifact-contract.md`

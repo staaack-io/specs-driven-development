@@ -28,14 +28,14 @@ Les commandes actuellement disponibles sont :
 | 3 | `/sdd-plan <feature-id>` | Concevoir et découper en tâches. |
 | 4 | `/sdd-build <feature-id> <T-NNN>` | Implémenter en TDD ou admettre une vague `--parallel`. |
 | 4 | `/sdd-code-simplify <path> [--dry-run]` | Simplifier sans changer le comportement. |
+| 5 | `/sdd-test <feature-id> [--gap]` | Ajouter les tests transverses sans toucher à la production. |
+| 6 | `/sdd-validate [<feature-id>]` | Exécuter le harness et publier les rapports communs. |
 
 Signaler séparément que les commandes suivantes font partie de la feuille de
 route et ne doivent pas être présentées comme installées avant leur conversion :
 
 | Étape | Commande prévue | Rôle |
 | --- | --- | --- |
-| 5 | `/sdd-test` | Ajouter les tests transverses. |
-| 6 | `/sdd-validate` | Exécuter le harness et la traçabilité. |
 | 7 | `/sdd-review` | Relire le code avant commit. |
 | 8, facultative | `/sdd-ship` | Préparer la livraison sans déployer. |
 
