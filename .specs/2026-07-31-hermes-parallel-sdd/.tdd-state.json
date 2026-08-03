@@ -255,7 +255,7 @@
       "kanban_id": null,
       "issue": 80,
       "branch": "agent/build-t011-job-envelope",
-      "pr": null,
+      "pr": 81,
       "red_at": "2026-08-03T11:31:20Z",
       "red_test_signature": "hermes.runtime.test_sdd_job_execution.JobExecutionTest.test_t011_t1_materializes_the_complete_job_envelope",
       "red_failure_excerpt": "AssertionError: T-011-T1: sdd_job_execution.py must materialize an admitted job; Ran 1 test in 0.000s; FAILED (failures=1)",

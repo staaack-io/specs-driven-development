@@ -1066,7 +1066,8 @@
 - L'API de production ne contient aucune surface de force-push, reset,
   suppression de branche/worktree ou fusion.
 - Issue d'exécution créée : `#80`. Branche :
-  `agent/build-t011-job-envelope`.
+  `agent/build-t011-job-envelope`. PR empilée : `#81`, basée sur la branche
+  T-010 jusqu'à son intégration.
 - État : `T-011 = simplify`, `active_task = T-011`.
 
 ---
