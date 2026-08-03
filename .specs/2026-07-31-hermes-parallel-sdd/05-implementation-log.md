@@ -998,3 +998,17 @@
 - État final : `T-010 = done`, `active_task = null`.
 
 ---
+
+### T-010 · ci-correction · 2026-08-03T11:34:00Z
+
+- PR `#79`, run `30809707342` : documentation verte ; les **270 tests Hermes
+  découverts** sont verts avec deux skips conditionnels.
+- Cause exacte de l'échec final : `validate_skills.py` refuse le lien
+  `../../runtime/build-orchestrator-contract.md` car une référence locale d'un
+  skill ne peut sortir de son propre dossier.
+- Correctif minimal : retirer uniquement ce lien de la liste publiée par le
+  skill. Le contrat runtime reste versionné et couvert directement par
+  `test_sdd_build_orchestrator.py`.
+- Aucun comportement, test, dépendance ou seuil de qualité n'est modifié.
+
+---

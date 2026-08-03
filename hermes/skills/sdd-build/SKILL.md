@@ -33,7 +33,6 @@ Contrats publiés :
 
 - [délégation](references/delegation-contract.md) ;
 - [cycle TDD](references/tdd-cycle-contract.md) ;
-- [admission parallèle](../../runtime/build-orchestrator-contract.md) ;
 - [role-spring-test-engineer.md](references/role-spring-test-engineer.md) ;
 - [role-spring-implementer.md](references/role-spring-implementer.md) ;
 - [role-react-nextjs-test-engineer.md](references/role-react-nextjs-test-engineer.md) ;
