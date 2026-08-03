@@ -1229,5 +1229,8 @@
   force-push, reset dur, auto-merge ou commande de fusion.
 - `git diff --check` est vert. État final : `T-013 = done`,
   `active_task = null`.
+- PR empilée créée : `#85`, base `agent/build-t012-wave-fan-in`, sans reviewer
+  sollicité. L'issue `#84`, le commit `df9a245` et les preuves locales y sont
+  liés.
 
 ---

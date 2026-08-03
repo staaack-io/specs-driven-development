@@ -315,7 +315,7 @@
       "kanban_id": null,
       "issue": 84,
       "branch": "agent/build-t013-s003-audit",
-      "pr": null,
+      "pr": 85,
       "red_at": "2026-08-03T11:54:43Z",
       "red_test_signature": "hermes.scripts.test_sdd_s003_contract.SddS003ContractTest.test_source_suites_and_public_build_documentation_are_complete",
       "red_failure_excerpt": "AssertionError: /sdd-build <feature-id> <T-NNN> absent from installed commands; capacity documentation markers also absent; Ran 6 tests, FAILED (failures=3)",
