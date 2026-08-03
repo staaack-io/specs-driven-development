@@ -864,3 +864,161 @@ T-008 done -> T-009 -> T-010 -> T-011 -> T-012 -> T-013 -> T-014
 - [x] Checklist `design-review.md` relue le 2026-08-03.
 
 Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-009`.
+
+## Tâches : S-004 — `/sdd-code-simplify`, profil 0.6.1
+
+> Cette section prolonge le registre sans modifier T-001 à T-014. Le
+> `high_water_mark` entrant est 14 ; les nouveaux identifiants commencent à
+> T-015 et couvrent uniquement AC-014 et AC-139.
+
+### S-004 Inputs
+
+- Conception détaillée : section S-004 de `03-design.md`, 2026-08-03.
+- Barrière source : T-009 est `done` ; T-015 peut donc démarrer.
+- Barrière de publication : T-016 attend T-014 et T-015 afin que le profil
+  0.6.0 précède 0.6.1 et que la source canonique soit prouvée.
+- Porte utilisateur : aucune review ni attente de review ; CI, tests, contrats
+  et go explicite seulement avant fusion.
+
+### S-004 Task Index
+
+| ID | Titre | AC-IDs | Dépend de | Estimation | Portes |
+|---|---|---|---|---|---|
+| T-015 | Convertir et prouver `/sdd-code-simplify` dans la source Hermes | AC-014 | T-009 | 3–4 h | unit, skill-contract, s004-contract, python, markdown, diff, CI |
+| T-016 | Publier le profil 0.6.1 avec parité et rollback | AC-014, AC-139 | T-014, T-015 | 3–4 h | profile-layout, parity, distribution, python, markdown, diff, CI, go |
+
+### S-004 Tasks
+
+### T-015 : Convertir et prouver `/sdd-code-simplify` dans la source Hermes
+
+- **Origine qualifiée :** `spring-architect:T-015`
+- **AC-IDs :** AC-014
+- **Test-IDs :**
+  - T-015-T1 (RED publication — la source Hermes ne contient pas encore `sdd-code-simplify` et l'aide le classe comme prévu)
+  - T-015-T2 (arguments — accepter exactement `/sdd-code-simplify <path> [--dry-run]`, puis refuser argument inconnu, cible de test, glob, symlink ou chemin hors dépôt avant écriture)
+  - T-015-T3 (baseline — refuser toute mutation si la commande de tests validée n'est pas verte au départ)
+  - T-015-T4 (clarity contract — embarquer et appliquer les catégories existantes : conditions, boucles lisibles, helpers, options, noms, abstractions, retours anticipés, code mort et littéraux répétés)
+  - T-015-T5 (file isolation — détenir le lease exact, traiter un fichier à la fois et restaurer seulement le fichier courant si ses tests régressent)
+  - T-015-T6 (result evidence — conserver argv structurés et sortie expurgée, puis résumer fichiers, catégories, tests, régressions et résultats `simplified`/`ignored` sans commit automatique)
+  - T-015-T7 (dry-run — proposer le même plan et le même résumé sans modifier la cible ni les artefacts partagés)
+  - T-015-T8 (source contract — l'aide et la documentation marquent la commande comme installée et le manifeste S-004 contient exactement AC-014 et AC-139 avec un producteur primaire chacun)
+- **Files in scope :**
+  - `hermes/skills/sdd-code-simplify/SKILL.md`
+  - `hermes/skills/sdd-code-simplify/references/clarity-checklist.md`
+  - `hermes/skills/sdd-code-simplify/references/delegation-contract.md`
+  - `hermes/skills/sdd-code-simplify/scripts/code_simplify_guard.py`
+  - `hermes/skills/sdd-code-simplify/scripts/test_code_simplify_guard.py`
+  - `hermes/skills/sdd-code-simplify/scripts/test_skill_contract.py`
+  - `hermes/scripts/test_sdd_s004_contract.py`
+  - `hermes/skills/sdd-help/SKILL.md`
+  - `hermes/README.md`
+  - `docs/codex-migration.md`
+- **Dépendances :** T-009
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30–45 min ; SIMPLIFY 15–30 min.
+- **Portes à exécuter après green :** `python-unit`, `skill-contract`,
+  `s004-contract`, `frontmatter`, `markdownlint`, `git-diff-check`, `ci`
+- **Retour arrière :** annuler la PR source ou retirer le nouveau dossier et
+  les entrées d'aide ; `/sdd-build` et le profil 0.6.0 restent utilisables.
+- **Notes :** le garde compose les primitives runtime v2 et ne réimplémente ni
+  ordonnanceur, ni lease, ni fingerprint. Les tests utilisent un runner et un
+  rôle injectés ; ils ne simplifient aucun fichier réel du dépôt. Cette tâche
+  ne demande aucune review et ne fusionne rien sans go explicite.
+
+### T-016 : Publier le profil 0.6.1 avec parité et rollback
+
+- **Origine qualifiée :** `spring-architect:T-016`
+- **AC-IDs :** AC-014, AC-139
+- **Test-IDs :**
+  - T-016-T1 (RED release — le contrat refuse un profil encore en 0.6.0 ou sans `/sdd-code-simplify`)
+  - T-016-T2 (skill parity — `skills/sdd-code-simplify` et l'entrée installée de `skills/sdd-help` sont identiques aux sources canoniques)
+  - T-016-T3 (profile tests — garde, contrat du skill et contrat S-004 s'exécutent depuis la disposition profil avec les mêmes résultats)
+  - T-016-T4 (distribution — version 0.6.1, changelog, frontmatters, documentation et découverte des tests sont cohérents)
+  - T-016-T5 (release order — refuser la publication tant que T-014/0.6.0 ou T-015/source ne sont pas fusionnés)
+  - T-016-T6 (publication gate — CI, tests et contrats verts puis go explicite précèdent la fusion, sans review ni attente de review)
+  - T-016-T7 (rollback — la note de release nomme le retour à 0.6.0 sans supprimer ni convertir états, journaux, logs, branches ou worktrees)
+  - T-016-T8 (no VPS — aucune mise à jour ou action VPS n'est exécutée par cette tâche)
+- **Files in scope :**
+  - `scripts/test_validate_distribution.py`
+  - `scripts/test_sdd_s004_contract.py`
+  - `skills/sdd-code-simplify/SKILL.md`
+  - `skills/sdd-code-simplify/references/clarity-checklist.md`
+  - `skills/sdd-code-simplify/references/delegation-contract.md`
+  - `skills/sdd-code-simplify/scripts/code_simplify_guard.py`
+  - `skills/sdd-code-simplify/scripts/test_code_simplify_guard.py`
+  - `skills/sdd-code-simplify/scripts/test_skill_contract.py`
+  - `skills/sdd-help/SKILL.md`
+  - `distribution.yaml`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `.github/workflows/ci.yml`
+- **Dépendances :** T-014, T-015
+- **Phases estimées :** RED 30–45 min ; GREEN copie et packaging 90–120 min ; REFACTOR 30–45 min ; SIMPLIFY 15–30 min.
+- **Portes à exécuter après green :** `profile-layout`, `skills-parity`,
+  `python-all-profile`, `distribution`, `frontmatter`, `markdownlint`,
+  `git-diff-check`, `ci`, `explicit-go-before-merge`
+- **Retour arrière :** fermer ou annuler la PR profil et conserver la version
+  0.6.0 ; si 0.6.1 est installée ultérieurement, réinstaller 0.6.0 sans
+  supprimer ni convertir états, journaux, logs, branches ou worktrees.
+- **Notes :** copier les fichiers canoniques sans transformation et exécuter
+  les mêmes tests depuis la disposition profil. Cette tâche ne demande aucune
+  review, ne fusionne rien automatiquement et n'accède à aucun VPS.
+
+### S-004 Primary AC Coverage Matrix
+
+| AC S-004 | Producteur primaire | Preuves principales | Couverture secondaire |
+|---|---|---|---|
+| AC-014 | T-016 | T-016-T1, T-016-T2, T-016-T3 | T-015-T1, T-015-T4, T-015-T8 |
+| AC-139 | T-016 | T-016-T1, T-016-T4, T-016-T5, T-016-T6 | T-015-T8 |
+
+La matrice contient exactement les deux AC S-004, sans AC de tranche voisine.
+
+### S-004 Dependency and Capacity Validation
+
+```text
+T-009 done -> T-015
+T-014 ─────────┐
+               ├─> T-016
+T-015 ─────────┘
+```
+
+- Le graphe est acyclique et l'index suit son ordre topologique.
+- T-015 peut utiliser le second slot prévu face à T-010 ; ses fichiers sont
+  disjoints des scopes T-010 à T-014.
+- T-016 attend T-014 et T-015 et devient l'unique writer du dépôt profil pour
+  0.6.1. Une seule gate lourde est exécutée à la fois.
+- Aucun worker ne reçoit en écriture `04-tasks.md`, `.tdd-state.json` ou
+  `05-implementation-log.md` ; le synthesizer reste l'écrivain partagé unique.
+
+### S-004 Cross-cutting Items
+
+- Aucun test ArchUnit, OpenAPI, base ou migration : stack non applicable.
+- Les contrats de commande et distribution appartiennent aux tâches ; les
+  scénarios E2E multi-commandes restent réservés à S-007.
+- Aucune porte, demande ou attente de review n'est planifiée pour T-015 ou
+  T-016.
+
+### S-004 Open Questions
+
+- (aucune)
+
+### S-004 Resolved Questions
+
+- **Décision autonome :** convertir sans extension le skill Codex existant et
+  réutiliser le runtime v2. Cette décision garde la tranche limitée aux deux AC.
+- **Décision autonome :** T-016 dépend à la fois de T-014 et T-015 pour rendre
+  l'ordre de versions et la provenance source vérifiables.
+- **Décision autonome :** les portes S-004 excluent toute review conformément à
+  la dernière instruction utilisateur ; le go explicite avant fusion demeure.
+
+### S-004 Sign-off
+
+- [x] Le registre progresse jusqu'à `high_water_mark: 16` sans réutiliser un ID.
+- [x] T-001 à T-014 conservent leurs IDs, textes, preuves et scopes.
+- [x] Chaque tâche dure 3–4 h et possède Test-IDs, chemins littéraux, dépendances, portes et rollback.
+- [x] Chaque tâche de production inclut ses tests dans le même scope.
+- [x] AC-014 et AC-139 ont un producteur observable de publication ; T-015 reste le prérequis source traçable.
+- [x] Le DAG est acyclique et 0.6.0 précède 0.6.1.
+- [x] Aucune question ouverte ni nouvelle décision ADR ne subsiste.
+- [x] Checklist `design-review.md` relue le 2026-08-03.
+
+Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-015`.
