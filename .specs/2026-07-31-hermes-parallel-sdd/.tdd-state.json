@@ -894,21 +894,24 @@
       ]
     },
     "T-031": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-029"],
       "test_ids": [
         "T-031-T1", "T-031-T2", "T-031-T3",
         "T-031-T4", "T-031-T5", "T-031-T6"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 118,
+      "branch": "agent/build-t031-vps-dry-run",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T16:49:58Z",
+      "red_test_signature": "hermes.operations.test_vps_pilot_dry_run.VpsPilotDryRunTest",
+      "red_failure_excerpt": "AssertionError: T-031-T1: vps_pilot_dry_run.py must generate an inert pilot plan; FAILED (errors=1)",
+      "green_at": "2026-08-03T16:51:43Z",
+      "refactor_at": "2026-08-03T16:52:27Z",
+      "simplify_at": "2026-08-03T16:53:56Z",
+      "done_at": "2026-08-03T17:00:04Z",
       "admission": "local-authorized",
       "files_in_scope": [
         "hermes/operations/vps_pilot_dry_run.py",

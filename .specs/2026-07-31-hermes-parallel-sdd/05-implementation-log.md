@@ -2171,3 +2171,71 @@
   `agent/build-t017-sdd-test`, sans fusion automatique.
 
 ---
+
+### T-031 · red · 2026-08-03T16:49:58Z
+
+- Le contrat comportemental couvre T-031-T1 à T-031-T6 : limites Kanban,
+  délégation bornée, auto-approve désactivé, vérification finale, dry-run
+  Super Lily, inertie, board explicite, expurgation et modèle JSON validé.
+- Commande :
+  `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python hermes/operations/test_vps_pilot_dry_run.py`.
+- Résultat : **échec attendu** — `vps_pilot_dry_run.py` est absent ; aucune
+  commande, connexion, opération VPS ou mutation externe n'a été exécutée.
+- État : `T-031 = red`, `active_task = T-031`.
+
+---
+
+### T-031 · green · 2026-08-03T16:51:43Z
+
+- Le générateur charge et valide un modèle JSON fermé, puis remplace uniquement
+  le slug de board prévalidé. Les trois plafonds Kanban, `failure_limit`, la
+  profondeur de délégation et l'auto-approve ont leurs valeurs exactes.
+- Le plan contient huit argv structurés et ordonnés, tous marqués
+  `execute: false`; le dry-run `super-lily` est borné à deux et reste
+  `dispatched: false`; `hermes config check` clôt la séquence.
+- Vérification ciblée : **6/6 tests** verts. Aucun client réseau, processus,
+  accès VPS, dispatch réel ou déploiement n'est présent dans la production.
+- État : `T-031 = green`, `active_task = T-031`.
+
+---
+
+### T-031 · refactor · 2026-08-03T16:52:27Z
+
+- La validation ferme désormais les champs racine et la forme de chaque
+  commande structurée avant toute lecture détaillée ; un champ secret ajouté
+  ou un argv non textuel est refusé au lieu d'être toléré silencieusement.
+- La triangulation rejette les slugs contenant casse, espace, chemin ou
+  séparateur shell, ainsi que les champs de modèle supplémentaires.
+- Vérification après refactor : **8/8 tests** et `git diff --check` verts,
+  sans changement du plan valide produit.
+- État : `T-031 = refactor`, `active_task = T-031`.
+
+---
+
+### T-031 · simplify · 2026-08-03T16:53:56Z
+
+- Passe `clarity-over-cleverness` : les limites, le profil, le mode, les argv
+  attendus et la version de schéma portent des noms métier ; la validation des
+  commandes utilise une boucle explicite et le retour est direct.
+- Le générateur reste une lecture locale suivie d'une matérialisation JSON. Il
+  n'expose ni exécuteur, ni callback, ni option d'activation, ni client externe.
+- Vérifications : **8/8 tests**, compilation des deux modules et
+  `git diff --check` verts.
+- État : `T-031 = simplify`, `active_task = T-031`.
+
+---
+
+### T-031 · done · 2026-08-03T17:00:04Z
+
+- T-031 couvre T-031-T1 à T-031-T6 et AC-170 à AC-174 ainsi que AC-183.
+- Preuves finales : **8/8 tests ciblés**, **401/405 tests Hermes exécutés**,
+  **4 skips historiques**, **14 skills validés**, modèle et état JSON valides,
+  journal Markdown sans erreur et `git diff --check` vert.
+- Le résultat est uniquement un plan local expurgé : aucune commande n'a été
+  exécutée, aucun client réseau ou processus n'est importé, et aucun accès VPS,
+  dispatch réel, gateway, fusion ou déploiement n'a eu lieu.
+- Issue d'exécution : `#118`. Branche :
+  `agent/build-t031-vps-dry-run`, sans reviewer sollicité.
+- État final : `T-031 = done`, `active_task = null`.
+
+---
