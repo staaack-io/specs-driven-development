@@ -914,6 +914,7 @@
 - `git diff --check` reste vert ; état TDD maintenu `done`.
 
 ---
+
 ## T-010 — Admettre et créer les cartes du build parallèle
 
 ### T-010 · red · 2026-08-03T11:12:21Z
