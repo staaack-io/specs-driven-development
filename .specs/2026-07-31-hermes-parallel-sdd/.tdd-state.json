@@ -493,21 +493,21 @@
       ]
     },
     "T-018": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-003", "T-009"],
       "test_ids": [
         "T-018-T1", "T-018-T2", "T-018-T3", "T-018-T4",
         "T-018-T5", "T-018-T6", "T-018-T7", "T-018-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
-      "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "issue": 93,
+      "branch": "agent/build-t018-sdd-validate",
+      "pr": 95,
+      "red_at": "2026-08-03T13:23:16Z",
+      "red_test_signature": "test_validation_guard.py::PublicationContractTests::test_t_018_t1_validation_guard_is_published",
+      "red_failure_excerpt": "AssertionError: False is not true : T-018-T1: /sdd-validate guard is absent; Ran 1 test; FAILED (failures=1)",
+      "green_at": "2026-08-03T13:27:42Z",
       "files_in_scope": [
         "hermes/skills/sdd-validate/SKILL.md",
         "hermes/skills/sdd-validate/references/delegation-contract.md",
