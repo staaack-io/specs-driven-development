@@ -17,7 +17,7 @@
 
 ## Task ID Registry
 
-- **high_water_mark :** 24
+- **high_water_mark :** 29
 - **retired_ids :** (aucun)
 
 ## Task Index
@@ -1410,3 +1410,211 @@ unique. Les preuves S-005 restent secondaires et ne sont pas réattribuées.
 - [x] Aucune question ouverte ni décision ADR supplémentaire.
 
 Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-021`.
+
+## Tâches : S-007 — E2E local complet et profil candidat 0.9.0
+
+### S-007 Task Index
+
+| ID | Tâche | AC primaires | Dépendances | Estimation | Portes |
+|---|---|---|---|---|---|
+| T-025 | Prouver deux writers full-stack réellement concurrents | AC-156, AC-219, AC-227 | T-024 | 3–4 h | unit, overlap, capacity, scope, CI |
+| T-026 | Prouver attente, échec isolé et reprise transactionnelle | AC-157, AC-158, AC-228 | T-024 | 3–4 h | unit, dependency, failure, recovery, fan-in, CI |
+| T-027 | Étendre le runner jetable de onboard à ship | AC-155, AC-218, AC-226 | T-025, T-026 | 3–4 h | e2e, lifecycle, disposable, all-python, CI |
+| T-028 | Auditer les commandes et les onze AC de S-007 | AC-225 | T-027 | 2–3 h | source-audit, help, docs, all-python, CI |
+| T-029 | Publier le profil candidat 0.9.0 | AC-159 | T-028 | 3–4 h | parity, profile-e2e, distribution, CI, go |
+
+### T-025 : Prouver deux writers full-stack réellement concurrents
+
+- **Origine qualifiée :** `spring-architect:T-025`
+- **AC-IDs :** AC-156, AC-219, AC-227
+- **Test-IDs :**
+  - T-025-T1 (RED concurrence — le scénario full-stack parallèle est absent)
+  - T-025-T2 (writers — backend et frontend écrivent des fichiers disjoints)
+  - T-025-T3 (chevauchement — leurs intervalles monotoniques se recouvrent strictement)
+  - T-025-T4 (capacité — le pic observé vaut deux et ne dépasse jamais deux)
+  - T-025-T5 (enveloppes — issue, carte, branche, worktree, session et PR sont uniques par tâche)
+  - T-025-T6 (conflit — deux scopes partageant un chemin sont sérialisés)
+  - T-025-T7 (preuves — intervalles, identités et fichiers sont publiés sans chemin absolu)
+- **Files in scope :**
+  - `hermes/e2e/parallel_scenario.py`
+  - `hermes/e2e/test_parallel_scenario.py`
+- **Dépendances :** T-024
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** tests du scénario, chevauchement monotone positif, pic de
+  concurrence égal à deux, sérialisation du conflit, scope, `git diff --check`,
+  CI source.
+- **Retour arrière :** retirer les deux fichiers du scénario ; le runner
+  existant limité au plan reste inchangé.
+- **Notes :** utiliser l'admission et les leases du runtime canonique, jamais un
+  second ordonnanceur. Les deux writers sont de vrais processus locaux dans un
+  dépôt jetable et non une succession simulée d'événements.
+
+### T-026 : Prouver attente, échec isolé et reprise transactionnelle
+
+- **Origine qualifiée :** `spring-architect:T-026`
+- **AC-IDs :** AC-157, AC-158, AC-228
+- **Test-IDs :**
+  - T-026-T1 (RED reprise — le scénario d'interruption est absent)
+  - T-026-T2 (dépendance — la tâche fan-in reste non admissible avant fusion et go observés)
+  - T-026-T3 (isolement — l'échec ou timeout injecté d'un writer ne révoque pas l'autre)
+  - T-026-T4 (conservation — changements et preuves du writer vert survivent à l'échec pair)
+  - T-026-T5 (reprise — le job interrompu reprend avec les mêmes identités sans doublon)
+  - T-026-T6 (fan-in — la reprise rend l'ancien ou le nouvel ensemble complet)
+  - T-026-T7 (atomicité — aucun mélange d'artefacts partagés n'est observable)
+  - T-026-T8 (no-merge — aucune fusion n'est exécutée sans go explicite)
+- **Files in scope :**
+  - `hermes/e2e/recovery_scenario.py`
+  - `hermes/e2e/test_recovery_scenario.py`
+- **Dépendances :** T-024
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** tests de dépendance, timeout/échec injecté, conservation,
+  reprise, idempotence, fan-in atomique, absence de merge, `git diff --check`,
+  CI source.
+- **Retour arrière :** retirer les deux fichiers du scénario ; aucun état réel,
+  PR distante ou artefact de feature n'est muté.
+- **Notes :** T-025 et T-026 ont des scopes disjoints et occupent au plus les
+  deux slots. L'échec est injecté uniquement dans leur bac à sable local.
+
+### T-027 : Étendre le runner jetable de onboard à ship
+
+- **Origine qualifiée :** `spring-architect:T-027`
+- **AC-IDs :** AC-155, AC-218, AC-226
+- **Test-IDs :**
+  - T-027-T1 (RED parcours — le runner s'arrête encore après plan)
+  - T-027-T2 (cycle — onboard, wire, spec, spec-review, epic-plan/plan, build, simplify, test, validate, review et ship sont traversés)
+  - T-027-T3 (dossier — tout le parcours vit sous une racine temporaire supprimable avec sentinelle)
+  - T-027-T4 (fan-in — les scénarios T-025/T-026 sont exécutés avant les commandes dépendantes)
+  - T-027-T5 (Git — chaque tâche conserve issue, carte, branche, worktree, session et PR dédiés)
+  - T-027-T6 (barrière — la tâche dépendante attend fusion et go sans effectuer la fusion)
+  - T-027-T7 (échec — le runner expose une reprise explicite du run conservé)
+  - T-027-T8 (sortie — le rapport final référence toutes les preuves sans secret ni chemin absolu)
+- **Files in scope :**
+  - `hermes/e2e/run_sdd_e2e.py`
+  - `hermes/e2e/test_run_sdd_e2e.py`
+  - `hermes/e2e/README.md`
+- **Dépendances :** T-025, T-026
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** tests du runner, E2E local jetable, cycle complet, enveloppes
+  Git/Kanban, reprise, toutes les suites Python Hermes, markdownlint,
+  `git diff --check`, CI source.
+- **Retour arrière :** revenir au runner borné au plan et supprimer uniquement
+  les runs portant la sentinelle E2E ; les runs en échec restent conservés par défaut.
+- **Notes :** T-027 ne démarre qu'après fusion autorisée de T-025 et T-026. Le
+  runner n'utilise ni VPS, ni dépôt métier, ni merge automatique.
+
+### T-028 : Auditer les commandes et les onze AC de S-007
+
+- **Origine qualifiée :** `spring-architect:T-028`
+- **AC-IDs :** AC-225
+- **Test-IDs :**
+  - T-028-T1 (manifeste — exactement onze AC S-007 et un producteur primaire par AC)
+  - T-028-T2 (commandes — toutes les commandes onboard à ship sont installées)
+  - T-028-T3 (DAG — T-025/T-026 parallèles puis T-027/T-028 séquentielles)
+  - T-028-T4 (preuves — overlap, capacité, conflit, dépendance, échec et fan-in sont exécutables)
+  - T-028-T5 (lifecycle — issue, carte, branche, worktree, session et PR par tâche)
+  - T-028-T6 (sécurité — aucun reviewer humain, merge, VPS, déploiement ou chemin absolu)
+- **Files in scope :**
+  - `hermes/scripts/test_sdd_s007_contract.py`
+  - `hermes/skills/sdd-help/SKILL.md`
+  - `hermes/README.md`
+  - `docs/artifact-contract.md`
+  - `docs/codex-migration.md`
+- **Dépendances :** T-027
+- **Phases estimées :** RED 30 min ; GREEN 60–90 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** contrat S-007, toutes les suites Python Hermes, validation des
+  skills, markdownlint, `git diff --check`, CI source.
+- **Retour arrière :** annuler la PR d'audit et ne pas annoncer le runner comme
+  complet ; les scénarios source restent isolés sur leurs branches.
+- **Notes :** T-028 est l'unique writer des documents partagés de publication.
+
+### T-029 : Publier le profil candidat 0.9.0
+
+- **Origine qualifiée :** `spring-architect:T-029`
+- **AC-IDs :** AC-159
+- **Test-IDs :**
+  - T-029-T1 (RED release — version antérieure ou surface E2E absente refusées)
+  - T-029-T2 (parité — runtime, skills, scénarios, runner et aide sont des copies exactes)
+  - T-029-T3 (profile layout — les suites E2E s'exécutent depuis le profil)
+  - T-029-T4 (distribution — version 0.9.0, précédent 0.8.0 et changelog cohérents)
+  - T-029-T5 (gate — runner complet, contrats, CI et parité sont verts)
+  - T-029-T6 (ordre — T-028 et le profil 0.8.0 sont fusionnés avant publication)
+  - T-029-T7 (rollback — réinstaller 0.8.0 sans supprimer les preuves)
+  - T-029-T8 (barrières — go explicite, aucune review humaine, fusion automatique, action VPS ou déploiement)
+- **Files in scope :**
+  - `scripts/run_skill_tests.py`
+  - `scripts/test_run_skill_tests.py`
+  - `scripts/test_validate_distribution.py`
+  - `scripts/test_sdd_s007_contract.py`
+  - `hermes/e2e/parallel_scenario.py`
+  - `hermes/e2e/test_parallel_scenario.py`
+  - `hermes/e2e/recovery_scenario.py`
+  - `hermes/e2e/test_recovery_scenario.py`
+  - `hermes/e2e/run_sdd_e2e.py`
+  - `hermes/e2e/test_run_sdd_e2e.py`
+  - `hermes/e2e/README.md`
+  - `skills/sdd-help/SKILL.md`
+  - `distribution.yaml`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `.github/workflows/ci.yml`
+- **Dépendances :** T-024, T-028
+- **Phases estimées :** RED 30 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** parité, runner profil, distribution, frontmatter, markdownlint,
+  `git diff --check`, CI et go explicite avant fusion.
+- **Retour arrière :** fermer la PR 0.9.0 et conserver 0.8.0 ; après
+  publication, réinstaller 0.8.0 sans supprimer états, journaux, logs,
+  branches, worktrees ou preuves E2E.
+- **Notes :** 0.9.0 est un candidat local complet, pas une autorisation de
+  pilote VPS, de déploiement ou de fusion automatique.
+
+### S-007 Primary AC Coverage Matrix
+
+| AC | Producteur primaire | Preuve principale |
+|---|---|---|
+| AC-156, AC-219, AC-227 | T-025 | T-025-T2 à T-025-T7 |
+| AC-157, AC-158, AC-228 | T-026 | T-026-T2 à T-026-T8 |
+| AC-155, AC-218, AC-226 | T-027 | T-027-T2 à T-027-T8 |
+| AC-225 | T-028 | T-028-T1 à T-028-T6 |
+| AC-159 | T-029 | T-029-T1 à T-029-T8 |
+
+La matrice développe exactement onze AC distincts, sans réattribuer les
+critères secondaires AC-207 à AC-217 exercés par les mêmes scénarios.
+
+### S-007 Dependency and Capacity Validation
+
+- Le DAG est acyclique. T-025 et T-026 ont des scopes disjoints et peuvent
+  occuper les deux slots writers ; T-027, T-028 puis T-029 sont séquentielles.
+- T-027 reste inadmissible tant que les deux PR parentes ne sont pas fusionnées
+  après go explicite ; aucune étape du plan n'exécute elle-même une fusion.
+- Le scénario mesure des intervalles monotoniques : le chevauchement
+  backend/frontend est strictement positif et le pic de writers vaut deux.
+- Le conflit de scope est sérialisé ; l'échec ou timeout d'un writer conserve
+  le résultat vert de l'autre et la reprise produit un fan-in complet.
+
+### S-007 Open Questions
+
+- (aucune)
+
+### S-007 Resolved Questions
+
+- **Décision autonome — modules de preuve disjoints :** concurrence et reprise
+  sont séparées pour rendre les scopes parallélisables et les échecs lisibles.
+- **Décision autonome — concurrence mesurée :** des processus locaux et des
+  intervalles monotoniques prouvent un overlap réel ; des événements séquentiels
+  préfabriqués ne suffisent pas.
+- **Décision autonome — GitHub sans mutation distante :** le bac à sable local
+  matérialise et vérifie issue, carte, branche, worktree, session et PR par
+  tâche via les adaptateurs canoniques ; aucun dépôt externe n'est modifié.
+- **Décision autonome — aucune review humaine :** les gates locales, CI, parité
+  et go explicite suffisent ; aucune personne n'est sollicitée pour reviewer.
+
+### S-007 Sign-off
+
+- [x] `high_water_mark: 29`; aucun ID existant n'est réutilisé.
+- [x] Les onze AC possèdent un producteur primaire unique.
+- [x] Chaque tâche possède tests, fichiers littéraux, dépendances, portes et rollback.
+- [x] Le DAG autorise deux writers puis impose intégration, audit et profil séquentiels.
+- [x] Aucune question ouverte ni décision ADR supplémentaire.
+
+Première vague : `/sdd-build 2026-07-31-hermes-parallel-sdd --parallel`
+admet T-025 et T-026 lorsque T-024 est terminée.

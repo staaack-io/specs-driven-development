@@ -1358,3 +1358,168 @@ recouvrir les AC S-005 ou S-007.
 - [x] Les scopes T-021/T-022 sont disjoints et les writers uniques sont nommés.
 - [x] Sécurité, rollback, fan-in, données et stacks N/A sont décrits.
 - [x] Aucune question ouverte ni nouvel ADR n'est requis.
+
+## Conception détaillée : S-007 — E2E local complet et candidat 0.9.0
+
+### S-007 Architecture Overview
+
+S-007 étend le runner E2E existant dans un dépôt temporaire marqué et
+supprimable, depuis `/sdd-onboard` jusqu'à `/sdd-ship`. Deux modules de scénario
+disjoints utilisent le runtime Hermes canonique : l'un exécute réellement les
+writers backend et frontend en concurrence et mesure leurs intervalles ; l'autre
+injecte une panne ou un timeout, vérifie l'attente des dépendances et reprend le
+fan-in transactionnel. Le runner agrège ensuite ces preuves avec le cycle
+complet des commandes et les enveloppes Git/Kanban propres à chaque tâche. Un
+audit source précède la copie exacte dans le profil candidat 0.9.0.
+
+Cette conception réutilise ADR-001 à ADR-005. Elle n'ajoute ni ordonnanceur,
+endpoint, persistance, reviewer humain, merge automatique, VPS ou déploiement.
+
+### S-007 ADRs
+
+- ADR-001 conserve Hermes Kanban comme ordonnanceur unique.
+- ADR-002 impose deux writers au maximum.
+- ADR-003 impose issue, carte, branche, worktree, session et PR par tâche.
+- ADR-004 impose le writer unique et le fan-in transactionnel.
+- ADR-005 impose la reprise idempotente et compatible.
+- Aucun nouvel ADR : le bac à sable supprimable, les scénarios attendus et le
+  candidat 0.9.0 sont imposés par la spécification.
+
+### S-007 Component Map
+
+| Frontière | Composant | Responsabilité | Tâche |
+|---|---|---|---|
+| Concurrence E2E | `hermes/e2e/parallel_scenario.py` | lancer deux processus writers disjoints, mesurer overlap/capacité, sérialiser un conflit | T-025 |
+| Reprise E2E | `hermes/e2e/recovery_scenario.py` | attendre fusion/go, injecter échec/timeout, conserver le pair et reprendre le fan-in | T-026 |
+| Runner complet | `hermes/e2e/run_sdd_e2e.py` | traverser onboard→ship dans un dépôt jetable et agréger les preuves | T-027 |
+| Audit source | `hermes/scripts/test_sdd_s007_contract.py` et docs | vérifier commandes, onze AC, DAG, sécurité et surfaces exécutables | T-028 |
+| Distribution | profil Hermes 0.9.0 | copier exactement le runner et publier le candidat après gates | T-029 |
+
+### S-007 Module Boundaries
+
+- `parallel_scenario` reçoit des tâches déjà validées et appelle l'admission,
+  les leases et les enveloppes existants ; il ne planifie rien lui-même.
+- `recovery_scenario` pilote uniquement les injections et oracles de reprise ;
+  le journal, CAS, verrou et synthesizer restent ceux du runtime canonique.
+- Les deux scénarios écrivent seulement dans leurs sous-arbres du dépôt E2E et
+  dans les journaux task-local ; seul le synthesizer écrit les artefacts partagés.
+- Le runner principal crée et valide la sentinelle avant toute suppression. Un
+  run échoué est conservé par défaut et repris explicitement.
+- Toute preuve persistée utilise des identifiants relatifs et expurgés ; aucun
+  token, contenu métier ou chemin absolu n'entre dans les artefacts.
+
+```text
+T-024 profil 0.8.0 ─┬─> T-025 concurrence ─┐
+                     └─> T-026 reprise ─────┤
+                                            └─> T-027 runner onboard→ship
+                                                  └─> T-028 audit source
+                                                        └─> T-029 profil 0.9.0
+```
+
+T-025 et T-026 sont développées sur des branches, worktrees, sessions, issues,
+cartes et PR distincts. T-027 attend que leurs deux PR soient fusionnées après
+go explicite. Un conflit de chemin observé dans le scénario est sérialisé.
+
+### S-007 Execution and Evidence Model
+
+| Objet | Champs principaux | Producteur | Invariant |
+|---|---|---|---|
+| Intervalle writer | task, stack, start monotone, end monotone | processus backend/frontend | overlap strictement positif, pic ≤ 2 |
+| Enveloppe de tâche | issue, card, branch, worktree, session, PR | pont canonique | identités uniques et idempotentes |
+| Injection | task, kind, phase, attempt | scénario reprise | échec/timeout local et déterministe |
+| Preuve conservée | task, files, Test-IDs, gate, journal | worker vert | inchangée lorsque le pair échoue |
+| Fan-in | old/new generation, CAS, marker | synthesizer unique | ancien ou nouveau complet, jamais mélangé |
+| Rapport E2E | commands, tasks, overlap, recovery, result | runner | données relatives expurgées |
+
+Le temps monotone sert uniquement à établir l'ordre et l'intersection des
+intervalles ; aucun seuil de performance ou SLO n'est inventé.
+
+### S-007 Local Git and Command Lifecycle
+
+Le dépôt jetable contient une fixture Spring et une fixture React/Next.js. Pour
+chaque tâche, les adaptateurs matérialisent issue, carte Kanban, branche
+`sdd/<feature>/<task>-<slug>`, worktree, session et PR en brouillon puis prête.
+Le scénario observe les checks et le go comme données contrôlées. Il n'appelle
+jamais un merge et n'accède à aucun GitHub ou VPS externe.
+
+Le parcours traverse successivement aide, onboarding, harness, spécification,
+revue de spécification, plan Epic/détaillé, build parallèle, simplification,
+tests, validation, revue technique SDD et préparation ship. Les commandes
+dépendantes attendent les fan-in requis ; ship ne déploie rien.
+
+### S-007 Data, API and Security Posture
+
+- Aucun endpoint HTTP ou contrat OpenAPI n'est ajouté par la migration ; les
+  fichiers Spring/Next de la fixture sont des cibles jetables du test.
+- Aucune entité, table ou migration n'est ajoutée ; Flyway/Liquibase sont N/A.
+- Aucune authentification réseau n'est nécessaire. Aucun secret ni credential
+  n'est fourni au runner.
+- Les processus sont limités à deux writers. Les analyses internes restent en
+  lecture seule et les gates lourdes demeurent sérialisées par le runtime.
+- Les suppressions sont refusées hors de la racine temporaire portant la
+  sentinelle exacte du run.
+
+### S-007 Test Strategy
+
+1. T-025 échoue d'abord faute de scénario, puis lance réellement les writers
+   backend/frontend disjoints, mesure l'overlap et le pic de deux, et sérialise
+   une paire ayant un fichier commun.
+2. T-026 échoue d'abord faute de scénario de reprise, puis bloque une tâche
+   dépendante avant fusion/go, injecte échec et timeout, conserve le pair vert,
+   reprend sans doublon et vérifie le fan-in ancien/nouveau complet.
+3. T-027 étend le runner du plan au ship dans un dossier supprimable et vérifie
+   le lifecycle issue→carte→branche→worktree→session→PR pour chaque tâche.
+4. T-028 manifeste exactement onze AC et exige toutes les commandes installées,
+   les preuves exécutables, l'absence de reviewer humain, merge, VPS et deploy.
+5. T-029 exécute les mêmes suites dans le layout profil, prouve la parité et
+   publie les métadonnées 0.9.0 uniquement après gates et go explicite.
+
+### S-007 Detailed AC Reconciliation
+
+| Groupe | Producteur primaire | Preuve prévue |
+|---|---|---|
+| AC-156, AC-219, AC-227 | T-025 | processus concurrents, overlap monotone et pic de deux |
+| AC-157, AC-158, AC-228 | T-026 | attente fusion/go, conservation, reprise et fan-in atomique |
+| AC-155, AC-218, AC-226 | T-027 | parcours complet dans une racine temporaire supprimable |
+| AC-225 | T-028 | inventaire exact des commandes publiées et audit source |
+| AC-159 | T-029 | profil candidat 0.9.0 après gate de publication |
+
+La réconciliation contient 3 + 3 + 3 + 1 + 1 = 11 producteurs primaires.
+Les scénarios couvrent aussi comme preuves secondaires les exigences de conflit,
+Git et transaction AC-207 à AC-217, sans les réattribuer à S-007.
+
+### S-007 Risks and Rollback
+
+| Risque | Réduction | Retour arrière |
+|---|---|---|
+| faux parallélisme séquentiel | processus distincts et overlap monotone strict | rejeter T-025 et conserver le runner antérieur |
+| plus de deux writers | compteur actif et admission canonique | terminer les processus du bac à sable et invalider le run |
+| conflit de scope concurrent | oracle explicite de sérialisation | annuler le scénario, aucun fichier externe touché |
+| panne d'un job effaçant l'autre | preuves immuables avant injection et comparaison après reprise | garder le run échoué pour diagnostic |
+| mélange au fan-in | verrou, CAS, journal et marker canonique | restaurer l'ancien ensemble complet |
+| suppression trop large | racine dédiée, nom borné et sentinelle vérifiée | conserver le dossier en cas de doute |
+| candidat divergent | parité exacte et gates profil | fermer la PR 0.9.0 et conserver 0.8.0 |
+
+### S-007 Open Questions
+
+- (aucune)
+
+### S-007 Resolved Questions
+
+- **Décision autonome — preuve de concurrence :** lancer des processus writers
+  et comparer leurs intervalles monotoniques fournit un oracle déterministe.
+- **Décision autonome — panne double :** exercer séparément une exception et un
+  timeout couvre l'isolation sans rendre le scénario dépendant du hasard.
+- **Décision autonome — environnement local :** les objets Git/Kanban sont
+  matérialisés dans le dépôt jetable via les adaptateurs existants ; aucune
+  mutation distante n'est nécessaire pour prouver leurs identités et transitions.
+- **Décision autonome — absence de review humaine :** aucune demande ni attente
+  de reviewer n'entre dans S-007 ; seul le go explicite reste une barrière de fusion.
+
+### S-007 Design Sign-off
+
+- [x] Les onze AC possèdent un producteur primaire unique.
+- [x] Le DAG est acyclique, les deux tâches parallèles ont des scopes disjoints.
+- [x] Le conflit, la dépendance, l'échec, le timeout et le fan-in ont des oracles.
+- [x] Données, sécurité, rollback, Git/Kanban et limites de capacité sont décrits.
+- [x] Aucune question ouverte ni nouvel ADR n'est requis.
