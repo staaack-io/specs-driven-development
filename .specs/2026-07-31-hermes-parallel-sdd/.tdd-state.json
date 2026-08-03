@@ -755,21 +755,21 @@
       ]
     },
     "T-026": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-024"],
       "test_ids": [
         "T-026-T1", "T-026-T2", "T-026-T3", "T-026-T4",
         "T-026-T5", "T-026-T6", "T-026-T7", "T-026-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 108,
+      "branch": "agent/build-t026-e2e-recovery",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T17:23:00Z",
+      "red_test_signature": "hermes/e2e/test_recovery_scenario.py::RecoveryScenarioTest::test_t026_t1_exposes_the_recovery_scenario",
+      "red_failure_excerpt": "AssertionError: T-026-T1: recovery_scenario.py must implement interruption recovery; Ran 8 tests, FAILED (failures=9)",
+      "green_at": "2026-08-03T17:28:30Z",
       "files_in_scope": [
         "hermes/e2e/recovery_scenario.py",
         "hermes/e2e/test_recovery_scenario.py"
