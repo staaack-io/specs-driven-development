@@ -164,6 +164,223 @@
         "README.md",
         ".github/workflows/ci.yml"
       ]
+    },
+    "T-009": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": [
+        "T-008"
+      ],
+      "test_ids": [
+        "T-009-T1",
+        "T-009-T2",
+        "T-009-T3",
+        "T-009-T4",
+        "T-009-T5",
+        "T-009-T6",
+        "T-009-T7",
+        "T-009-T8",
+        "T-009-T9"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/skills/sdd-build/scripts/test_build_guard.py",
+        "hermes/skills/sdd-build/scripts/test_skill_contract.py",
+        "hermes/skills/sdd-build/scripts/build_guard.py",
+        "hermes/skills/sdd-build/SKILL.md",
+        "hermes/skills/sdd-build/references/delegation-contract.md",
+        "hermes/skills/sdd-build/references/tdd-cycle-contract.md",
+        "hermes/skills/sdd-build/references/role-spring-test-engineer.md",
+        "hermes/skills/sdd-build/references/role-spring-implementer.md",
+        "hermes/skills/sdd-build/references/role-react-nextjs-test-engineer.md",
+        "hermes/skills/sdd-build/references/role-react-nextjs-implementer.md"
+      ]
+    },
+    "T-010": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": [
+        "T-009"
+      ],
+      "test_ids": [
+        "T-010-T1",
+        "T-010-T2",
+        "T-010-T3",
+        "T-010-T4",
+        "T-010-T5",
+        "T-010-T6",
+        "T-010-T7",
+        "T-010-T8",
+        "T-010-T9"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/runtime/test_sdd_build_orchestrator.py",
+        "hermes/skills/sdd-build/scripts/test_build_guard.py",
+        "hermes/runtime/build-orchestrator-contract.md",
+        "hermes/runtime/sdd_build_orchestrator.py",
+        "hermes/skills/sdd-build/scripts/build_guard.py",
+        "hermes/skills/sdd-build/SKILL.md"
+      ]
+    },
+    "T-011": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": [
+        "T-010"
+      ],
+      "test_ids": [
+        "T-011-T1",
+        "T-011-T2",
+        "T-011-T3",
+        "T-011-T4",
+        "T-011-T5",
+        "T-011-T6",
+        "T-011-T7"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/runtime/test_sdd_job_execution.py",
+        "hermes/runtime/job-execution-contract.md",
+        "hermes/runtime/sdd_job_execution.py"
+      ]
+    },
+    "T-012": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": [
+        "T-010",
+        "T-011"
+      ],
+      "test_ids": [
+        "T-012-T1",
+        "T-012-T2",
+        "T-012-T3",
+        "T-012-T4",
+        "T-012-T5",
+        "T-012-T6",
+        "T-012-T7",
+        "T-012-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/runtime/test_sdd_wave_synthesizer.py",
+        "hermes/runtime/wave-synthesizer-contract.md",
+        "hermes/runtime/sdd_wave_synthesizer.py"
+      ]
+    },
+    "T-013": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": [
+        "T-012"
+      ],
+      "test_ids": [
+        "T-013-T1",
+        "T-013-T2",
+        "T-013-T3",
+        "T-013-T4",
+        "T-013-T5",
+        "T-013-T6",
+        "T-013-T7"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/scripts/test_sdd_s003_contract.py",
+        "hermes/runtime/README.md",
+        "hermes/skills/sdd-help/SKILL.md",
+        "hermes/README.md",
+        "docs/artifact-contract.md",
+        "docs/codex-migration.md"
+      ]
+    },
+    "T-014": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": [
+        "T-013"
+      ],
+      "test_ids": [
+        "T-014-T1",
+        "T-014-T2",
+        "T-014-T3",
+        "T-014-T4",
+        "T-014-T5",
+        "T-014-T6",
+        "T-014-T7",
+        "T-014-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "scripts/test_validate_distribution.py",
+        "skills/sdd-build/scripts/test_build_guard.py",
+        "skills/sdd-build/scripts/test_skill_contract.py",
+        "hermes/runtime/test_sdd_build_orchestrator.py",
+        "hermes/runtime/test_sdd_job_execution.py",
+        "hermes/runtime/test_sdd_wave_synthesizer.py",
+        "skills/sdd-build/scripts/build_guard.py",
+        "skills/sdd-build/SKILL.md",
+        "skills/sdd-build/references/delegation-contract.md",
+        "skills/sdd-build/references/tdd-cycle-contract.md",
+        "skills/sdd-build/references/role-spring-test-engineer.md",
+        "skills/sdd-build/references/role-spring-implementer.md",
+        "skills/sdd-build/references/role-react-nextjs-test-engineer.md",
+        "skills/sdd-build/references/role-react-nextjs-implementer.md",
+        "skills/sdd-help/SKILL.md",
+        "hermes/runtime/README.md",
+        "hermes/runtime/build-orchestrator-contract.md",
+        "hermes/runtime/sdd_build_orchestrator.py",
+        "hermes/runtime/job-execution-contract.md",
+        "hermes/runtime/sdd_job_execution.py",
+        "hermes/runtime/wave-synthesizer-contract.md",
+        "hermes/runtime/sdd_wave_synthesizer.py",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/workflows/ci.yml"
+      ]
     }
   }
 }

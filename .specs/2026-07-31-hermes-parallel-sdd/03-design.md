@@ -493,3 +493,338 @@ introduite.
 - [x] Checklist `design-review.md` relue le 2026-08-01.
 - [x] Exécution de la migration autorisée par l'utilisateur le 2026-08-01
   (instruction : « ok go »).
+
+## Conception détaillée : S-003 — `/sdd-build` mono-tâche et parallèle, profil 0.6.0
+
+> Responsable : `spring-architect` · Phase 3b · Tranche Epic : `S-003`
+>
+> Cet addendum préserve intégralement les conceptions S-001 et S-002. Il porte
+> exclusivement sur les 51 AC affectés à S-003 par la roadmap approuvée.
+
+### S-003 Inputs
+
+- Source de tranche : issue GitHub
+  [#74](https://github.com/staaack-io/specs-driven-development/issues/74),
+  `Plan S-003: publish /sdd-build sequential and parallel in profile 0.6.0`,
+  ouverte et relue le 2026-08-03.
+- Révision de `01-spec.md` : SHA-256
+  `71fd818b8d9e30931ac5203bd3099ec5ecceb6475461b4d494e72674f640a7b6`.
+- Révision de `02-spec-review.md` : SHA-256
+  `c64ffd8f8af312a50da04a066ee47874a310654753630224a5184a8d5a0e50f2` ;
+  verdict `approve`, 286 AC conformes et zéro question ouverte.
+- Révision de `03-epic-design.md` : SHA-256
+  `f17fced20d9a0f3dc1c9c82732d1a6cb1cb755ebcf52cf06696d9b552c82430b`.
+- Révision de `03a-epic-roadmap.md` lue avant cet addendum : SHA-256
+  `5bfd79d95e74cee8ae5fedd9e12345214ca040df819bad1b502a4ea15fcee7d1`.
+- Baseline source : `main` à `0f5932a`, après achèvement de S-002 et de
+  T-008 ; runtime v2, bridge Kanban–GitHub, `/sdd-status`,
+  `/sdd-epic-plan`, `/sdd-wire-harness` et profil 0.5.0 disponibles.
+- Couverture primaire S-003 : exactement `AC-013`, `AC-019` à `AC-024`,
+  `AC-027` à `AC-047`, `AC-124` à `AC-138`, `AC-231`, `AC-233`,
+  `AC-234`, `AC-236` et `AC-257` à `AC-260`, soit **51 AC**.
+
+#### S-003 Inputs from detect-stack.sh
+
+L'exécution de `.github/scripts/detect-stack.sh` retourne :
+
+```json
+{"error":"pom.xml introuvable","searched":"pom.xml"}
+```
+
+Ce résultat confirme que Spring Boot, OpenAPI, base de données, outil de
+migration, Testcontainers, frontend applicatif et ArchUnit sont sans objet
+pour le produit modifié. `/sdd-build` doit néanmoins sélectionner des rôles
+embarqués Spring ou React/Next.js à partir des preuves de stack du projet
+cible, sans déduire la stack de ce dépôt Python/Hermes.
+
+### S-003 Architecture Overview
+
+S-003 introduit une seule commande publique, `/sdd-build`, avec deux chemins
+d'exécution. Le chemin `/sdd-build <feature-id> <T-NNN>` est livré et fusionné
+en premier. Il orchestre dans un même job les rôles test-engineer puis
+implementer adaptés à la stack, tout en gardant l'agent principal responsable
+des portes et de l'ordre RED → GREEN → REFACTOR → SIMPLIFY. Les rôles ne
+reçoivent que le contrat de tâche et un workspace borné ; ils n'accèdent jamais
+directement aux artefacts partagés. Le garde principal conserve dans le journal
+local les Test-IDs, commandes structurées, sorties expurgées et fichiers
+concernés.
+
+Après fusion du socle mono-tâche, `/sdd-build <feature-id> --parallel
+[--max-workers 1|2]` utilise exclusivement le Kanban Hermes et les primitives
+du runtime v2. L'orchestrateur calcule une vague contenant toutes les tâches
+`pending`/`ready` admissibles dont les dépendances sont `done`/`done`, refuse
+les périmètres en conflit et laisse le Kanban activer au plus deux leases
+disjoints à la fois. Pour chaque tâche admise, il crée une carte
+dans le projet parent avec carte parente, branche, clé d'idempotence, skill
+préchargé, durée maximale de 45 minutes et deux nouvelles tentatives au plus.
+Une enveloppe de job distincte crée ensuite issue enfant, branche, worktree
+Hermes sous `.worktrees/`, session et PR brouillon, sans force-push, reset
+destructif ou auto-merge.
+
+Le cycle humain reste hors des workers. Une PR prête et revue place sa carte
+dans `awaiting_go`. Seule une fusion explicitement autorisée et observée place
+la carte à `done`. Quand toutes les cartes de la vague sont `done`, un
+synthesizer unique vérifie les journaux immuables, construit les trois
+artefacts partagés candidats, appelle le fan-in transactionnel du runtime et
+ouvre une PR de fan-in. La vague suivante demeure inadmissible jusqu'à fusion
+humaine de cette PR.
+
+### S-003 ADRs
+
+Aucun nouvel ADR n'est nécessaire. S-003 applique sans variante locale les
+décisions acceptées :
+
+- [ADR-001](adr/001-use-hermes-kanban.md) — Kanban Hermes comme unique
+  ordonnanceur durable ;
+- [ADR-002](adr/002-bound-parallel-capacity.md) — deux writers, trois analyses
+  en lecture seule et une gate lourde ;
+- [ADR-003](adr/003-isolate-each-job.md) — enveloppe complète propre à chaque
+  job ;
+- [ADR-004](adr/004-use-single-writer-fan-in.md) — journaux task-local et
+  synthesizer transactionnel unique ;
+- [ADR-005](adr/005-migrate-state-with-dual-read.md) — état v2 compatible avec
+  le rollback au profil précédent.
+
+### S-003 Component Map
+
+| Frontière | Composant | Responsabilité S-003 | Writer |
+|---|---|---|---|
+| Commande mono-tâche | `hermes/skills/sdd-build` | Valider l'appel, choisir les rôles Spring ou React, piloter le cycle TDD et journaliser les preuves | T-009 |
+| Admission parallèle | `hermes/runtime/sdd_build_orchestrator.py` | Interroger l'état v2, construire la vague, acquérir les leases et créer les cartes Kanban | T-010 |
+| Enveloppe de job | `hermes/runtime/sdd_job_execution.py` | Créer branche, worktree, session, issue et PR ; expurger les logs et préserver les ressources en échec | T-011 |
+| Synthèse de vague | `hermes/runtime/sdd_wave_synthesizer.py` | Appliquer la gate de go, observer les merges, consolider les journaux et produire la PR de fan-in | T-012 |
+| Audit source | `hermes/scripts/test_sdd_s003_contract.py` | Prouver la couverture exacte 51/51, les frontières, la capacité et la publication de la commande dans l'aide | T-013 |
+| Distribution | profil Hermes 0.6.0 | Copier exactement skill et runtime, exécuter les mêmes tests, versionner, appliquer la gate et conserver le rollback 0.5.0 | T-014 |
+
+Le runtime existant reste partagé et non dupliqué :
+
+- `sdd_runtime_guard.py` valide l'état, le DAG, les Test-IDs et scopes, gère
+  leases, journaux, empreintes et fan-in transactionnel ;
+- `sdd_github_bridge.py` crée issue et PR, rend la PR prête et suit
+  checks/reviews/fils sans fusion ;
+- les trois nouveaux composants composent ces primitives par adaptateurs
+  structurés ; aucun ne crée une seconde boucle d'ordonnancement Python.
+
+### S-003 Module Boundaries
+
+- `hermes/skills/sdd-build` est la seule interface utilisateur de S-003. Son
+  garde orchestre une tâche ; il ne remplace ni l'état partagé ni le Kanban.
+- `sdd_build_orchestrator.py` décide seulement de l'admission et crée les
+  cartes via l'adaptateur Kanban. Il délègue l'exécution à une interface de job
+  et ne manipule pas GitHub ou les artefacts partagés directement.
+- `sdd_job_execution.py` matérialise une enveloppe déjà admise. Il consomme le
+  bridge GitHub existant et n'admet aucune autre tâche.
+- `sdd_wave_synthesizer.py` est l'unique appelant autorisé de
+  `transactional_fan_in` pour S-003. Les workers ne reçoivent aucune référence
+  leur permettant d'écrire `04-tasks.md`, `.tdd-state.json` ou
+  `05-implementation-log.md`.
+- Les rôles embarqués sont en lecture limitée sur le contrat fourni et en
+  écriture uniquement sur les fichiers loués. `delegate_task` reste réservé à
+  leurs sous-analyses internes en lecture seule ; il n'ordonnance pas les jobs.
+- Après T-009, T-010 est le seul writer S-003 admissible avec le writer S-004
+  `/sdd-code-simplify` prévu par la roadmap. T-011 dépend de T-010 : leurs
+  chemins restent strictement disjoints pour éviter un couplage de fichiers,
+  mais ils ne consomment jamais simultanément les deux slots avec S-004. T-012
+  est ensuite le writer unique d'intégration, puis T-013 le writer unique
+  d'audit source et T-014 le writer unique du dépôt profil.
+
+### S-003 Interaction Model
+
+#### Chemin mono-tâche
+
+1. Valider les arguments structurés, `feature-id`, `T-NNN`, spec approuvée,
+   état v2, contrat de `04-tasks.md`, dépendances `done` et scope littéral.
+2. Détecter la stack du projet cible à partir de preuves reliées à la tâche et
+   charger le couple de rôles Spring ou React/Next.js correspondant.
+3. Acquérir le lease, relever l'empreinte hors scope et transmettre au
+   test-engineer uniquement Test-IDs, fichiers de test, commande de test et
+   contrat RED. Le rôle écrit seulement le test rouge.
+4. Vérifier que l'échec est celui attendu, puis écrire d'abord l'événement RED
+   immuable avec Test-IDs, commande, sortie expurgée et fichiers concernés.
+5. Transmettre à l'implementer uniquement la preuve RED et les fichiers de
+   production en scope. Vérifier GREEN, puis exécuter REFACTOR et SIMPLIFY dans
+   le même job, chaque transition étant journalisée avant progression.
+6. Vérifier l'empreinte hors scope et libérer le lease. Un échec conserve le
+   journal et les preuves, sans écriture directe des artefacts partagés.
+
+#### Chemin parallèle et fan-in
+
+1. Valider `--parallel` et la valeur éventuelle `--max-workers`; sur le VPS,
+   l'absence vaut deux et toute valeur supérieure à deux est refusée.
+2. Lire les tâches prêtes dans l'état v2, puis placer dans la vague toutes celles
+   dont les dépendances sont fusionnées et dont les scopes sont mutuellement
+   disjoints. Un conflit est sérialisé et une dépendante reste en attente ; le
+   Kanban ne rend actifs que deux writers, les cartes suivantes restant en file.
+3. Créer idempotemment chaque carte sur le projet parent, avec carte parente,
+   branche, skill, budget de 45 minutes et deux retries, puis matérialiser
+   l'enveloppe propre du job.
+4. Lancer le même cycle mono-tâche dans chaque job. Le timeout ou l'échec d'un
+   job libère uniquement son lease, conserve ses logs/journal/worktree et ne
+   modifie ni n'annule l'autre job.
+5. Après tests, checks et review, placer la carte à `awaiting_go`. Sans go, ne
+   fusionner aucune PR. Après go et fusion humaine observée, passer cette carte
+   à `done`.
+6. Quand toute la vague est `done`, le synthesizer vérifie chaque manifeste,
+   consolide transactionnellement les artefacts partagés sur sa branche et
+   crée une PR de fan-in. Une reprise rejoue le même identifiant et contenu.
+7. Refuser toute admission de la vague suivante jusqu'à fusion humaine de la
+   PR de fan-in.
+
+### S-003 Entity Relationship Model
+
+S-003 n'ajoute aucune entité persistée par une application. Il matérialise les
+cardinalités conceptuelles déjà approuvées :
+
+- une tâche possède au plus un job actif ; chaque job parallèle possède
+  exactement une carte, une issue enfant, une branche, un worktree, une
+  session, un journal et une PR ;
+- une vague contient au moins un job et au plus deux writers actifs à un
+  instant donné ; le nombre de cartes de la vague peut être supérieur à deux,
+  mais les suivantes attendent un slot ;
+- une vague possède exactement une PR de fan-in, créée seulement après que
+  toutes ses cartes sont `done` ;
+- une feature possède une issue et une carte parentes, un projet/board Hermes
+  explicites et un seul ensemble d'artefacts partagés.
+
+### S-003 OpenAPI Sketch
+
+N/A. Aucun endpoint HTTP n'est ajouté ou modifié.
+
+### S-003 Data Model + Migrations
+
+- Base de données, table, collection et outil de migration : N/A.
+- État SDD : le schéma v2 fusionné en S-002 est réutilisé sans nouveau champ.
+  T-009 à T-014 sont ajoutées `pending` avec dépendances, Test-IDs et scopes ;
+  T-001 à T-008 et leurs preuves restent inchangées.
+- Données durables non versionnées : leases, manifestes et transactions restent
+  dans le Git common dir selon le runtime v2.
+- Retour arrière : rétablir le profil 0.5.0. Ne supprimer ni état, journal,
+  log, issue, carte, branche, worktree, session ou PR existants.
+
+### S-003 Security Posture
+
+- Authentification HTTP et autorisation applicative : N/A.
+- GitHub et Hermes sont fournis par des adaptateurs déjà authentifiés ; aucun
+  token ou credential n'est transmis aux rôles ni écrit dans les artefacts.
+- Les logs et extraits de commandes expurgent secrets, tokens, données
+  personnelles, chemins absolus et contenu métier avant journalisation.
+- Les commandes restent des listes d'arguments structurées. `--yolo`, options
+  de bypass, force-push, reset destructif et toute commande de merge automatique
+  sont refusés.
+- Chaque worker reçoit le plus petit contexte et le scope littéral nécessaire ;
+  les artefacts partagés ne sont jamais montés comme surface d'écriture du rôle.
+
+### S-003 Test Strategy
+
+1. T-009 produit le RED du garde mono-tâche, puis prouve le routage Spring/React,
+   l'ordre des rôles et phases, l'écriture locale préalable des preuves et le
+   refus des artefacts partagés.
+2. Après fusion de T-009, T-010 peut progresser en parallèle du writer S-004
+   hors périmètre. T-011 attend T-010, puis complète l'enveloppe sur des
+   fichiers distincts. Des adaptateurs factices et une horloge contrôlée
+   prouvent admission, cartes, budgets, retries, isolation et reprise sans
+   appeler Hermes ou GitHub réels.
+3. T-012 injecte des états de PR et des interruptions avant/après fan-in pour
+   prouver go humain, aucune fusion automatique, atomicité, idempotence et
+   barrière de vague.
+4. T-013 exécute un manifeste source exact des 51 AC, vérifie les scopes et le
+   DAG, puis rejoue toutes les suites runtime/skill concernées. Il constitue le
+   fan-in d'audit, sans réimplémenter T-009 à T-012.
+5. T-014 copie exactement les surfaces source dans le profil, exécute les mêmes
+   tests depuis la disposition profil, vérifie la parité, la version 0.6.0 et la
+   gate CI/tests/contrats/review/fils/go avant fusion.
+
+### S-003 Detailed AC Reconciliation
+
+| Producteur primaire | AC uniques | Nombre | Preuve principale |
+|---|---|---:|---|
+| T-009 mono-tâche | AC-019, AC-037–AC-044, AC-124–AC-127, AC-257–AC-259 | 16 | garde du skill, cycle et journal task-local |
+| T-010 orchestrateur | AC-020–AC-023, AC-027–AC-029, AC-031, AC-128–AC-133, AC-236, AC-260 | 16 | barrière mono fusionnée, sélection de vague et carte Kanban |
+| T-011 enveloppe job | AC-030, AC-032–AC-036, AC-233–AC-234 | 8 | branche/worktree/session/GitHub et sécurité Git |
+| T-012 fan-in humain | AC-045–AC-047, AC-134–AC-137, AC-231 | 8 | gate de go et synthesizer transactionnel |
+| T-013 audit source | AC-024 | 1 | carte visible par `/sdd-status` et manifeste 51/51 |
+| T-014 profil 0.6.0 | AC-013, AC-138 | 2 | parité, tests de profil et gate de publication |
+
+Total : **51 AC primaires uniques sur 51**, aucun orphelin et aucun doublon
+primaire. T-013 audite secondairement l'ensemble des 51 identifiants.
+
+### S-003 Capacity and Wave Validation
+
+```text
+T-008 done
+  -> W-009 : T-009 build mono-tâche
+       -> W-010 : T-010 orchestrateur || writer S-004 hors périmètre
+            -> W-011 : T-011 enveloppe job
+                 -> W-012 : T-012 gate humaine et synthesizer
+                      -> W-013 : T-013 audit source 51/51
+                           -> W-014 : T-014 profil 0.6.0
+```
+
+- Writers : W-010 utilise un writer S-003 et réserve le second au chantier
+  S-004. W-011 à W-014 utilisent chacune un seul writer S-003.
+- Analyses internes : chaque job peut déléguer au plus trois analyses en
+  lecture seule ; elles n'obtiennent aucun lease d'écriture.
+- Gate lourde : le coordinateur de gate du runtime en autorise exactement une
+  à la fois ; les jobs supplémentaires attendent.
+- Artefacts partagés : les workers n'y accèdent pas ; T-012 est le seul
+  synthesizer transactionnel de sa vague.
+- S-004 : `/sdd-code-simplify` peut être développé après fusion de T-009 en
+  parallèle de T-010. T-011 attend ensuite T-010 et le prochain slot S-003 ;
+  les AC, fichiers et la publication 0.6.1 restent hors de S-003.
+
+### S-003 Risks + Rollback
+
+| Risque | Probabilité | Impact | Réduction | Retour arrière |
+|---|---|---|---|---|
+| Le mono-tâche laisse un rôle écrire l'état partagé | moyenne | preuves concurrentes ou partielles | contexte sans handle partagé, fingerprint et `validate_worker_changes` | arrêter le job, conserver son journal et revenir au profil 0.5.0 |
+| Deux tâches en conflit entrent dans la même vague | moyenne | collision de fichiers | validation DAG/scopes, leases et sérialisation explicite | libérer uniquement le lease non démarré et recalculer la vague |
+| Timeout ou échec détruit l'autre job | moyenne | travail perdu | ressources par job, erreurs isolées et aucun nettoyage automatique | conserver branche, worktree, PR, logs et journal ; reprendre idempotemment |
+| Carte, branche et PR divergent | moyenne | reprise ambiguë | même clé d'idempotence et identifiants croisés via le bridge | remettre la carte `needs_input`, sans recréer ni supprimer les objets |
+| Fan-in partiel après interruption | moyenne | artefacts incohérents | writer unique, verrou, CAS, journal et marqueur transactionnel | reprise runtime vers l'ancien ou le nouvel ensemble complet |
+| Fusion sans go | faible | violation de la gouvernance | aucune API de merge dans les modules ; état `awaiting_go` bloquant | ne pas fusionner ; conserver PR et carte |
+| Profil 0.6.0 diverge de la source | moyenne | commande installée non prouvée | copie exacte, comparaison sans différence et tests depuis le profil | fermer la PR profil et conserver 0.5.0 |
+
+### S-003 Non-Functional Requirements
+
+- Capacité : au plus deux writers, trois analyses en lecture seule et une gate
+  lourde, sans valeur plus élevée configurable sur le VPS.
+- Durée/reprise : 45 minutes maximum par tentative et deux nouvelles tentatives
+  au plus ; la reprise conserve l'autre job et toutes les preuves du job en
+  échec.
+- Confidentialité : aucune des cinq catégories sensibles définies par Q-008 ne
+  paraît dans les logs versionnés.
+- Publication : CI obligatoire, tests et contrats verts, review `approve`, zéro
+  fil actionnable et go humain précèdent la fusion du profil 0.6.0.
+
+Aucun autre SLO de latence, débit ou consommation n'est introduit.
+
+### S-003 Open Questions
+
+- (aucune)
+
+### S-003 Resolved Questions
+
+- Les décisions Q-001 à Q-010 de `01-spec.md` et ADR-001 à ADR-005 suffisent ;
+  S-003 n'introduit aucune décision supplémentaire.
+- Le mono-tâche est fusionné avant l'orchestrateur ; S-004 peut seulement
+  démarrer après cette barrière et reste hors de la couverture S-003.
+
+### S-003 Design Review
+
+- [x] Carte des composants Python/Hermes, frontières et interaction présentes.
+- [x] Spring applicatif, OpenAPI, persistance, migrations et ArchUnit explicitement N/A.
+- [x] Rôles Spring/React embarqués, sécurité, logs et interdictions documentés.
+- [x] Les composants parallèles ont des fichiers concrets disjoints et un writer partagé unique.
+- [x] Le DAG respecte mono-tâche avant orchestrateur et publication après audit.
+- [x] La capacité 2 writers / 3 analyses / 1 gate est vérifiable.
+- [x] Chaque risque possède une réduction et un retour arrière 0.5.0.
+- [x] Les 51 AC sont couverts exactement, sans doublon primaire.
+- [x] Aucun comportement absent de `01-spec.md` ou de l'issue #74 n'est introduit.
+- [x] Aucun nouvel ADR n'est requis et aucune question ouverte ne subsiste.
+
+### S-003 Sign-off
+
+- [x] Les artefacts Epic restent approuvés et inchangés dans leurs décisions.
+- [x] Chaque AC S-003 est relié à un producteur primaire et à un Test-ID planifié.
+- [x] Checklist `design-review.md` relue le 2026-08-03.
+- [x] Première tâche build : `/sdd-build 2026-07-31-hermes-parallel-sdd T-009`.

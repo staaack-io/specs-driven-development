@@ -14,37 +14,39 @@
 - Socle de départ : `main` à `06ee632`, CI Hermes fusionnée par la pull request
   #49 ; profil VPS initial 0.4.7 ; runner E2E actuel arrêté au plan.
 
-## Execution Snapshot — 2026-08-01
+## Execution Snapshot — 2026-08-03
 
 | Tranche | État observé | Conditions de sortie restantes |
 |---|---|---|
-| S-001 / 0.4.8 | En cours | La PR source [#62](https://github.com/staaack-io/specs-driven-development/pull/62) est prête, `MERGEABLE/CLEAN` et ses deux checks sont verts, mais aucune review n'est consignée. L'issue profil [#45](https://github.com/staaack-io/hermes-agent-profile-staaack/issues/45) est ouverte ; aucune PR profil ni version 0.4.8 n'existe. |
-| S-002 / 0.5.0 | Partiellement fusionnée en source | Runtime v2 [#61](https://github.com/staaack-io/specs-driven-development/pull/61), `/sdd-epic-plan` [#57](https://github.com/staaack-io/specs-driven-development/pull/57) et `/sdd-wire-harness` [#59](https://github.com/staaack-io/specs-driven-development/pull/59) sont sur `origin/main` à `a5815b1`. Le pont Kanban–GitHub, l'enrichissement de `/sdd-status`, l'audit des 84 AC et le profil 0.5.0 manquent. |
-| S-003 / 0.6.0 | Non commencée | `/sdd-build` mono-tâche, puis orchestrateur parallèle et fan-in. |
+| S-001 / 0.4.8 | Terminée | T-001 à T-003 sont `done` ; `/sdd-onboard` et la distribution 0.4.8 constituent la baseline conservée. |
+| S-002 / 0.5.0 | Terminée | T-004 à T-008 sont `done` sur `main` à `0f5932a` ; runtime v2, bridge, status, epic-plan, wire-harness et profil 0.5.0 constituent l'entrée de S-003. |
+| S-003 / 0.6.0 | Planifiée | T-009 à T-014 sont `pending`. Première action : livrer et fusionner T-009 mono-tâche ; T-010 peut ensuite progresser avec le writer S-004, puis T-011 attend T-010. |
 | S-004 / 0.6.1 | Non commencée | `/sdd-code-simplify` et publication après 0.6.0. |
 | S-005 / 0.7.0 | Non commencée | `/sdd-test`, puis `/sdd-validate`. |
 | S-006 / 0.8.0 | Non commencée | `/sdd-review`, puis `/sdd-ship`. |
 | S-007 / 0.9.0 | Non commencée | E2E complet onboard→ship, parallélisme, dépendance et reprise injectée. |
 | S-008 / 1.0.0 | Non commencée | Sandbox VPS, gateway utilisateur et pilote Super Lily sans déploiement. |
 
-Le profil publié reste exactement en **0.4.7** avec cinq skills : `sdd-help`,
-`sdd-plan`, `sdd-spec`, `sdd-spec-review` et `sdd-status`. Le dépôt source en
-contient huit ; `sdd-onboard`, `sdd-epic-plan` et `sdd-wire-harness` ne sont
-donc pas encore distribués.
+Le point de reprise de la roadmap est désormais S-003. La prochaine commande
+est `/sdd-build 2026-07-31-hermes-parallel-sdd T-009`. Après fusion de T-009,
+T-010 et le writer S-004 `/sdd-code-simplify` peuvent occuper les deux slots.
+T-011 dépend de T-010 et attend donc le prochain slot S-003, sans modifier la
+couverture ni les décisions de S-003.
 
 ## Roadmap / Reality Reconciliation
 
-- La roadmap historique part de `06ee632` puis `3eef5b5`; le nouveau point de
-  référence source est `a5815b1`, avant la PR #62.
-- S-002 a avancé avant la sortie de S-001. Le code déjà fusionné reste acquis,
-  mais le train de publication demeure bloqué à 0.4.7.
-- Le séquencement interne connu de S-002 est valide : le contrat runtime v2 a
-  été fusionné avant `/sdd-epic-plan` et `/sdd-wire-harness`.
-- Les tâches détaillées actuelles couvrent S-001 seulement. Avant tout nouveau
-  writer S-002, un architecte consolide les preuves des 84 AC et ne crée des
-  tâches que pour les écarts réels.
-- Le runtime v2 valide état, DAG, périmètres, leases, CAS, reprise et fan-in ;
-  il ne remplace pas le pont Hermes Kanban–GitHub et ne lance aucun job.
+- La roadmap historique partait de `06ee632`, `3eef5b5` puis `a5815b1`. Le
+  point de référence source actuel est `0f5932a` sur `main`.
+- S-001 et S-002 sont terminées : profils 0.4.8 et 0.5.0 publiés dans leur
+  ordre, et T-001 à T-008 portent l'état `done`.
+- Le séquencement S-002 est acquis : contrat runtime v2 avant les capacités,
+  puis bridge Kanban–GitHub, `/sdd-status`, audit 84/84,
+  `/sdd-epic-plan`, `/sdd-wire-harness` et publication 0.5.0.
+- Les tâches détaillées couvrent désormais S-001 à S-003. Le point de reprise
+  est T-009 ; aucun travail S-001/S-002 n'est recréé.
+- Le runtime v2 reste l'autorité déterministe pour état, DAG, périmètres,
+  leases, journaux, CAS, reprise et fan-in ; le bridge S-002 est la surface
+  événementielle GitHub réutilisée par S-003, sans second ordonnanceur.
 - Les nouvelles règles locales rendent les audits Codex `$validate` et
   `$review` facultatifs. Elles ne retirent pas les commandes Hermes
   `/sdd-validate` et `/sdd-review` des tranches S-005 et S-006. Si cette
@@ -57,18 +59,18 @@ Toutes les vagues respectent deux writers maximum, trois analyses en lecture
 seule maximum, un écrivain des artefacts partagés et une seule gate lourde à la
 fois.
 
-| Vague | Writer A | Writer B | Gate et critère de sortie |
-|---|---|---|---|
-| G-000 | — | — | Obtenir la review de #62, traiter ses fils, recevoir le go explicite et fusionner. |
-| W-001 | Profil 0.4.8 depuis l'issue #45 : copie exacte onboard, version, changelog, tests et parité. | Réconciliation S-002 : matrice des 84 AC, conception détaillée et tâches limitées aux écarts. | CI profil, review, zéro fil actionnable, go, fusion et publication 0.4.8. |
-| W-002 | Pont Hermes Kanban–GitHub : issue, carte, branche, worktree, session, draft PR, polling et reprise. | `/sdd-status` enrichi et corrections d'audit seulement si les fichiers sont disjoints. | PR source fusionnées après leurs gates ; fan-in par un writer unique. |
-| G-002 | Profil 0.5.0 : runtime et skills S-002 ayant satisfait la parité. | — | CI, review, zéro fil, go, fusion et publication 0.5.0. |
-| W-003 | `/sdd-build` mono-tâche avec RED→GREEN→REFACTOR→SIMPLIFY. | — | Socle mono-tâche fusionné avant toute orchestration parallèle. |
-| W-004 | `/sdd-build --parallel`, admission et fan-in. | `/sdd-code-simplify`. | Fusion et publication 0.6.0 avant 0.6.1. |
-| W-005 | `/sdd-test`. | `/sdd-validate`. | Développement parallèle autorisé, fusion de test avant validate, gates lourdes sérialisées, profil 0.7.0. |
-| W-006 | `/sdd-review`. | `/sdd-ship`. | Développement parallèle autorisé, fusion de review avant ship, profil 0.8.0. |
-| W-007 | Runner E2E onboard→ship dans un dossier supprimable. | Analyses en lecture seule seulement. | Chevauchement de deux tâches, dépendance, échec injecté, reprise et profil 0.9.0. |
-| W-008 | Préparation et pilote VPS/Super Lily. | Deuxième job sandbox seulement après dry-run valide. | Deux jobs maximum, zéro OOM ou perte, gateway utilisateur, pilote réel puis 1.0.0. |
+| Vague | Statut au 2026-08-03 | Writer A | Writer B | Gate et critère de sortie |
+|---|---|---|---|---|
+| G-000 | terminée | — | — | Review de #62, fils, go explicite et fusion obtenus. |
+| W-001 | terminée | Profil 0.4.8 : copie exacte onboard, version, changelog, tests et parité. | Réconciliation S-002 : matrice des 84 AC et tâches limitées aux écarts. | CI verte, zéro fil, absence de review formelle consignée comme dérogation, go, fusion et publication 0.4.8 obtenus. |
+| W-002 | terminée | Pont Hermes Kanban–GitHub. | `/sdd-status` enrichi et audit source. | PR source fusionnées et fan-in S-002 terminé. |
+| G-002 | terminée | Profil 0.5.0 : runtime et skills S-002 avec parité. | — | CI verte, zéro fil, absence de review formelle consignée comme dérogation, go, fusion et publication 0.5.0 obtenus. |
+| W-003 | prochaine | `/sdd-build` mono-tâche avec RED→GREEN→REFACTOR→SIMPLIFY. | — | T-009 fusionnée avant toute orchestration parallèle. |
+| W-004 | planifiée | `/sdd-build --parallel`, admission et fan-in. | `/sdd-code-simplify`. | Deux writers maximum ; fusion et publication 0.6.0 avant 0.6.1. |
+| W-005 | future | `/sdd-test`. | `/sdd-validate`. | Développement parallèle autorisé, fusion de test avant validate, gates lourdes sérialisées, profil 0.7.0. |
+| W-006 | future | `/sdd-review`. | `/sdd-ship`. | Développement parallèle autorisé, fusion de review avant ship, profil 0.8.0. |
+| W-007 | future | Runner E2E onboard→ship dans un dossier supprimable. | Analyses en lecture seule seulement. | Chevauchement de deux tâches, dépendance, échec injecté, reprise et profil 0.9.0. |
+| W-008 | future | Préparation et pilote VPS/Super Lily. | Deuxième job sandbox seulement après dry-run valide. | Deux jobs maximum, zéro OOM ou perte, gateway utilisateur, pilote réel puis 1.0.0. |
 
 Le chemin critique actualisé est :
 
