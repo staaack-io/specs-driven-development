@@ -238,8 +238,8 @@
       ]
     },
     "T-011": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": [
         "T-010"
       ],
@@ -253,13 +253,13 @@
         "T-011-T7"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 80,
+      "branch": "agent/build-t011-job-envelope",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T11:31:20Z",
+      "red_test_signature": "hermes.runtime.test_sdd_job_execution.JobExecutionTest.test_t011_t1_materializes_the_complete_job_envelope",
+      "red_failure_excerpt": "AssertionError: T-011-T1: sdd_job_execution.py must materialize an admitted job; Ran 1 test in 0.000s; FAILED (failures=1)",
+      "green_at": "2026-08-03T11:36:27Z",
       "files_in_scope": [
         "hermes/runtime/test_sdd_job_execution.py",
         "hermes/runtime/job-execution-contract.md",
