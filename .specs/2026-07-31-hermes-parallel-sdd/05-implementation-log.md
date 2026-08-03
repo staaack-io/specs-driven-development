@@ -4,6 +4,79 @@
 
 ---
 
+## T-030 — Encoder la politique de conformité VPS
+
+### T-030 · red · 2026-08-03T16:49:25Z
+
+- Le contrat unitaire structuré couvre T-030-T1 à T-030-T7 : données
+  expurgées, invocation Hermes, limites de délégation, barrière gateway,
+  service utilisateur, rétention et pureté AST.
+- Commande :
+  `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python -m unittest hermes.operations.test_vps_pilot_policy.VpsPilotPolicyTest.test_t030_t1_accepts_a_compliant_structured_policy`.
+- Résultat : **échec attendu** —
+  `ModuleNotFoundError: No module named 'hermes.operations.vps_pilot_policy'` ;
+  1 test exécuté, 1 erreur.
+- État : `T-030 = red`, `active_task = T-030`. Aucun module de production
+  n'existait au moment de cette preuve.
+
+---
+
+### T-030 · green · 2026-08-03T16:53:58Z
+
+- `validate_vps_pilot_policy` retourne un tuple stable de violations sans
+  exécuter de commande ni effectuer d'I/O.
+- Les preuves sensibles, l'invocation Hermes, la profondeur, l'auto-approve,
+  la barrière des deux succès, le service utilisateur et la rétention sont
+  validés de façon fermée en cas de valeur absente ou mal typée.
+- Vérification ciblée portable depuis hors dépôt : **7/7 tests verts** en
+  0,017 s. Le premier runner complet a aussi révélé puis fait corriger le
+  chargement isolé du module de test.
+- État : `T-030 = green`, `active_task = T-030`.
+
+---
+
+### T-030 · refactor · 2026-08-03T16:54:46Z
+
+- La fixture charge le module pur une seule fois par classe et les violations
+  suivent un ordre métier déterministe, sans changer la surface publique.
+- La couverture de l'expurgation distingue explicitement secret, token,
+  credential et transcript. Une valeur de compteur mal typée est refusée sans
+  lever d'exception.
+- Vérification après refactor : **7/7 tests verts** depuis un répertoire isolé
+  en 0,006 s.
+- État : `T-030 = refactor`, `active_task = T-030`.
+
+---
+
+### T-030 · simplify · 2026-08-03T16:55:25Z
+
+- Passe `clarity-over-cleverness` : chaque section est validée par une fonction
+  nommée selon le domaine, les retours sont déterministes et aucun mode,
+  paramètre ou helper spéculatif n'est présent.
+- Les contrôles de type restent explicites ; le seul chemin absolu admis est
+  la valeur distante Hermes imposée par AC-169, jamais un chemin de preuve.
+- Vérification : **7/7 tests verts** en 0,007 s et pureté AST confirmée.
+- État : `T-030 = simplify`, `active_task = T-030`.
+
+---
+
+### T-030 · done · 2026-08-03T17:00:22Z
+
+- T-030-T1 à T-030-T7 couvrent les quinze AC de la tâche par sept tests
+  comportementaux, dont une preuve AST d'absence de processus, réseau et SSH.
+- Vérification finale : **400 tests exécutés sur 404 découverts**, 4 skips
+  historiques et zéro échec ; **14 skills Hermes** validés ; **2 documents**
+  lintés avec zéro erreur ; JSON, état ciblé et `git diff --check` verts.
+- La régression de métadonnées a été contrôlée explicitement : `T-014` est
+  identique à HEAD et seul `T-030` a suivi le cycle de cette branche.
+- Issue d'exécution : `#119`. Branche : `agent/build-t030-vps-policy`, prévue
+  sur `agent/plan-s008-vps-pilot-100`, sans reviewer ni merge.
+- PR empilée : `#121`, base `agent/plan-s008-vps-pilot-100`, sans reviewer.
+- Aucune primitive VPS, gateway, SSH, réseau, déploiement ou publication n'a
+  été appelée. État final : `T-030 = done`, `active_task = null`.
+
+---
+
 ## T-028 — Auditer les commandes et les onze AC de S-007
 
 ### T-028 · red · 2026-08-03T16:05:04Z
