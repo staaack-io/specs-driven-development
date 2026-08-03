@@ -199,6 +199,41 @@ def run_cycle(
 
 
 class BuildGuardTest(unittest.TestCase):
+    def test_t010_t1_public_guard_routes_structured_parallel_arguments(self) -> None:
+        """T-010-T1: the public guard distinguishes sequential and parallel calls."""
+
+        guard = load_guard()
+
+        self.assertEqual(
+            {
+                "mode": "parallel",
+                "feature_id": FEATURE_ID,
+                "max_workers": 2,
+            },
+            guard.parse_build_arguments([FEATURE_ID, "--parallel"]),
+        )
+        self.assertEqual(
+            {
+                "mode": "sequential",
+                "feature_id": FEATURE_ID,
+                "task_id": TASK_ID,
+            },
+            guard.parse_build_arguments([FEATURE_ID, TASK_ID]),
+        )
+
+    def test_t010_t8_public_guard_uses_the_canonical_hermes_orchestrator(self) -> None:
+        """T-010-T8: the skill guard exposes no second job dispatch mechanism."""
+
+        guard = load_guard()
+
+        self.assertIs(
+            guard.run_parallel_build.__globals__["orchestrator"],
+            guard.orchestrator,
+        )
+        source = MODULE_PATH.read_text(encoding="utf-8")
+        self.assertNotIn("delegate_task", source)
+        self.assertNotIn("ThreadPool", source)
+
     def test_t009_t1_public_arguments_are_validated_before_mutation(self) -> None:
         """T-009-T1: malformed public arguments fail before mutation."""
 

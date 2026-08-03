@@ -914,3 +914,101 @@
 - `git diff --check` reste vert ; état TDD maintenu `done`.
 
 ---
+
+## T-010 — Admettre et créer les cartes du build parallèle
+
+### T-010 · red · 2026-08-03T11:12:21Z
+
+- Tests ajoutés : `hermes/runtime/test_sdd_build_orchestrator.py`, couvrant
+  T-010-T1 à T-010-T9 et AC-020 à AC-023, AC-027 à AC-029, AC-031,
+  AC-128 à AC-133, AC-236 et AC-260.
+- Commande :
+  `python3 -m unittest hermes.runtime.test_sdd_build_orchestrator.ParallelBuildOrchestratorTest.test_t010_t1_parallel_cli_requires_structured_parallel_arguments`.
+- Résultat : **échec attendu** —
+  `AssertionError: T-010-T1: sdd_build_orchestrator.py must implement parallel admission` ;
+  **1 test exécuté, 1 échec**.
+- La branche T-010 est empilée sur le commit T-009 `e1449d437f...` sans
+  fusionner la PR #77. Cette décision suit l'instruction utilisateur explicite
+  de poursuivre le développement sans demander de review.
+- État : `T-010 = red`, `active_task = T-010`. Aucun code de production T-010
+  n'existait lors de cette preuve RED.
+
+---
+
+### T-010 · green · 2026-08-03T11:17:41Z
+
+- Production minimale : `sdd_build_orchestrator.py` effectue une seule passe
+  d'admission, valide les arguments et l'état v2, sélectionne les scopes
+  disjoints, crée les cartes et confie exclusivement leur dispatch au Kanban.
+- Intégration publique : `build_guard.py` conserve le chemin mono-tâche et route
+  `--parallel` vers l'orchestrateur canonique ; `SKILL.md` et
+  `build-orchestrator-contract.md` publient les invariants.
+- Tests T-010 : **9/9 verts en 6,065 s**. Garde build complet : **12/12 verts
+  en 5,360 s**. Runtime partagé : **31/31 verts en 17,197 s**. Contrat du skill :
+  **7/7 verts en 0,008 s**.
+- `py_compile` des quatre fichiers Python modifiés et `git diff --check` sont
+  verts.
+- État : `T-010 = green`, `active_task = T-010`.
+
+---
+
+### T-010 · refactor · 2026-08-03T11:19:29Z
+
+- La séquence acquisition → dispatch → libération ciblée en cas d'échec est
+  extraite dans `_dispatch_admitted_card`. La passe principale ne conserve que
+  la sélection, la création de carte et le suivi `active|queued|failed`.
+- Aucun contrat public ni comportement n'a changé. La constante métier
+  `FAILED_STATUS` remplace le littéral répété de statut.
+- Vérifications après refactor : **9/9 T-010 en 6,615 s**, **12/12 garde build
+  en 5,883 s** et **31/31 runtime en 17,539 s**.
+- État : `T-010 = refactor`, `active_task = T-010`.
+
+---
+
+### T-010 · simplify · 2026-08-03T11:25:40Z
+
+- Passe `clarity-over-cleverness` : import mort retiré, plafond workers centralisé
+  par `MAX_WORKERS`, noms métier explicites et aucune ligne Python supérieure à
+  100 caractères dans les quatre fichiers modifiés.
+- Vérifications ciblées après simplification : **9/9 T-010**, **12/12 garde
+  build**, **7/7 contrat du skill** et **31/31 runtime** verts.
+- Le superviseur global a découvert 21 fichiers et validé E2E **14/14**,
+  orchestrateur **9/9**, bridge **8/8**, runtime **31/31**, parité **5/5**,
+  superviseur **37/37 avec 4 skips conditionnels**, onboarding **1/1**, profil
+  runtime **4/4**, contrat S-002 **6/6** et documentation **6/6**. Il s'arrête
+  ensuite sur `ModuleNotFoundError: markdown_it` dans `test_validate_skills.py`,
+  écart d'environnement identique à T-009. Aucun runtime local fourni ne porte
+  ce module et aucune dépendance n'a été ajoutée.
+- Issue d'exécution créée : `#78`. Branche :
+  `agent/build-t010-parallel-admission`. PR empilée : `#79`, basée sur la
+  branche de T-009 jusqu'à sa fusion.
+- État : `T-010 = simplify`, `active_task = T-010`.
+
+---
+
+### T-010 · done · 2026-08-03T11:26:28Z
+
+- Les neuf Test-IDs T-010-T1 à T-010-T9 couvrent les 16 AC de la tâche dans
+  neuf tests runtime et deux tests d'intégration au garde public.
+- Vérification finale : **9/9 T-010 en 6,799 s**, **12/12 garde build en
+  5,923 s**, **7/7 contrat du skill en 0,047 s**, **31/31 runtime en 17,312 s**
+  et **6/6 documentation en 2,109 s** ; `git diff --check` est vert.
+- Aucun scheduler Python concurrent, `delegate_task`, force-push, reset
+  destructif, suppression de worktree ou fusion automatique n'est exposé.
+- État final : `T-010 = done`, `active_task = null`.
+
+---
+
+### T-010 · ci-correction · 2026-08-03T11:34:00Z
+
+- PR `#79`, run `30809707342` : documentation verte ; les **270 tests Hermes
+  découverts** sont verts avec deux skips conditionnels.
+- Cause exacte de l'échec final : `validate_skills.py` refuse le lien
+  `../../runtime/build-orchestrator-contract.md` car une référence locale d'un
+  skill ne peut sortir de son propre dossier.
+- Correctif minimal : retirer uniquement ce lien de la liste publiée par le
+  skill. Le contrat runtime reste versionné et couvert directement par
+  `test_sdd_build_orchestrator.py`.
+- Aucun comportement, test, dépendance ou seuil de qualité n'est modifié.
+
+---
