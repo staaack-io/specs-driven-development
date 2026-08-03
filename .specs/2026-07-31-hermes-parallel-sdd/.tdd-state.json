@@ -503,7 +503,7 @@
       "kanban_id": null,
       "issue": 93,
       "branch": "agent/build-t018-sdd-validate",
-      "pr": null,
+      "pr": 95,
       "red_at": "2026-08-03T13:23:16Z",
       "red_test_signature": "test_validation_guard.py::PublicationContractTests::test_t_018_t1_validation_guard_is_published",
       "red_failure_excerpt": "AssertionError: False is not true : T-018-T1: /sdd-validate guard is absent; Ran 1 test; FAILED (failures=1)",

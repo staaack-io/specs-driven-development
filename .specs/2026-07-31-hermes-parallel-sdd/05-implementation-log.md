@@ -1468,6 +1468,7 @@
   accès VPS ou déploiement n'a été exécuté.
 - État final : `T-018 = done`, `active_task = null`.
 - Issue d'exécution : `#93`. Branche : `agent/build-t018-sdd-validate`, sans
-  reviewer sollicité. La PR reste à créer après le commit validé.
+  reviewer sollicité. PR empilée : `#95`, base
+  `agent/build-t017-sdd-test`, sans fusion automatique.
 
 ---
