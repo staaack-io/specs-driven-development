@@ -627,21 +627,21 @@
       ]
     },
     "T-022": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-018", "T-009"],
       "test_ids": [
         "T-022-T1", "T-022-T2", "T-022-T3", "T-022-T4",
         "T-022-T5", "T-022-T6", "T-022-T7", "T-022-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 101,
+      "branch": "agent/build-t022-sdd-ship",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T14:37:47Z",
+      "red_test_signature": "hermes/skills/sdd-ship/scripts/test_ship_guard.py::ShipGuardTests::test_t_022_t8_publishes_one_plan_but_never_executes_deployment",
+      "red_failure_excerpt": "AssertionError: validate:T-022 event missing before lock:enter and write:09-ship-plan.md; Ran 9 tests; FAILED (failures=1)",
+      "green_at": "2026-08-03T14:41:26Z",
       "files_in_scope": [
         "hermes/skills/sdd-ship/SKILL.md",
         "hermes/skills/sdd-ship/references/delegation-contract.md",

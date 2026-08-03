@@ -72,6 +72,129 @@
 
 ---
 
+## T-022 — Convertir `/sdd-ship` sans capacité de déploiement
+
+### T-022 · red · 2026-08-03T14:25:46Z
+
+- Test minimal :
+  `ShipGuardPublicationTests.test_t_022_t1_ship_guard_is_published`.
+- Commande :
+  `PYTHONDONTWRITEBYTECODE=1 python hermes/skills/sdd-ship/scripts/test_ship_guard.py -v`.
+- Résultat : **1 test exécuté, 1 échec attendu** —
+  `T-022-T1: ship_guard.py must publish /sdd-ship`.
+- Aucun fichier de production `sdd-ship` n'existait pendant cette preuve.
+- État : `T-022 = red`, `active_task = T-022`.
+
+---
+
+### T-022 · green · 2026-08-03T14:30:48Z
+
+- `/sdd-ship [<feature-id>] [--base <ref>]` valide les arguments comme des
+  données et ne possède aucune primitive d'exécution.
+- Les six portes sont fail-closed avant toute publication ; rollback,
+  observabilité, flag et deux catégories de notes sont obligatoires.
+- Le writer publie uniquement `09-ship-plan.md` par remplacement atomique sous
+  le verrou canonique ; une commande de déploiement reste du texte expurgé.
+- Vérifications ciblées : **9/9 tests du garde** et **3/3 contrats du skill**
+  verts.
+- État : `T-022 = green`, `active_task = T-022`.
+
+---
+
+### T-022 · refactor · 2026-08-03T14:32:15Z
+
+- Les preuves, le rollback, l'observabilité, le flag et le plan sont des
+  structures immuables explicites ; chaque validateur échoue sur son champ
+  métier avant le writer.
+- Le rollback encode la limite maximale de cinq minutes et refuse le simple
+  revert ; notes et commande refusent secrets et chemins locaux sensibles.
+- Vérifications après refactor : **12/12 tests T-022** et
+  `git diff --check` verts.
+- État : `T-022 = refactor`, `active_task = T-022`.
+
+---
+
+### T-022 · simplify · 2026-08-03T14:35:40Z
+
+- Passe `clarity-over-cleverness` : retours anticipés pour chaque porte,
+  validateurs nommés selon le contrat de livraison et structures sans option
+  morte ni callback spéculatif.
+- La capacité négative est lisible dans le code et prouvée par AST : aucun
+  import shell, réseau, SSH ou VPS et aucun appel d'exécution.
+- Vérifications : **13/13 skills embarqués**, markdownlint sur cinq documents,
+  JSON et `git diff --check` verts.
+- État : `T-022 = simplify`, `active_task = T-022`.
+
+---
+
+### T-022 · done · 2026-08-03T14:36:24Z
+
+- Les huit Test-IDs couvrent publication, arguments, six portes, rollback,
+  observabilité, flags, notes, writer unique et absence de capacité de
+  déploiement pour AC-152, AC-153, AC-235 et AC-261 à AC-263.
+- Le runner complet exécute **344 tests sur 348 découverts**, avec quatre skips
+  historiques explicitement rapportés et aucun échec.
+- Issue d'exécution : `#101`. Branche : `agent/build-t022-sdd-ship`. Aucun
+  reviewer, merge, shell, réseau, VPS ou déploiement n'est sollicité ou
+  exécuté.
+- État final : `T-022 = done`, `active_task = null`.
+
+---
+
+### T-022 · red transversal · 2026-08-03T14:37:47Z
+
+- Le test de triangulation exige l'ordre
+  `validate_worker_changes(T-022) → global_lock → atomic_replace` sur le seul
+  chemin `.specs/<feature-id>/09-ship-plan.md`.
+- Il exige aussi le refus des backticks triples dans la commande affichée afin
+  qu'une donnée ne puisse pas fermer le fence Markdown.
+- Résultat attendu : **9 tests exécutés, 1 échec** — l'événement de validation
+  de scope manque avant le verrou et le writer.
+- État : `T-022 = red`, `active_task = T-022`.
+
+---
+
+### T-022 · green transversal · 2026-08-03T14:41:26Z
+
+- Le writer appelle maintenant `validate_worker_changes` pour T-022 et le seul
+  `09-ship-plan.md` autorisé avant d'acquérir le verrou et d'écrire.
+- Les commandes affichées refusent CR, LF, fences triples, secrets et chemins
+  absolus ; elles restent des données inertes.
+- Vérifications : **12/12 tests ciblés**, **13/13 skills embarqués** et
+  `git diff --check` verts.
+- État : `T-022 = green`, `active_task = T-022`.
+
+---
+
+### T-022 · refactor transversal · 2026-08-03T14:41:26Z
+
+- Le chemin relatif autorisé est construit une fois et transmis identiquement
+  au scope et aux changements du garde canonique.
+- L'ordre de capacité est explicite et testé : validation, verrou, remplacement
+  atomique ; aucune autre cible ni primitive n'est exposée.
+- État : `T-022 = refactor`, `active_task = T-022`.
+
+---
+
+### T-022 · simplify transversal · 2026-08-03T14:41:26Z
+
+- La validation de la commande reste une suite lisible de refus directs, sans
+  parseur shell, allowlist fragile ni abstraction supplémentaire.
+- Markdownlint, JSON et contrôle statique no-shell/no-réseau restent verts.
+- État : `T-022 = simplify`, `active_task = T-022`.
+
+---
+
+### T-022 · done transversal · 2026-08-03T14:41:26Z
+
+- Le runner complet confirme **344 tests sur 348 découverts**, quatre skips
+  historiques et aucun échec après les deux corrections de capacité.
+- Issue `#101`; branche `agent/build-t022-sdd-ship`; aucun reviewer, merge,
+  réseau, VPS ou déploiement.
+- État final : `T-022 = done`, `active_task = null`.
+
+---
+
 ## T-019 — Auditer exactement les 32 AC source S-005
 
 ### T-019 · red · 2026-08-03T13:41:55Z
