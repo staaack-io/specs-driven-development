@@ -932,7 +932,7 @@
       "kanban_id": null,
       "issue": 122,
       "branch": "agent/build-t032-s008-audit",
-      "pr": null,
+      "pr": 123,
       "red_at": "2026-08-03T17:11:39Z",
       "red_test_signature": "hermes.scripts.test_sdd_s008_contract.SddS008ContractTest",
       "red_failure_excerpt": "T-032-T1/T5/T7: hermes/operations/vps-pilot-runbook.md is absent; Ran 7 tests, FAILED (failures=1, errors=2)",

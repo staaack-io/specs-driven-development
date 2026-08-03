@@ -2320,3 +2320,14 @@
   reviewer sollicité.
 
 ---
+
+### T-032 · publication · 2026-08-03T17:25:00Z
+
+- Commit principal : `799f0dd`. PR empilée : `#123`, base
+  `agent/build-t030-vps-policy`, sans reviewer.
+- La branche compose localement T-031 afin que l'audit lise les deux producteurs
+  T-030/T-031 ; elle ne fusionne aucune branche.
+- Issue `#122` liée. Les checks CI de la PR sont attendus sans déclencher aucune
+  opération VPS, gateway ou déploiement.
+
+---
