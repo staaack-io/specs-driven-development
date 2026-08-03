@@ -596,21 +596,24 @@
       ]
     },
     "T-021": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-018", "T-009"],
       "test_ids": [
         "T-021-T1", "T-021-T2", "T-021-T3", "T-021-T4",
         "T-021-T5", "T-021-T6", "T-021-T7", "T-021-T8"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 100,
+      "branch": "agent/build-t021-sdd-review",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T14:28:34Z",
+      "red_test_signature": "test_review_guard.ReviewGuardTests",
+      "red_failure_excerpt": "AssertionError: False is not true : SKILL.md must publish /sdd-review; AssertionError: review_guard.py must publish the /sdd-review guard; Ran 8 tests; FAILED (failures=8)",
+      "green_at": "2026-08-03T14:31:14Z",
+      "refactor_at": "2026-08-03T14:32:32Z",
+      "simplify_at": "2026-08-03T14:33:46Z",
+      "done_at": "2026-08-03T14:40:52Z",
       "files_in_scope": [
         "hermes/skills/sdd-review/SKILL.md",
         "hermes/skills/sdd-review/references/delegation-contract.md",

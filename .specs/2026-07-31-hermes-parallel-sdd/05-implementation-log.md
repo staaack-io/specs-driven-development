@@ -4,6 +4,73 @@
 
 ---
 
+## T-021 — Convertir `/sdd-review` dans la source Hermes
+
+### T-021 · red · 2026-08-03T14:28:34Z
+
+- Le test engineer délégué a ajouté huit tests exécutables couvrant T-021-T1
+  à T-021-T8 et AC-150/AC-151, sans modifier la production.
+- Commande : `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python hermes/skills/sdd-review/scripts/test_review_guard.py`.
+- Résultat attendu : **8 tests exécutés, 8 échecs** ; `SKILL.md` et
+  `review_guard.py` sont absents, donc `/sdd-review` n'est pas encore publié.
+- État : `T-021 = red`, `active_task = T-021`. Issue : `#100`. Branche :
+  `agent/build-t021-sdd-review`.
+
+---
+
+### T-021 · green · 2026-08-03T14:31:14Z
+
+- Le garde accepte uniquement les arguments structurés facultatifs, route les
+  lectures Spring et React/Next.js, et ne remet aux rôles que le diff et les
+  artefacts sans handle d'écriture.
+- Le fan-in valide puis déduplique les constats, expurge les preuves et laisse
+  l'unique writer publier atomiquement `08-code-review.md` sous verrou global.
+- Le verdict est fermé à `approve|request-changes` et reste toujours informatif,
+  sans gate Git ni sollicitation humaine.
+- Vérifications : **8/8 tests comportementaux** et **4/4 contrats statiques**
+  verts. État : `T-021 = green`, `active_task = T-021`.
+
+---
+
+### T-021 · refactor · 2026-08-03T14:32:32Z
+
+- Les vocabulaires de stack, l'option de base, le répertoire d'artefacts et le
+  marqueur d'expurgation sont centralisés dans des constantes métier.
+- Les gardes de validité des rôles et de complétude des constats sont nommées
+  explicitement, sans modifier les signatures ni le comportement public.
+- Vérifications après refactor : **12/12 tests propres au skill** et
+  `git diff --check` verts. État : `T-021 = refactor`.
+
+---
+
+### T-021 · simplify · 2026-08-03T14:33:46Z
+
+- Passe `clarity-over-cleverness` : fonctions courtes par frontière, retours
+  anticipés, constantes pour les littéraux répétés et aucune option morte.
+- Deux tests de triangulation prouvent les valeurs par défaut des arguments et
+  la validation runtime du jeu de changements vide des rôles read-only.
+- Vérifications : **10/10 tests comportementaux**, **4/4 contrats statiques**
+  et `git diff --check` verts. État : `T-021 = simplify`.
+
+---
+
+### T-021 · done · 2026-08-03T14:40:52Z
+
+- Le runner source complet exécute **346 tests sur 350 découverts**, avec
+  quatre skips historiques déclarés et aucun échec.
+- Les **13 skills Hermes** sont valides ; les sept documents modifiés passent
+  `markdownlint-cli2@0.18.1`, le JSON, l'AST et `git diff --check` sont verts.
+- T-021-T1 à T-021-T8 couvrent AC-150/AC-151 : délégation spécialisée en
+  lecture seule, fan-in dédupliqué, rapport unique atomique, verdict informatif
+  et expurgation.
+- La frontière durable valide explicitement le seul changement autorisé avant
+  le verrou et expurge le contenu complet avant l'écriture ; le test vérifie
+  l'ordre `validate → lock → write` et l'absence de token, e-mail ou chemin.
+- État final : `T-021 = done`, `active_task = null`. Issue : `#100`. Aucun
+  reviewer humain, aucune fusion, opération VPS ou déploiement.
+
+---
+
 ## T-019 — Auditer exactement les 32 AC source S-005
 
 ### T-019 · red · 2026-08-03T13:41:55Z
