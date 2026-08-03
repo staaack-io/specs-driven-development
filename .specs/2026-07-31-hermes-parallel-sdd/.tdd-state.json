@@ -808,7 +808,7 @@
       "kanban_id": null,
       "issue": 114,
       "branch": "agent/build-t028-s007-audit",
-      "pr": null,
+      "pr": 115,
       "red_at": "2026-08-03T16:05:04Z",
       "red_test_signature": "hermes.scripts.test_sdd_s007_contract.SddS007ContractTest",
       "red_failure_excerpt": "T-028-T4: dependency proof marker absent; T-028-T6: S-007 onboard→ship publication and safety wording absent; Ran 6 tests, FAILED (failures=4)",

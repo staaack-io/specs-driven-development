@@ -66,7 +66,7 @@
   tâche. JSON d'état et `git diff --check` sont verts.
 - Issue d'exécution : `#114`. Branche : `agent/build-t028-s007-audit`, empilée
   sur `agent/build-t027-e2e-full-flow`, sans reviewer humain, fusion, VPS ou
-  déploiement.
+  déploiement. PR empilée : `#115`.
 - État final : `T-028 = done`, `active_task = null`.
 
 ---
