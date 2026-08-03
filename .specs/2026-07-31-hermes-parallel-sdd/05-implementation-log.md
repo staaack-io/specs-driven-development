@@ -4,6 +4,61 @@
 
 ---
 
+## T-023 — Auditer la tranche S-006 dans la source Hermes
+
+### T-023 · red · 2026-08-03T14:48:48Z
+
+- Le contrat exécutable relie exactement les 13 critères de S-006 à T-021,
+  T-022, T-023 et T-024, vérifie les deux suites source, l'ordre du DAG, les
+  scopes disjoints et l'absence de capacité de déploiement dans `/sdd-ship`.
+- Échec attendu : l'aide classe encore `/sdd-review` et `/sdd-ship` dans la
+  feuille de route au lieu des commandes installées.
+- Preuve : **6 tests exécutés, 1 échec** sur
+  `test_t023_t5_help_and_docs_publish_both_commands_as_installed`.
+- État : `T-023 = red`, `active_task = T-023`. Aucun reviewer sollicité.
+
+### T-023 · green · 2026-08-03T14:50:09Z
+
+- L'aide expose les formes exactes `/sdd-review [<feature-id>] [--base <ref>]`
+  et `/sdd-ship [<feature-id>] [--base <ref>]` parmi les commandes installées.
+- La documentation fixe les writers uniques de `08-code-review.md` et
+  `09-ship-plan.md`, l'absence de reviewer humain et l'inertie de la commande
+  de livraison affichée.
+- Preuve : **6/6 tests S-006 verts**. État : `T-023 = green`,
+  `active_task = T-023`.
+
+### T-023 · refactor · 2026-08-03T14:52:54Z
+
+- Le manifeste des 13 AC reste déclaratif et attribue un producteur primaire
+  unique à chaque critère ; les contrôles AST isolent explicitement les imports
+  interdits de la capacité de livraison.
+- Les limites de writers sont formulées au même endroit dans le contrat des
+  artefacts, sans dupliquer les contrats détaillés des skills.
+- Preuves : **364/368 tests Hermes exécutés**, 4 skips historiques, zéro échec ;
+  **14 skills validés** et `git diff --check` vert.
+- État : `T-023 = refactor`, `active_task = T-023`.
+
+### T-023 · simplify · 2026-08-03T14:53:29Z
+
+- Passe `clarity-over-cleverness` : six tests nommés par responsabilité suffisent
+  pour prouver le manifeste, les skills, le DAG, les frontières de capacité,
+  l'aide installée et les interdictions source.
+- Aucun helper, format ou abstraction supplémentaire n'est nécessaire. Les cinq
+  documents Markdown modifiés passent le linter épinglé sans erreur.
+- État : `T-023 = simplify`, `active_task = T-023`.
+
+### T-023 · done · 2026-08-03T14:53:29Z
+
+- T-023-T1 à T-023-T6 couvrent AC-148 et AC-149 ; le manifeste S-006 relie
+  exactement **13/13 AC** aux tâches T-021 à T-024.
+- Preuves finales : **6/6 tests S-006**, **364/368 tests Hermes** avec 4 skips
+  historiques, **14 skills**, **5 documents Markdown**, JSON et diff verts.
+- Issue d'exécution : `#104`. Branche : `agent/build-t023-s006-audit`, empilée
+  sur T-022. Aucun reviewer sollicité ; aucune fusion, VPS ou livraison.
+- État final : `T-023 = done`, `active_task = null`.
+
+---
+
 ## T-021 — Convertir `/sdd-review` dans la source Hermes
 
 ### T-021 · red · 2026-08-03T14:28:34Z

@@ -653,21 +653,25 @@
       ]
     },
     "T-023": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
+      "status": "in_progress",
       "dependencies": ["T-021", "T-022"],
       "test_ids": [
         "T-023-T1", "T-023-T2", "T-023-T3",
         "T-023-T4", "T-023-T5", "T-023-T6"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 104,
+      "branch": "agent/build-t023-s006-audit",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T14:48:48Z",
+      "red_test_signature": "hermes.scripts.test_sdd_s006_contract.SddS006ContractTest.test_t023_t5_help_and_docs_publish_both_commands_as_installed",
+      "red_failure_excerpt": "AssertionError: /sdd-review [<feature-id>] [--base <ref>] absent from installed help; Ran 6 tests, FAILED (failures=1)",
+      "green_at": "2026-08-03T14:50:09Z",
+      "refactor_at": "2026-08-03T14:52:54Z",
+      "simplify_at": "2026-08-03T14:53:29Z",
+      "done_at": "2026-08-03T14:53:29Z",
       "files_in_scope": [
         "hermes/scripts/test_sdd_s006_contract.py",
         "hermes/skills/sdd-help/SKILL.md",
