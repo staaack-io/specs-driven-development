@@ -1054,7 +1054,7 @@ Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-015`.
   - `hermes/skills/sdd-test/references/delegation-contract.md`
   - `hermes/skills/sdd-test/references/test-plan-contract.md`
   - `hermes/skills/sdd-test/templates/test-plan.template.md`
-  - `hermes/skills/sdd-test/scripts/test_guard.py`
+  - `hermes/skills/sdd-test/scripts/guard.py`
   - `hermes/skills/sdd-test/scripts/test_test_guard.py`
   - `hermes/skills/sdd-test/scripts/test_skill_contract.py`
 - **Dépendances :** T-003, T-009
@@ -1145,7 +1145,7 @@ Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-015`.
   - `skills/sdd-test/references/delegation-contract.md`
   - `skills/sdd-test/references/test-plan-contract.md`
   - `skills/sdd-test/templates/test-plan.template.md`
-  - `skills/sdd-test/scripts/test_guard.py`
+  - `skills/sdd-test/scripts/guard.py`
   - `skills/sdd-test/scripts/test_test_guard.py`
   - `skills/sdd-test/scripts/test_skill_contract.py`
   - `skills/sdd-validate/SKILL.md`

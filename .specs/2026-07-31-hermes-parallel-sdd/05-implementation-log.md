@@ -4,6 +4,88 @@
 
 ---
 
+## T-017 — Convertir `/sdd-test` et publier le catalogue AC-196 à AC-209
+
+### T-017 · red · 2026-08-03T13:23:05Z
+
+- Test minimal ajouté :
+  `TestGuardTest.test_t017_t1_guard_is_published`.
+- Commande :
+  `PYTHONDONTWRITEBYTECODE=1 python3 hermes/skills/sdd-test/scripts/test_test_guard.py`.
+- Résultat : **échec attendu** —
+  `AssertionError: T-017-T1: test_guard.py must publish /sdd-test` ;
+  **1 test exécuté, 1 échec**.
+- Aucun fichier de production du skill n'existait au moment de cette preuve.
+- État : `T-017 = red`, `active_task = T-017`.
+
+---
+
+### T-017 · green · 2026-08-03T13:27:27Z
+
+- Production minimale publiée : arguments exacts, scope `src/test/**` et plan,
+  matrice AC/types, gaps résolus, preuves structurées et expurgées, gate sous
+  verrou global, publication atomique puis traçabilité.
+- Le catalogue AC-196 à AC-209 vérifie les chemins et noms de quatorze preuves
+  exécutables déjà présentes dans le runtime.
+- Vérifications : **8/8 tests comportementaux**, **4/4 contrats statiques** et
+  **40/40 tests runtime + orchestrateur** verts.
+- État : `T-017 = green`, `active_task = T-017`.
+
+---
+
+### T-017 · refactor · 2026-08-03T13:28:37Z
+
+- La validation du scope partage maintenant un contrôle explicite des
+  composants symboliques et refuse un `src/test` redirigé.
+- Le garde canonique valide le changement avant le remplacement atomique ; un
+  refus ne peut donc plus publier brièvement un plan non autorisé.
+- Les AC du plan doivent être uniques, en plus de respecter la forme `AC-NNN`.
+- Vérification après refactor : **12/12 tests T-017** et
+  `git diff --check` verts.
+- État : `T-017 = refactor`, `active_task = T-017`.
+
+---
+
+### T-017 · simplify · 2026-08-03T13:31:06Z
+
+- Passe `clarity-over-cleverness` : responsabilités courtes, constantes métier,
+  retours anticipés et structures de preuves explicites.
+- Le contrôle de fichiers temporaires du test utilise désormais des variables
+  nommées ; aucune ligne Python du périmètre ne dépasse 100 caractères.
+- Le skill embarqué est valide avec ses références locales et son frontmatter ;
+  **11 skills Hermes** sont validés.
+- Vérifications : **12/12 T-017**, markdownlint et `git diff --check` verts.
+- État : `T-017 = simplify`, `active_task = T-017`.
+
+---
+
+### T-017 · done · 2026-08-03T13:32:10Z
+
+- Les huit Test-IDs couvrent les arguments, le scope exact, le plan et ses
+  gaps, les preuves expurgées, le verrou global, la publication atomique suivie
+  de la traçabilité et le catalogue exécutable AC-196 à AC-209.
+- Vérification finale : **12/12 T-017**, **40/40 runtime + orchestrateur** et
+  **11/11 skills embarqués** verts ; markdownlint, JSON et
+  `git diff --check` sont verts.
+- Aucun fichier T-018 à T-020, document partagé, commit, push, PR, review,
+  fusion ou VPS n'a été touché.
+- État final : `T-017 = done`, `active_task = null`.
+- Issue d'exécution : `#92`. Branche : `agent/build-t017-sdd-test`, sans
+  reviewer sollicité. PR empilée : `#94`, base
+  `agent/plan-s005-test-validate`, sans fusion automatique.
+
+---
+
+### T-017 · correction CI · 2026-08-03T13:52:35Z
+
+- Le runner officiel a correctement refusé le module de production
+  `test_guard.py`, découvert à tort comme suite sans cas `unittest`.
+- Le garde est renommé `guard.py`; ses tests et contrats suivent ce chemin.
+  Aucun filtre ni contournement n'est ajouté au runner fail-closed.
+- La correction est reportée à T-017 afin que chaque PR empilée reste verte.
+
+---
+
 ## T-015 — Convertir `/sdd-code-simplify` dans la source Hermes
 
 ### T-015 · red · 2026-08-03T12:43:39Z
