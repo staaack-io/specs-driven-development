@@ -54,7 +54,8 @@
 - Preuves finales : **6/6 tests S-006**, **364/368 tests Hermes** avec 4 skips
   historiques, **14 skills**, **5 documents Markdown**, JSON et diff verts.
 - Issue d'exécution : `#104`. Branche : `agent/build-t023-s006-audit`, empilée
-  sur T-022. Aucun reviewer sollicité ; aucune fusion, VPS ou livraison.
+  sur T-022. PR : `#105`. Aucun reviewer sollicité ; aucune fusion, VPS ou
+  livraison.
 - État final : `T-023 = done`, `active_task = null`.
 
 ---
