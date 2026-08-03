@@ -1153,3 +1153,81 @@
 - État final : `T-012 = done`, `active_task = null`.
 
 ---
+
+## T-013 — Auditer la source S-003 sur exactement 51 AC
+
+### T-013 · red · 2026-08-03T11:54:43Z
+
+- Contrat agrégé ajouté dans `hermes/scripts/test_sdd_s003_contract.py` pour
+  T-013-T1 à T-013-T7 et les 51 AC de S-003.
+- Commande : `python3 hermes/scripts/test_sdd_s003_contract.py`.
+- Résultat : **échec attendu** — `/sdd-build` manque dans les commandes
+  installées et les marqueurs de capacité S-003 manquent dans le README runtime ;
+  **6 tests exécutés, 3 échecs**.
+- Le test de scopes a été aligné sur le plan approuvé : le chevauchement
+  T-009/T-010 est sérialisé par dépendance ; T-010/T-011 et T-011/T-012 sont
+  disjoints.
+- État : `T-013 = red`, `active_task = T-013`. Aucun document de production
+  n'avait été modifié lors de la preuve RED.
+
+---
+
+### T-013 · green · 2026-08-03T11:58:01Z
+
+- Les cinq documents publient désormais `/sdd-build`, ses trois surfaces
+  runtime, sa capacité 2/3/1, la vue status sans inférence et le fan-in borné
+  par un go explicite observé.
+- `/sdd-help` déplace uniquement `/sdd-build` vers les commandes installées ;
+  `/sdd-code-simplify` reste planifiée pour S-004.
+- Vérifications : **6/6 contrat S-003**, **56/56 suites build, orchestrateur,
+  job, fan-in, bridge et status**, puis **49/49 runtime, S-002, S-003 et
+  documentation** verts.
+- État : `T-013 = green`, `active_task = T-013`.
+
+---
+
+### T-013 · refactor · 2026-08-03T11:59:31Z
+
+- Le manifeste de preuves a été mis en forme pour garder une entrée lisible par
+  groupe d'AC et les contrôles AST ont reçu des variables intermédiaires
+  explicites.
+- L'audit Git destructif couvre aussi `--force-with-lease`, sans changer la
+  politique : force-push, reset dur et fusion par commande restent interdits.
+- Vérification après refactor : **6/6 S-003** et `git diff --check` verts ;
+  aucune nouvelle ligne supérieure à 100 caractères dans le périmètre modifié.
+- État : `T-013 = refactor`, `active_task = T-013`.
+
+---
+
+### T-013 · simplify · 2026-08-03T12:00:50Z
+
+- Passe `clarity-over-cleverness` : le contrat reste un manifeste déclaratif,
+  les parsers sont courts et chaque test correspond à une responsabilité
+  T-013 explicite. Aucun helper supplémentaire ne réduirait la complexité.
+- Les documents distinguent clairement la commande installée, les commandes
+  encore planifiées et les opérations volontairement absentes du runtime.
+- Issue d'exécution créée : `#84`. Branche :
+  `agent/build-t013-s003-audit`, empilée sur T-012 sans solliciter de review.
+- État : `T-013 = simplify`, `active_task = T-013`.
+
+- Correction de régression : le runner complet a détecté que le contrat
+  portable `sdd-onboard` classait encore `/sdd-build` comme planifié. Son
+  assertion est alignée sur S-003 et le fichier est ajouté explicitement au
+  scope T-013 ; `/sdd-code-simplify` reste vérifié comme planifié.
+
+---
+
+### T-013 · done · 2026-08-03T12:09:39Z
+
+- Le manifeste exécutable relie exactement **51/51 AC S-003** à un producteur
+  primaire unique et à une preuve source présente.
+- Vérification finale dans l'environnement CI épinglé : **287 tests exécutés
+  sur 291 découverts**, 4 skips déclarés, zéro échec ; **9 skills Hermes**
+  validés ; **7 documents** lintés avec `markdownlint-cli2@0.18.1`, zéro erreur.
+- Le test portable onboarding est aligné sur la commande convertie et le contrat
+  de sécurité ne détecte aucun ordonnanceur concurrent, secret, chemin local,
+  force-push, reset dur, auto-merge ou commande de fusion.
+- `git diff --check` est vert. État final : `T-013 = done`,
+  `active_task = null`.
+
+---

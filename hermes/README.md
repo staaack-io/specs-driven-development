@@ -19,7 +19,9 @@ Les skills suivants sont prêts à être copiés dans la distribution
 - `sdd-spec-review` — revue avec décision utilisateur et production de
   `02-spec-review.md` ;
 - `sdd-plan` — conception et tâches avec délégation interne à l'architecte
-  Spring ou React/Next.js.
+  Spring ou React/Next.js ;
+- `sdd-build` — cycle TDD mono-tâche, admission parallèle bornée, enveloppes
+  isolées et fan-in transactionnel après autorisation humaine observée.
 
 Les hooks ne font volontairement pas partie de ce lot. Ils seront activés après
 leur conversion au protocole Hermes et la réussite de tests de blocage.
@@ -27,8 +29,9 @@ leur conversion au protocole Hermes et la réussite de tests de blocage.
 Le socle déterministe partagé vit sous `hermes/runtime/`. Il remplace les
 suppositions liées aux hooks Codex par des appels explicites : validation de
 l'état v2, DAG, Test-IDs, scopes et preuve RED, leases entre worktrees,
-fingerprints, journaux task-local et fan-in transactionnel. Les futurs skills
-d'écriture doivent appeler ce socle ; ils ne réimplémentent pas ces invariants.
+fingerprints, journaux task-local et fan-in transactionnel. `/sdd-build` appelle
+ce socle pour chaque transition ; les futurs skills d'écriture font de même au
+lieu de réimplémenter ces invariants.
 
 ## Étapes du workflow
 
@@ -40,13 +43,14 @@ d'écriture doivent appeler ce socle ; ils ne réimplémentent pas ces invariant
 | 2 | Relire la spécification | `/sdd-spec-review` |
 | 3a | Concevoir une Epic, si nécessaire | `/sdd-epic-plan` |
 | 3 ou 3b | Concevoir et découper en tâches | `/sdd-plan` |
-| 4 | Implémenter en TDD | `/sdd-build`, `/sdd-code-simplify` |
+| 4 | Implémenter en TDD | `/sdd-build` |
 | 5 | Ajouter les tests transverses | `/sdd-test` |
 | 6 | Valider avec le harness | `/sdd-validate` |
 | 7 | Relire le code avant commit | `/sdd-review` |
 | 8 | Préparer la livraison, facultatif | `/sdd-ship` |
 
 `/sdd-help` et `/sdd-status` sont des commandes méta disponibles à tout moment.
+`/sdd-code-simplify` reste planifiée séparément pour S-004.
 
 ## Rôles internes et délégation
 
@@ -56,7 +60,8 @@ confier une partie précise du travail.
 
 Exemple pendant l'étape 4 :
 
-1. `/sdd-build T-001` reste l'unique commande saisie par l'utilisateur ;
+1. `/sdd-build <feature-id> T-001` reste l'unique commande saisie par
+   l'utilisateur ;
 2. l'orchestrateur charge le rôle `spring-test-engineer` et délègue l'écriture
    du test rouge ;
 3. après validation de l'échec, il charge `spring-implementer` et délègue le

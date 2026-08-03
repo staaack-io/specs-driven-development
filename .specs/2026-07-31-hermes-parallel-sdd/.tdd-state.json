@@ -298,8 +298,8 @@
       ]
     },
     "T-013": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": [
         "T-012"
       ],
@@ -313,15 +313,16 @@
         "T-013-T7"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 84,
+      "branch": "agent/build-t013-s003-audit",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T11:54:43Z",
+      "red_test_signature": "hermes.scripts.test_sdd_s003_contract.SddS003ContractTest.test_source_suites_and_public_build_documentation_are_complete",
+      "red_failure_excerpt": "AssertionError: /sdd-build <feature-id> <T-NNN> absent from installed commands; capacity documentation markers also absent; Ran 6 tests, FAILED (failures=3)",
+      "green_at": "2026-08-03T11:58:01Z",
       "files_in_scope": [
         "hermes/scripts/test_sdd_s003_contract.py",
+        "hermes/skills/sdd-onboard/scripts/test_skill_contract.py",
         "hermes/runtime/README.md",
         "hermes/skills/sdd-help/SKILL.md",
         "hermes/README.md",

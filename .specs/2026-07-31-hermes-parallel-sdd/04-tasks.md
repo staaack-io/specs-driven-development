@@ -713,6 +713,7 @@ S-003 utilisent donc un seul slot de développement à la fois après T-009.
   - T-013-T7 (safety audit — aucun auto-merge, force-push, reset destructif, secret, chemin absolu versionné ou ordonnanceur Python concurrent)
 - **Files in scope :**
   - `hermes/scripts/test_sdd_s003_contract.py`
+  - `hermes/skills/sdd-onboard/scripts/test_skill_contract.py`
   - `hermes/runtime/README.md`
   - `hermes/skills/sdd-help/SKILL.md`
   - `hermes/README.md`

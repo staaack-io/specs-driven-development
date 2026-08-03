@@ -147,6 +147,16 @@ lourdes sont exécutées séquentiellement.
 
 ## Écrivains parallèles et fan-in
 
+`/sdd-build <feature-id> <T-NNN>` exécute une tâche après preuve RED. La forme
+`/sdd-build <feature-id> --parallel [--max-workers 1|2]` effectue une admission
+unique dans Hermes Kanban ; elle ne crée aucune boucle d'ordonnancement Python.
+Le plafond demandé ne peut jamais dépasser `max_writers`.
+
+Une carte admise conserve le projet, la carte parente, la branche, la clé
+d'idempotence, le skill, une durée maximale de 45 minutes et deux retries. Sa
+vue `/sdd-status` restitue seulement les champs task-local persistés : une
+valeur absente reste `—` et n'est jamais déduite.
+
 Chaque worker possède un worktree, un lease de fichiers et un journal propre
 sous `jobs/<T-ID>/`. Un événement existant peut être rejoué uniquement avec le
 même identifiant et le même contenu. Le worker ne modifie jamais
@@ -169,13 +179,18 @@ terminées et leurs chemins concrets disjoints. Un conflit de chemin impose une
 dépendance et une exécution séquentielle. Les globs, dossiers, chemins hors
 dépôt et chaînes de symlinks sont refusés.
 
-Après fusion autorisée des PR d'une vague, un synthesizer unique lit les
-journaux task-local et publie les artefacts partagés. Le fan-in utilise le
+Après go explicite et observation d'une fusion réalisée hors runtime, un
+synthesizer unique lit les journaux task-local et publie les artefacts partagés.
+Une PR techniquement prête ne suffit pas à déduire ce go. Le fan-in utilise le
 verrou du Git common dir, des tokens CAS, un journal synchronisé et un marqueur
 de commit lié au dépôt, au worktree et au `HEAD`. Après interruption, la reprise
 restitue l'ancien ou le nouvel ensemble complet, jamais un mélange. Elle refuse
 une reprise depuis un autre worktree, après un changement de `HEAD` ou avec un
 marqueur altéré.
+
+Le synthesizer crée au plus une PR brouillon de fan-in par clé idempotente et
+ne la fusionne pas. La vague suivante reste bloquée jusqu'à ce que sa fusion
+humaine soit observée.
 
 ## Interdictions
 
