@@ -17,7 +17,7 @@
 
 ## Task ID Registry
 
-- **high_water_mark :** 20
+- **high_water_mark :** 24
 - **retired_ids :** (aucun)
 
 ## Task Index
@@ -1226,3 +1226,187 @@ secondaires lorsque leur producteur historique appartient à une autre tranche.
 - [x] Aucune question ouverte ni décision ADR supplémentaire.
 
 Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-017`.
+
+## Tâches : S-006 — `/sdd-review`, `/sdd-ship`, profil 0.8.0
+
+### S-006 Task Index
+
+| ID | Tâche | AC primaires | Dépendances | Estimation | Portes |
+|---|---|---|---|---|---|
+| T-021 | Convertir `/sdd-review` dans la source Hermes | AC-150, AC-151 | T-018, T-009 | 3–4 h | unit, contract, fan-in, scope, CI |
+| T-022 | Convertir `/sdd-ship` sans capacité de déploiement | AC-152, AC-153, AC-235, AC-261–AC-263 | T-018, T-009 | 3–4 h | unit, contract, no-deploy, scope, CI |
+| T-023 | Auditer exactement les 13 AC source S-006 | AC-148, AC-149 | T-021, T-022 | 3–4 h | source-audit, help, docs, all-python, CI |
+| T-024 | Publier le profil 0.8.0 avec parité et rollback | AC-017, AC-018, AC-154 | T-020, T-023 | 3–4 h | parity, profile, distribution, CI, go |
+
+### T-021 : Convertir `/sdd-review` dans la source Hermes
+
+- **Origine qualifiée :** `spring-architect:T-021`
+- **AC-IDs :** AC-150, AC-151
+- **Test-IDs :**
+  - T-021-T1 (RED publication — le skill et son garde sont absents)
+  - T-021-T2 (arguments — accepter `[<feature-id>] [--base <ref>]` sans shell)
+  - T-021-T3 (routage — déléguer Spring, React ou les deux selon le diff)
+  - T-021-T4 (lecture — diff et artefacts transmis sans handle d'écriture)
+  - T-021-T5 (fan-in — consolider les constats structurés sans doublon)
+  - T-021-T6 (writer — écrire uniquement `08-code-review.md` atomiquement)
+  - T-021-T7 (verdict — vocabulaire fermé et revue informative non bloquante)
+  - T-021-T8 (sécurité — expurger secrets, données métier et chemins absolus)
+- **Files in scope :**
+  - `hermes/skills/sdd-review/SKILL.md`
+  - `hermes/skills/sdd-review/references/delegation-contract.md`
+  - `hermes/skills/sdd-review/references/review-contract.md`
+  - `hermes/skills/sdd-review/references/role-spring-code-reviewer.md`
+  - `hermes/skills/sdd-review/references/role-react-nextjs-code-reviewer.md`
+  - `hermes/skills/sdd-review/templates/code-review.template.md`
+  - `hermes/skills/sdd-review/scripts/review_guard.py`
+  - `hermes/skills/sdd-review/scripts/test_review_guard.py`
+  - `hermes/skills/sdd-review/scripts/test_skill_contract.py`
+- **Dépendances :** T-018, T-009
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** tests du garde, contrat du skill, fan-in, frontmatter,
+  markdownlint, `git diff --check`, CI source.
+- **Retour arrière :** retirer `sdd-review`; aucun rapport de feature existant
+  n'est modifié par la PR tant que la commande n'est pas invoquée.
+- **Notes :** la commande SDD effectue une revue technique déléguée ; la PR de
+  migration ne demande aucune review à une personne.
+
+### T-022 : Convertir `/sdd-ship` sans capacité de déploiement
+
+- **Origine qualifiée :** `spring-architect:T-022`
+- **AC-IDs :** AC-152, AC-153, AC-235, AC-261 à AC-263
+- **Test-IDs :**
+  - T-022-T1 (RED publication — le skill et son garde sont absents)
+  - T-022-T2 (arguments — accepter `[<feature-id>] [--base <ref>]` sans shell)
+  - T-022-T3 (préconditions — validation, revue, questions, baseline et scope)
+  - T-022-T4 (rollback — détection, limitation sous cinq minutes, restauration)
+  - T-022-T5 (observabilité — métriques, journaux, alertes et dashboard ou justification)
+  - T-022-T6 (flags — valeur, arrêt d'urgence, responsable et retrait)
+  - T-022-T7 (notes — externes et internes sans données sensibles)
+  - T-022-T8 (no-deploy — aucune primitive shell, réseau, VPS ou déploiement)
+- **Files in scope :**
+  - `hermes/skills/sdd-ship/SKILL.md`
+  - `hermes/skills/sdd-ship/references/delegation-contract.md`
+  - `hermes/skills/sdd-ship/references/shipping-contract.md`
+  - `hermes/skills/sdd-ship/templates/ship-plan.template.md`
+  - `hermes/skills/sdd-ship/scripts/ship_guard.py`
+  - `hermes/skills/sdd-ship/scripts/test_ship_guard.py`
+  - `hermes/skills/sdd-ship/scripts/test_skill_contract.py`
+- **Dépendances :** T-018, T-009
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** tests du garde, contrat du skill, preuve négative de déploiement,
+  frontmatter, markdownlint, `git diff --check`, CI source.
+- **Retour arrière :** retirer `sdd-ship`; aucun déploiement, mutation VPS ou
+  modification de production n'a pu être exécuté.
+- **Notes :** T-022 est développable avec T-021 sur un scope disjoint, mais sa
+  fusion attend celle de T-021. Aucun reviewer n'est demandé.
+
+### T-023 : Auditer exactement les 13 AC source S-006
+
+- **Origine qualifiée :** `spring-architect:T-023`
+- **AC-IDs :** AC-148, AC-149
+- **Test-IDs :**
+  - T-023-T1 (manifeste — exactement 13 AC et un producteur primaire par AC)
+  - T-023-T2 (commandes — les deux skills et leurs suites sont présents)
+  - T-023-T3 (DAG — développement parallèle, fusion review avant ship)
+  - T-023-T4 (scopes — T-021/T-022 disjoints, documents réservés à l'audit)
+  - T-023-T5 (publication — aide et docs classent les deux commandes installées)
+  - T-023-T6 (sécurité — aucun déploiement, merge, secret, chemin absolu ou VPS)
+- **Files in scope :**
+  - `hermes/scripts/test_sdd_s006_contract.py`
+  - `hermes/skills/sdd-help/SKILL.md`
+  - `hermes/README.md`
+  - `docs/artifact-contract.md`
+  - `docs/codex-migration.md`
+- **Dépendances :** T-021, T-022
+- **Phases estimées :** RED 30 min ; GREEN 60–90 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** contrat S-006, toutes les suites Python Hermes, validation des
+  skills, markdownlint, `git diff --check`, CI source.
+- **Retour arrière :** annuler la PR d'audit et garder les deux commandes sur
+  leurs branches sans les annoncer comme installées.
+- **Notes :** T-023 est l'unique writer des documents partagés de publication.
+
+### T-024 : Publier le profil 0.8.0 avec parité et rollback
+
+- **Origine qualifiée :** `spring-architect:T-024`
+- **AC-IDs :** AC-017, AC-018, AC-154
+- **Test-IDs :**
+  - T-024-T1 (RED release — profil antérieur ou commandes absentes refusés)
+  - T-024-T2 (parité — copies exactes de review, ship et aide)
+  - T-024-T3 (profile layout — mêmes suites exécutées depuis `skills/**`)
+  - T-024-T4 (distribution — version 0.8.0, changelog et découverte cohérents)
+  - T-024-T5 (ordre — profil 0.7.0 et audit T-023 fusionnés avant publication)
+  - T-024-T6 (gate — CI et contrats verts puis go explicite, sans reviewer)
+  - T-024-T7 (rollback — réinstaller 0.7.0 en conservant les preuves)
+  - T-024-T8 (no VPS — aucune installation, mise à jour ou livraison exécutée)
+- **Files in scope :**
+  - `scripts/test_validate_distribution.py`
+  - `scripts/test_sdd_s006_contract.py`
+  - `skills/sdd-review/SKILL.md`
+  - `skills/sdd-review/references/delegation-contract.md`
+  - `skills/sdd-review/references/review-contract.md`
+  - `skills/sdd-review/references/role-spring-code-reviewer.md`
+  - `skills/sdd-review/references/role-react-nextjs-code-reviewer.md`
+  - `skills/sdd-review/templates/code-review.template.md`
+  - `skills/sdd-review/scripts/review_guard.py`
+  - `skills/sdd-review/scripts/test_review_guard.py`
+  - `skills/sdd-review/scripts/test_skill_contract.py`
+  - `skills/sdd-ship/SKILL.md`
+  - `skills/sdd-ship/references/delegation-contract.md`
+  - `skills/sdd-ship/references/shipping-contract.md`
+  - `skills/sdd-ship/templates/ship-plan.template.md`
+  - `skills/sdd-ship/scripts/ship_guard.py`
+  - `skills/sdd-ship/scripts/test_ship_guard.py`
+  - `skills/sdd-ship/scripts/test_skill_contract.py`
+  - `skills/sdd-help/SKILL.md`
+  - `distribution.yaml`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `.github/workflows/ci.yml`
+- **Dépendances :** T-020, T-023
+- **Phases estimées :** RED 30 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** parité, runner profil, distribution, frontmatter, markdownlint,
+  `git diff --check`, CI et go explicite avant fusion.
+- **Retour arrière :** fermer la PR 0.8.0 et conserver 0.7.0; après
+  publication, réinstaller 0.7.0 sans supprimer ni convertir les preuves.
+- **Notes :** aucune review humaine, fusion automatique, action VPS ou déploiement.
+
+### S-006 Primary AC Coverage Matrix
+
+| AC | Producteur primaire | Preuve principale |
+|---|---|---|
+| AC-017, AC-018, AC-154 | T-024 | T-024-T1 à T-024-T7 |
+| AC-148, AC-149 | T-023 | T-023-T1, T-023-T3, T-023-T4 |
+| AC-150, AC-151 | T-021 | T-021-T3 à T-021-T7 |
+| AC-152, AC-153, AC-235, AC-261–AC-263 | T-022 | T-022-T3 à T-022-T8 |
+
+Les plages se développent en 13 AC distincts avec un producteur primaire
+unique. Les preuves S-005 restent secondaires et ne sont pas réattribuées.
+
+### S-006 Dependency and Capacity Validation
+
+- Le DAG est acyclique. T-021 et T-022 ont des scopes disjoints et peuvent
+  occuper les deux slots writers; T-023 puis T-024 sont séquentielles.
+- T-022 n'est jamais fusionnée avant T-021 malgré leur développement parallèle.
+- Aucun skill S-006 ne peut lancer un déploiement ou écrire hors de son artefact.
+
+### S-006 Open Questions
+
+- (aucune)
+
+### S-006 Resolved Questions
+
+- **Décision autonome :** quatre tâches séparent commandes, audit et profil.
+- **Décision autonome :** `/sdd-review` est une commande technique du produit;
+  aucune personne n'est sollicitée pour relire les PR de migration.
+- **Décision autonome :** `/sdd-ship` produit uniquement un plan structuré et
+  ne reçoit aucune primitive d'exécution de déploiement.
+
+### S-006 Sign-off
+
+- [x] `high_water_mark: 24`; aucun ID existant n'est réutilisé.
+- [x] Les 13 AC possèdent un producteur primaire unique.
+- [x] Chaque tâche possède tests, fichiers littéraux, dépendances, portes et rollback.
+- [x] Le DAG autorise deux writers puis impose audit et publication séquentiels.
+- [x] Aucune question ouverte ni décision ADR supplémentaire.
+
+Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-021`.
