@@ -111,11 +111,11 @@
       ]
     },
     "T-008": {
-      "phase": "pending",
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "phase": "done",
+      "red_at": "2026-08-02T18:31:54Z",
+      "red_test_signature": "scripts.test_validate_distribution.DistributionValidatorTest.test_release_0_5_0_includes_sdd_commands_and_shared_runtime",
+      "red_failure_excerpt": "AssertionError: '0.5.0' != '0.4.8'; Ran 1 test in 0.001s; FAILED (failures=1)",
+      "green_at": "2026-08-02T18:43:46Z",
       "files_in_scope": [
         "hermes/runtime/README.md",
         "hermes/runtime/__init__.py",

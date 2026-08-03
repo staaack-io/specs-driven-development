@@ -615,3 +615,159 @@
   du scope T-007 confié à ce writer.
 
 ---
+
+## T-008 — Publier le profil 0.5.0 avec parité skills/runtime
+
+### T-008 · red · 2026-08-02T18:31:54Z
+
+- Test ajouté :
+  `scripts.test_validate_distribution.DistributionValidatorTest.test_release_0_5_0_includes_sdd_commands_and_shared_runtime`
+  (`T-008-T1`, `AC-011`, `AC-012`, `AC-025`, `AC-026`, `AC-123`,
+  `AC-278`). Le contrat exige d'abord la version 0.5.0, puis les deux skills
+  publics et le package du runtime partagé par des chemins distribués réels.
+- Commande ciblée :
+  `/usr/bin/time -p env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/private/tmp/hermes-t008-markdown-stub /opt/miniconda3/bin/python3 -m unittest scripts.test_validate_distribution.DistributionValidatorTest.test_release_0_5_0_includes_sdd_commands_and_shared_runtime`.
+- Résultat : **échec attendu** — le manifeste déclare encore exactement
+  `0.4.8`, alors que le contrat de release attend `0.5.0`.
+- Extrait (10 lignes) :
+
+  ```text
+  FAIL: test_release_0_5_0_includes_sdd_commands_and_shared_runtime (scripts.test_validate_distribution.DistributionValidatorTest.test_release_0_5_0_includes_sdd_commands_and_shared_runtime)
+  T-008-T1 / AC-011, AC-012, AC-025, AC-026, AC-123, AC-278.
+  Traceback (most recent call last):
+    File "scripts/test_validate_distribution.py", line 54, in test_release_0_5_0_includes_sdd_commands_and_shared_runtime
+      self.assertEqual("0.5.0", manifest["version"])
+  AssertionError: '0.5.0' != '0.4.8'
+  - 0.5.0
+  + 0.4.8
+  Ran 1 test in 0.001s
+  FAILED (failures=1)
+  ```
+
+- Durée rapportée par `/usr/bin/time` : `real 0.26`, `user 0.08`,
+  `sys 0.03`.
+- Environnement : `markdown-it-py` n'est pas installé localement ; le stub
+  d'import temporaire hors dépôt ne participe à aucune assertion et sert
+  uniquement à charger ce test de métadonnées ciblé.
+- État : `T-008 = red`, `active_task = T-008`. Aucun fichier de production,
+  manifeste, skill, runtime ou documentation n'a été modifié.
+
+---
+
+### T-008 · green · 2026-08-02T18:43:46Z
+
+- Le RED de release a été rejoué avant toute copie et a échoué exactement sur
+  `0.5.0 != 0.4.8` : **1/1 échec attendu** en 0,001 s.
+- Copie mécanique sans transformation : **31/31 fichiers skills** en scope,
+  puis **7/7 fichiers runtime**. Après le premier groupe, la parité ne signalait
+  plus que les sept fichiers runtime absents ; après le second, elle confirme
+  **65 fichiers skills et 7 fichiers runtime identiques**.
+- Runner minimal : la découverte suivie/non ignorée couvre désormais
+  `skills/**/test_*.py` et les tests directs `hermes/runtime/test_*.py` dans le
+  même superviseur. Chaque fichier reste refusé s'il ne découvre ou n'exécute
+  aucun cas `unittest` non ignoré.
+- Triangulation du runner : le nouveau test mixte a d'abord échoué parce que le
+  fichier runtime n'était pas découvert, puis réussit **1/1 en 0,931 s** hors
+  sandbox macOS. La suite du runner réussit **66/66 tests en 28,897 s**, avec
+  trois tests conditionnels ignorés.
+- Métadonnées minimales : `distribution.yaml` vaut `0.5.0`; le changelog et le
+  README publient epic-plan, wire-harness et le runtime partagé. Le rollback
+  nomme explicitement la réinstallation du profil 0.4.8 sans suppression ni
+  reconversion des états v2, journaux, branches ou worktrees.
+- Le contrat T-008-T1 devient **vert, 1/1 en 0,001 s**. Le contrat historique
+  T-002 conserve ses trois assertions sur la présence documentée de 0.4.8,
+  désormais comme entrée de release antérieure.
+- État intermédiaire : `T-008 = green`, `active_task = T-008`. La gate lourde
+  de tous les tests profil reste réservée à la passe finale après simplification.
+
+---
+
+### T-008 · refactor · 2026-08-02T18:44:58Z
+
+- Relecture structurelle : la sélection des deux racines de tests reste dans
+  la découverte existante et réutilise l'unique superviseur. Aucun second
+  runner, ordonnanceur, mode ou option n'a été ajouté.
+- Le contrat historique de 0.4.8 vérifie désormais explicitement qu'au moins
+  deux releases sont présentes avant d'accéder à la release précédente. Il
+  conserve ses assertions de version, changelog et README sans masquer 0.5.0.
+- Commande ciblée : les contrats de release 0.4.8 historique et 0.5.0 courant
+  réussissent **2/2 en 0,001 s**.
+- Aucun refactor des 38 fichiers copiés n'est autorisé : ils restent strictement
+  byte-for-byte avec la source canonique.
+- État intermédiaire : `T-008 = refactor`, `active_task = T-008`.
+
+---
+
+### T-008 · simplify · 2026-08-02T18:46:14Z
+
+- Passe `clarity-over-cleverness` : la découverte filtre d'abord le nom de test,
+  sélectionne ensuite explicitement la racine skill ou runtime, puis applique
+  les contrôles de fichier sûr. Les versions courante et précédente sont des
+  constantes nommées dans le contrat de release.
+- Aucun ternaire imbriqué, option morte, paramètre inutilisé, second runner ou
+  helper spéculatif n'est introduit. Les 38 fichiers canoniques restent
+  inchangés et byte-for-byte avec la source.
+- Preuves post-simplification : runner mixte **1/1 vert en 0,964 s**, contrats
+  de release **2/2 verts en 0,001 s**, parité exacte **65 skills + 7 runtime**
+  et `git diff --check` vert.
+- État conservé intentionnellement : `T-008 = simplify`,
+  `active_task = T-008`. T-008-T7 exige encore CI, review `approve`, zéro fil
+  actionnable et go humain avant fusion ; la tâche n'est donc pas `done`.
+
+### T-008 · waiting-publication-gate · 2026-08-02T18:46:14Z
+
+- Les portes locales finales, la PR profil et ses deux checks restent à produire.
+- La branche source/meta demeure un ledger actif non commité et non poussé.
+- Aucune fusion, installation de profil, mise à jour VPS ou déploiement n'est
+  autorisé dans cette attente.
+
+### T-008 · publication-checkpoint · 2026-08-02T18:56:56Z
+
+- Gate profil complète : **10/10 fichiers de test**, **137/137 cas exécutés**,
+  zéro ignoré, en environ **59,4 s**. Elle couvre les deux tests runtime, plan,
+  epic-plan, wire-harness, status, onboard, spec-review et leurs contrats.
+- Suite distribution locale : **226 tests en 131,867 s**, avec deux échecs
+  déterministes de fixtures SemVer qui remplaçaient encore la version 0.4.8 et
+  trois tests conditionnels ignorés. Après correction dans le scope, les deux
+  tests ciblés réussissent **2/2 en 1,075 s** ; la suite complète n'est pas
+  déclarée verte localement sans relance inchangée.
+- Validateur autonome : **8 skills valides**. Parité : **65 skills + 7 runtime
+  identiques**. `git diff --check` : vert. Markdownlint local a été interrompu
+  après 60 s sans sortie ; aucune réussite locale Markdown n'est revendiquée.
+- Commit profil : `5042e33038a9b22f04da8b91e9e1d8b617d96a39`, **44 fichiers**,
+  **9 633 insertions et 60 suppressions**, poussé sur
+  `agent/build-t008-profile-050`.
+- PR profil : `staaack-io/hermes-agent-profile-staaack#48`, ouverte en draft
+  avec `Closes #47`, puis passée prête après CI verte.
+- CI Linux autoritative : **2/2 checks verts** — `Skills / Python tests` en
+  **20 s** et `Distribution / Validate, docs and diff` en **1 min 32 s**. Ce
+  second check couvre la suite distribution complète, le validateur,
+  Markdownlint et le diff.
+- État GitHub : `MERGEABLE/CLEAN`, **0 review**, décision de review vide et
+  **0 fil de review**. T-008-T7 reste donc incomplète : une review `approve` et
+  un go humain explicite sont encore requis avant toute fusion.
+- État maintenu : `T-008 = simplify`, `active_task = T-008`. La branche
+  source/meta reste non commitée et non poussée ; la branche profil est propre.
+
+---
+
+### T-008 · done · 2026-08-02T18:59:05Z
+
+- Le go humain explicite a été reçu après présentation du SHA profil, des deux
+  checks CI verts, de l'état `MERGEABLE/CLEAN`, de l'absence de fils et de
+  l'absence de review formelle.
+- La review `approve` prévue par T-008-T7 reste absente. Comme pour le profil
+  0.4.8, cette absence est consignée comme une dérogation explicite : le nouvel
+  `AGENTS.md` rend `$review` facultatif et le go utilisateur autorise la fusion
+  sans revendiquer une approbation inexistante.
+- PR profil `staaack-io/hermes-agent-profile-staaack#48` fusionnée à
+  `2026-08-02T18:59:05Z`, depuis la tête
+  `5042e33038a9b22f04da8b91e9e1d8b617d96a39` vers le commit de fusion
+  `e0e518b9d2b7e1e7c708546e9d4b02da945078ce`.
+- La publication source/profil 0.5.0 est complète : **65 fichiers skills et 7
+  fichiers runtime identiques**, **137/137 tests profil** et **2/2 checks CI**.
+- Aucun profil VPS n'a été installé ou mis à jour ; aucun gateway, board,
+  déploiement ou état distant Hermes n'a été modifié.
+- État final : `T-008 = done`, `active_task = null`.
+
+---
