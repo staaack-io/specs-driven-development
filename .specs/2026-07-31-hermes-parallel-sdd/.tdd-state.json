@@ -462,6 +462,128 @@
         "README.md",
         ".github/workflows/ci.yml"
       ]
+    },
+    "T-017": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-003", "T-009"],
+      "test_ids": [
+        "T-017-T1", "T-017-T2", "T-017-T3", "T-017-T4",
+        "T-017-T5", "T-017-T6", "T-017-T7", "T-017-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/skills/sdd-test/SKILL.md",
+        "hermes/skills/sdd-test/references/delegation-contract.md",
+        "hermes/skills/sdd-test/references/test-plan-contract.md",
+        "hermes/skills/sdd-test/templates/test-plan.template.md",
+        "hermes/skills/sdd-test/scripts/test_guard.py",
+        "hermes/skills/sdd-test/scripts/test_test_guard.py",
+        "hermes/skills/sdd-test/scripts/test_skill_contract.py"
+      ]
+    },
+    "T-018": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-003", "T-009"],
+      "test_ids": [
+        "T-018-T1", "T-018-T2", "T-018-T3", "T-018-T4",
+        "T-018-T5", "T-018-T6", "T-018-T7", "T-018-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/skills/sdd-validate/SKILL.md",
+        "hermes/skills/sdd-validate/references/delegation-contract.md",
+        "hermes/skills/sdd-validate/references/validation-contract.md",
+        "hermes/skills/sdd-validate/references/role-spring-validator.md",
+        "hermes/skills/sdd-validate/references/role-react-nextjs-validator.md",
+        "hermes/skills/sdd-validate/templates/validation-report.template.md",
+        "hermes/skills/sdd-validate/templates/traceability.template.md",
+        "hermes/skills/sdd-validate/scripts/validation_guard.py",
+        "hermes/skills/sdd-validate/scripts/test_validation_guard.py",
+        "hermes/skills/sdd-validate/scripts/test_skill_contract.py"
+      ]
+    },
+    "T-019": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-017", "T-018"],
+      "test_ids": [
+        "T-019-T1", "T-019-T2", "T-019-T3", "T-019-T4",
+        "T-019-T5", "T-019-T6", "T-019-T7"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/scripts/test_sdd_s005_contract.py",
+        "hermes/skills/sdd-help/SKILL.md",
+        "hermes/README.md",
+        "docs/artifact-contract.md",
+        "docs/codex-migration.md"
+      ]
+    },
+    "T-020": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-016", "T-019"],
+      "test_ids": [
+        "T-020-T1", "T-020-T2", "T-020-T3", "T-020-T4",
+        "T-020-T5", "T-020-T6", "T-020-T7", "T-020-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "scripts/test_validate_distribution.py",
+        "scripts/test_sdd_s005_contract.py",
+        "skills/sdd-test/SKILL.md",
+        "skills/sdd-test/references/delegation-contract.md",
+        "skills/sdd-test/references/test-plan-contract.md",
+        "skills/sdd-test/templates/test-plan.template.md",
+        "skills/sdd-test/scripts/test_guard.py",
+        "skills/sdd-test/scripts/test_test_guard.py",
+        "skills/sdd-test/scripts/test_skill_contract.py",
+        "skills/sdd-validate/SKILL.md",
+        "skills/sdd-validate/references/delegation-contract.md",
+        "skills/sdd-validate/references/validation-contract.md",
+        "skills/sdd-validate/references/role-spring-validator.md",
+        "skills/sdd-validate/references/role-react-nextjs-validator.md",
+        "skills/sdd-validate/templates/validation-report.template.md",
+        "skills/sdd-validate/templates/traceability.template.md",
+        "skills/sdd-validate/scripts/validation_guard.py",
+        "skills/sdd-validate/scripts/test_validation_guard.py",
+        "skills/sdd-validate/scripts/test_skill_contract.py",
+        "skills/sdd-help/SKILL.md",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/workflows/ci.yml"
+      ]
     }
   }
 }

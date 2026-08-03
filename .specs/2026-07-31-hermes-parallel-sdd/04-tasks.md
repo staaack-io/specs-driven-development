@@ -17,7 +17,7 @@
 
 ## Task ID Registry
 
-- **high_water_mark :** 14
+- **high_water_mark :** 20
 - **retired_ids :** (aucun)
 
 ## Task Index
@@ -1024,3 +1024,200 @@ T-015 ─────────┘
 - [x] Checklist `design-review.md` relue le 2026-08-03.
 
 Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-015`.
+
+## Tâches : S-005 — `/sdd-test`, `/sdd-validate`, profil 0.7.0
+
+### S-005 Task Index
+
+| ID | Tâche | AC primaires | Dépendances | Estimation | Portes |
+|---|---|---|---|---|---|
+| T-017 | Convertir `/sdd-test` dans la source Hermes | AC-142, AC-196–AC-209 | T-003, T-009 | 3–4 h | unit, contract, scope, traceability, CI |
+| T-018 | Convertir `/sdd-validate` et le fan-in des rapports | AC-143–AC-146, AC-210–AC-217 | T-003, T-009 | 3–4 h | unit, contract, fan-in, gate-lock, CI |
+| T-019 | Auditer exactement les 32 AC source S-005 | AC-140, AC-141 | T-017, T-018 | 3–4 h | source-audit, help, docs, all-python, CI |
+| T-020 | Publier le profil 0.7.0 avec parité et rollback | AC-015, AC-016, AC-147 | T-016, T-019 | 3–4 h | parity, profile, distribution, CI, go |
+
+### T-017 : Convertir `/sdd-test` dans la source Hermes
+
+- **Origine qualifiée :** `spring-architect:T-017`
+- **AC-IDs :** AC-142, AC-196 à AC-209
+- **Test-IDs :**
+  - T-017-T1 (RED publication — le skill et son garde sont absents)
+  - T-017-T2 (arguments — accepter `<feature-id> [--gap]` et refuser le reste)
+  - T-017-T3 (scope — autoriser uniquement `src/test/**` et `06-test-plan.md`)
+  - T-017-T4 (plan — matrice AC/types, Testcontainers, Gap-NNN et `Won't fix`)
+  - T-017-T5 (preuves — tags AC, noms descriptifs, argv structurés et sortie expurgée)
+  - T-017-T6 (gate — sérialiser la commande de tests avec le verrou runtime)
+  - T-017-T7 (traçabilité — publier atomiquement le plan puis régénérer la matrice)
+  - T-017-T8 (catalogue — relier AC-196 à AC-209 à des tests exécutables)
+- **Files in scope :**
+  - `hermes/skills/sdd-test/SKILL.md`
+  - `hermes/skills/sdd-test/references/delegation-contract.md`
+  - `hermes/skills/sdd-test/references/test-plan-contract.md`
+  - `hermes/skills/sdd-test/templates/test-plan.template.md`
+  - `hermes/skills/sdd-test/scripts/test_guard.py`
+  - `hermes/skills/sdd-test/scripts/test_test_guard.py`
+  - `hermes/skills/sdd-test/scripts/test_skill_contract.py`
+- **Dépendances :** T-003, T-009
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** tests du garde, contrat du skill, tests runtime référencés,
+  frontmatter, markdownlint, `git diff --check`, CI source.
+- **Retour arrière :** retirer le dossier `sdd-test`; aucun fichier de
+  production consommateur ni artefact de feature n'est modifié par la PR.
+- **Notes :** le rôle de test ne reçoit aucun handle `src/main/**`. Aucun
+  commit, fusion ou review n'est automatique.
+
+### T-018 : Convertir `/sdd-validate` et le fan-in des rapports
+
+- **Origine qualifiée :** `spring-architect:T-018`
+- **AC-IDs :** AC-143 à AC-146, AC-210 à AC-217
+- **Test-IDs :**
+  - T-018-T1 (RED publication — le skill et son garde sont absents)
+  - T-018-T2 (préconditions — harness disponible, tâches done, résultats frais, aucun bypass)
+  - T-018-T3 (routage — Spring, React ou les deux selon les sources modifiées)
+  - T-018-T4 (gate — sérialiser Maven, Next, PIT et OWASP sous le verrou runtime)
+  - T-018-T5 (fan-in — résultats spécialisés structurés, sans handle partagé)
+  - T-018-T6 (writer — écrire uniquement `07-validation-report.md` et `07a-traceability.md`)
+  - T-018-T7 (verdicts — décision `approve|request-changes`, technique `PASS|FAIL`)
+  - T-018-T8 (preuves — relier AC-210 à AC-217 aux tests GitHub et transactionnels)
+- **Files in scope :**
+  - `hermes/skills/sdd-validate/SKILL.md`
+  - `hermes/skills/sdd-validate/references/delegation-contract.md`
+  - `hermes/skills/sdd-validate/references/validation-contract.md`
+  - `hermes/skills/sdd-validate/references/role-spring-validator.md`
+  - `hermes/skills/sdd-validate/references/role-react-nextjs-validator.md`
+  - `hermes/skills/sdd-validate/templates/validation-report.template.md`
+  - `hermes/skills/sdd-validate/templates/traceability.template.md`
+  - `hermes/skills/sdd-validate/scripts/validation_guard.py`
+  - `hermes/skills/sdd-validate/scripts/test_validation_guard.py`
+  - `hermes/skills/sdd-validate/scripts/test_skill_contract.py`
+- **Dépendances :** T-003, T-009
+- **Phases estimées :** RED 30–45 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** tests du garde, contrat du skill, fan-in, verrou de gate,
+  frontmatter, markdownlint, `git diff --check`, CI source.
+- **Retour arrière :** retirer le dossier `sdd-validate`; les anciens rapports
+  communs restent intacts grâce à la transaction du writer unique.
+- **Notes :** T-018 peut être développée avec T-017 sur un scope disjoint, mais
+  sa fusion attend T-017. Aucune review n'est demandée.
+
+### T-019 : Auditer exactement les 32 AC source S-005
+
+- **Origine qualifiée :** `spring-architect:T-019`
+- **AC-IDs :** AC-140, AC-141
+- **Test-IDs :**
+  - T-019-T1 (manifeste — exactement 32 AC S-005 sans doublon primaire)
+  - T-019-T2 (commandes — les deux skills et leurs suites sont présents)
+  - T-019-T3 (DAG — développement parallèle et fusion test avant validate)
+  - T-019-T4 (scopes — T-017/T-018 disjoints, writer commun réservé à l'audit)
+  - T-019-T5 (capacité — deux writers et une gate lourde au maximum)
+  - T-019-T6 (publication — aide et docs classent test/validate comme installées)
+  - T-019-T7 (sécurité — aucun scheduler, merge, secret, chemin absolu ou VPS)
+- **Files in scope :**
+  - `hermes/scripts/test_sdd_s005_contract.py`
+  - `hermes/skills/sdd-help/SKILL.md`
+  - `hermes/README.md`
+  - `docs/artifact-contract.md`
+  - `docs/codex-migration.md`
+- **Dépendances :** T-017, T-018
+- **Phases estimées :** RED 30 min ; GREEN 60–90 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** contrat S-005, toutes les suites Python Hermes, validation des
+  skills, markdownlint, `git diff --check`, CI source.
+- **Retour arrière :** annuler la PR d'audit et garder les deux commandes
+  sources sur leurs branches sans les annoncer comme installées.
+- **Notes :** T-019 est l'unique writer des documents partagés de publication.
+
+### T-020 : Publier le profil 0.7.0 avec parité et rollback
+
+- **Origine qualifiée :** `spring-architect:T-020`
+- **AC-IDs :** AC-015, AC-016, AC-147
+- **Test-IDs :**
+  - T-020-T1 (RED release — profil antérieur ou commandes absentes refusés)
+  - T-020-T2 (parité — copies exactes des deux skills et de l'aide)
+  - T-020-T3 (profile layout — mêmes tests exécutés depuis `skills/**`)
+  - T-020-T4 (distribution — version, changelog, frontmatters et découverte cohérents)
+  - T-020-T5 (ordre — profil 0.6.1 et audit T-019 fusionnés avant publication)
+  - T-020-T6 (gate — CI et contrats verts puis go explicite, sans review)
+  - T-020-T7 (rollback — réinstaller 0.6.1 sans supprimer les preuves)
+  - T-020-T8 (no VPS — aucune installation ou mise à jour exécutée)
+- **Files in scope :**
+  - `scripts/test_validate_distribution.py`
+  - `scripts/test_sdd_s005_contract.py`
+  - `skills/sdd-test/SKILL.md`
+  - `skills/sdd-test/references/delegation-contract.md`
+  - `skills/sdd-test/references/test-plan-contract.md`
+  - `skills/sdd-test/templates/test-plan.template.md`
+  - `skills/sdd-test/scripts/test_guard.py`
+  - `skills/sdd-test/scripts/test_test_guard.py`
+  - `skills/sdd-test/scripts/test_skill_contract.py`
+  - `skills/sdd-validate/SKILL.md`
+  - `skills/sdd-validate/references/delegation-contract.md`
+  - `skills/sdd-validate/references/validation-contract.md`
+  - `skills/sdd-validate/references/role-spring-validator.md`
+  - `skills/sdd-validate/references/role-react-nextjs-validator.md`
+  - `skills/sdd-validate/templates/validation-report.template.md`
+  - `skills/sdd-validate/templates/traceability.template.md`
+  - `skills/sdd-validate/scripts/validation_guard.py`
+  - `skills/sdd-validate/scripts/test_validation_guard.py`
+  - `skills/sdd-validate/scripts/test_skill_contract.py`
+  - `skills/sdd-help/SKILL.md`
+  - `distribution.yaml`
+  - `CHANGELOG.md`
+  - `README.md`
+  - `.github/workflows/ci.yml`
+- **Dépendances :** T-016, T-019
+- **Phases estimées :** RED 30 min ; GREEN 90–120 min ; REFACTOR 30 min ; SIMPLIFY 15 min.
+- **Portes :** parité, runner profil, distribution, frontmatter, markdownlint,
+  `git diff --check`, CI et go explicite avant fusion.
+- **Retour arrière :** fermer ou annuler la PR 0.7.0 et conserver 0.6.1; après
+  publication, réinstaller 0.6.1 sans supprimer ni convertir les preuves.
+- **Notes :** aucune review, fusion automatique, action VPS ou déploiement.
+
+### S-005 Primary AC Coverage Matrix
+
+| AC | Producteur primaire | Preuve principale |
+|---|---|---|
+| AC-015 | T-020 | T-020-T1 à T-020-T4 |
+| AC-016 | T-020 | T-020-T1 à T-020-T4 |
+| AC-140 | T-019 | T-019-T3, T-019-T4 |
+| AC-141 | T-019 | T-019-T3 |
+| AC-142 | T-017 | T-017-T3, T-017-T7 |
+| AC-143 | T-018 | T-018-T2 |
+| AC-144 | T-018 | T-018-T3, T-018-T5, T-018-T6 |
+| AC-145 | T-018 | T-018-T7 |
+| AC-146 | T-018 | T-018-T7 |
+| AC-147 | T-020 | T-020-T4 à T-020-T6 |
+| AC-196–AC-209 | T-017 | T-017-T8 et catalogue exécutable |
+| AC-210–AC-217 | T-018 | T-018-T8 et catalogue exécutable |
+
+Les plages de la matrice se développent en 32 AC distincts. Chaque AC possède
+un seul producteur primaire; les tests existants restent des preuves
+secondaires lorsque leur producteur historique appartient à une autre tranche.
+
+### S-005 Dependency and Capacity Validation
+
+- Le DAG est acyclique. T-017 et T-018 ont des scopes disjoints et peuvent
+  occuper les deux slots writers; T-019 puis T-020 sont séquentielles.
+- T-018 n'est jamais fusionnée avant T-017 malgré leur développement parallèle.
+- Les gates Maven, Next, PIT et OWASP partagent le verrou global canonique.
+- Aucun worker n'écrit directement les artefacts partagés de fan-in.
+
+### S-005 Open Questions
+
+- (aucune)
+
+### S-005 Resolved Questions
+
+- **Décision autonome :** quatre tâches préservent scopes et rollbacks.
+- **Décision autonome :** les preuves AC-196 à AC-217 doivent référencer des
+  tests exécutables, pas seulement un manifeste Markdown.
+- **Décision autonome :** aucune review n'est une gate; le go explicite de
+  fusion demeure une barrière séparée.
+
+### S-005 Sign-off
+
+- [x] `high_water_mark: 20`; aucun ID T-001 à T-016 n'est réutilisé.
+- [x] Les 32 AC sont couverts exactement une fois comme producteurs primaires.
+- [x] Chaque tâche possède tests, fichiers littéraux, dépendances, portes et rollback.
+- [x] Le DAG permet deux writers puis impose audit et publication séquentiels.
+- [x] Aucune question ouverte ni décision ADR supplémentaire.
+
+Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-017`.

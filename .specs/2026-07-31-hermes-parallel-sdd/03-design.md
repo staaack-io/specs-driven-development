@@ -1040,3 +1040,168 @@ absorbé par cette tranche.
 - [x] Chaque AC S-004 est relié à une tâche et à des Test-IDs planifiés.
 - [x] Checklist `design-review.md` relue le 2026-08-03.
 - [x] Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-015`.
+
+## Conception détaillée : S-005 — `/sdd-test`, `/sdd-validate`, profil 0.7.0
+
+> Cette section prolonge S-001 à S-004 sans les réécrire. Elle couvre
+> exactement AC-015, AC-016, AC-140 à AC-147 et AC-196 à AC-217.
+
+### S-005 Inputs
+
+- Spécification et revue approuvées sans question ouverte.
+- Conception Epic et roadmap : S-005 publie les phases 5 et 6 après le cycle
+  de build et de simplification.
+- Barrières : `/sdd-wire-harness` est disponible ; la publication 0.7.0 attend
+  le profil 0.6.1 et l'audit source S-005.
+- Sources fonctionnelles : `.agents/skills/test/SKILL.md`,
+  `.agents/skills/validate/SKILL.md`, les templates de test, validation et
+  traçabilité, ainsi que les scripts existants du harness.
+- Stack détectée : dépôt de framework Python sans `pom.xml`; Spring, React,
+  OpenAPI, persistance et migration sont non applicables à l'implémentation des
+  commandes, mais restent des stacks consommatrices déléguées par les skills.
+
+### S-005 Architecture Overview
+
+La source ajoute deux skills indépendants. `sdd-test` construit un plan de test
+et peut déléguer l'ajout de tests, avec une frontière d'écriture limitée à
+`src/test/**` et `06-test-plan.md`. `sdd-validate` exécute le harness installé,
+collecte les résultats spécialisés Spring et React, puis un writer unique
+publie `07-validation-report.md` et `07a-traceability.md`. Les deux commandes
+utilisent le verrou global canonique du runtime autour de chaque gate lourde :
+Maven, Next, PIT et OWASP ne se chevauchent jamais. Les agents spécialisés ne
+reçoivent aucun handle vers les rapports communs.
+
+Le développement source des deux commandes peut progresser en parallèle sur
+des scopes disjoints. Leur ordre de fusion reste strict : la PR `sdd-test`
+précède la PR `sdd-validate`. Un audit source unique prouve ensuite les 32 AC,
+installe les deux commandes dans l'aide et ouvre la voie au profil 0.7.0.
+Aucune review humaine n'est une gate; tests, contrats et CI sont techniques,
+et toute fusion conserve le go explicite prévu par le handoff.
+
+### S-005 ADRs
+
+- ADR-001 à ADR-005 restent applicables : Kanban unique, capacité bornée,
+  isolation, writer partagé unique et état v2.
+- Aucun nouvel ADR : les limites d'écriture, l'ordre de fusion et les verdicts
+  sont imposés directement par AC-140 à AC-147.
+
+### S-005 Component Map
+
+| Frontière | Composant | Responsabilité | Tâche |
+|---|---|---|---|
+| Test public | `hermes/skills/sdd-test/**` | arguments, gaps, matrice, scope tests, traçabilité et preuve verte | T-017 |
+| Validation publique | `hermes/skills/sdd-validate/**` | gates sérialisées, fan-in spécialisé, rapports communs et verdict `PASS\|FAIL` | T-018 |
+| Audit source | `hermes/scripts/test_sdd_s005_contract.py` et docs | couverture exacte des 32 AC et publication dans l'aide | T-019 |
+| Distribution | profil Hermes 0.7.0 | copie exacte, tests de disposition, version, rollback et barrières | T-020 |
+
+### S-005 Module Boundaries
+
+- `sdd-test` peut lire spécification, conception, tâches et rapports existants.
+  Son rôle reçoit uniquement les chemins de tests autorisés et un candidat de
+  plan; le garde principal publie atomiquement `06-test-plan.md`.
+- `sdd-validate` peut lire le harness, son résumé, le plan de test et les
+  artefacts SDD. Les validateurs Spring et React retournent des objets
+  structurés en lecture seule; seul le fan-in écrit les deux rapports communs.
+- Les deux gardes composent `hermes.runtime.sdd_runtime_guard.global_lock` pour
+  une gate lourde à la fois et `validate_worker_changes` pour leur scope.
+- L'audit et le profil ne modifient jamais le comportement des deux skills.
+
+```text
+T-003 wire-harness ─┬─> T-017 /sdd-test ─────┐
+T-009 runtime v2 ───┘                         ├─> T-019 audit source
+                     └─> T-018 /sdd-validate ┘
+
+T-016 profil 0.6.1 ─┐
+                     ├─> T-020 profil 0.7.0
+T-019 audit source ──┘
+```
+
+T-017 et T-018 sont développables en parallèle, mais T-018 est empilée ou
+retargetée de façon à ne jamais fusionner avant T-017.
+
+### S-005 Data and Report Model
+
+| Objet | Champs principaux | Producteur | Règles |
+|---|---|---|---|
+| Plan de test | AC, types, gaps, tests, justification | `sdd-test` | un `Gap-NNN` a un test ou `Won't fix`; écriture atomique |
+| Preuve de gate | type, argv, retour, sortie expurgée, horodatage | garde de validation | argv structurés; résultat uniquement `PASS` ou `FAIL` |
+| Résultat spécialisé | stack, portes, couverture, mutations, traçabilité | validateur Spring ou React | lecture seule; aucun rapport commun écrit |
+| Rapport commun | verdict, table des portes, échecs, liens, action | fan-in validation | writer unique; verdict uniquement `PASS` ou `FAIL` |
+| Matrice de traçabilité | AC, tâche, test, symbole, porte | fan-in validation | aucun AC sans preuve en cas de `PASS` |
+
+Il n'existe aucune entité JPA, table, relation persistée ou migration dans
+S-005. Les fichiers Markdown et JSON sont les seules sorties durables.
+
+### S-005 API and Security Posture
+
+- Aucun endpoint OpenAPI ou HTTP n'est ajouté.
+- Les commandes acceptent des identifiants et options structurés, jamais une
+  chaîne shell. Tout argument de contournement de test est refusé.
+- Chemins absolus, secrets, tokens, données personnelles et contenu métier sont
+  expurgés avant journalisation.
+- Les liens symboliques, sorties de dépôt et écritures hors scope sont refusés.
+- Aucun credential, accès VPS ou déploiement n'appartient à cette tranche.
+
+### S-005 Test Strategy
+
+1. T-017 commence par un contrat rouge sur l'absence de `/sdd-test`, puis
+   couvre arguments, refus de production, plan atomique, gaps, tags AC,
+   traçabilité et verrou de gate.
+2. T-018 commence par l'absence de `/sdd-validate`, puis couvre préconditions,
+   résultats frais, fan-in Spring/React, writer unique, sérialisation des gates
+   et verdicts `PASS|FAIL`.
+3. Les preuves AC-196 à AC-217 référencent des tests exécutables existants du
+   runtime et des contrats supplémentaires; aucun test documentaire seul ne
+   prétend prouver une reprise ou un chevauchement temporel.
+4. T-019 vérifie par manifeste exécutable exactement 32 AC et un producteur
+   primaire unique par AC.
+5. T-020 exécute les mêmes tests depuis la disposition profil et prouve la
+   parité exacte avant toute publication 0.7.0.
+
+### S-005 Detailed AC Reconciliation
+
+| Groupe | Producteur primaire | Preuve prévue |
+|---|---|---|
+| AC-142, AC-196 à AC-209 | T-017 | garde `sdd-test`, catalogue de tests unitaires et parallèles |
+| AC-143 à AC-146, AC-210 à AC-217 | T-018 | garde `sdd-validate`, fan-in et preuves GitHub/transactionnelles |
+| AC-140, AC-141 | T-019 | audit DAG, scopes disjoints et ordre de fusion |
+| AC-015, AC-016, AC-147 | T-020 | parité, profil 0.7.0 et gate de publication |
+
+La réconciliation contient 15 + 12 + 2 + 3 = 32 producteurs primaires, sans
+recouvrir les AC S-004 ou S-006.
+
+### S-005 Risks and Rollback
+
+| Risque | Réduction | Retour arrière |
+|---|---|---|
+| `sdd-test` touche la production | normalisation du scope et fingerprint | restaurer la transaction et refuser le plan |
+| deux gates lourdes se chevauchent | verrou global canonique autour de chaque gate | libérer le lease et conserver la preuve d'échec |
+| un validateur écrit un rapport commun | délégation sans handle et fan-in unique | rejeter le résultat et conserver les anciens rapports |
+| verdict ambigu | enums fermés `approve\|request-changes` et `PASS\|FAIL` | refuser la publication du rapport |
+| profil divergent ou hors ordre | parité et dépendances T-016/T-019 | fermer la PR 0.7.0 et conserver 0.6.1 |
+
+### S-005 Open Questions
+
+- (aucune)
+
+### S-005 Resolved Questions
+
+- **Décision autonome — quatre tâches :** séparer les deux commandes, l'audit
+  source et la distribution. Justification : les scopes et rollbacks diffèrent
+  et le profil doit attendre les deux commandes auditées.
+- **Décision autonome — parallélisme de développement seulement :** T-017 et
+  T-018 peuvent progresser ensemble, tandis que la fusion de T-018 attend
+  T-017. Justification : concilier AC-140 et AC-141 sans scope commun.
+- **Décision autonome — verrou existant :** composer le verrou global runtime
+  plutôt que créer un ordonnanceur ou une nouvelle primitive de scheduling.
+- **Décision autonome — aucune review :** les gates S-005 sont les tests,
+  contrats, CI et le go explicite avant fusion; aucune demande ou attente de
+  review n'est ajoutée.
+
+### S-005 Design Sign-off
+
+- [x] Les 32 AC possèdent un producteur primaire unique.
+- [x] Le DAG est acyclique et l'ordre test avant validate est explicite.
+- [x] Les scopes T-017/T-018 sont disjoints et le writer commun est T-019.
+- [x] Sécurité, rollback, fan-in, données et stack non applicable sont décrits.
+- [x] Aucune question ouverte ni nouvel ADR n'est requis.
