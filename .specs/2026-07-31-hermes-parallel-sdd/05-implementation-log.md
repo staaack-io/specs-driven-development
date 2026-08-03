@@ -1012,3 +1012,75 @@
 - Aucun comportement, test, dépendance ou seuil de qualité n'est modifié.
 
 ---
+
+## T-011 — Isoler l'enveloppe Git, Hermes et GitHub d'un job
+
+### T-011 · red · 2026-08-03T11:31:20Z
+
+- Tests ajoutés : `hermes/runtime/test_sdd_job_execution.py`, couvrant
+  T-011-T1 à T-011-T7 et AC-030, AC-032 à AC-036, AC-233 et AC-234.
+- Commande :
+  `python3 -m unittest hermes.runtime.test_sdd_job_execution.JobExecutionTest.test_t011_t1_materializes_the_complete_job_envelope`.
+- Résultat : **échec attendu** —
+  `AssertionError: T-011-T1: sdd_job_execution.py must materialize an admitted job` ;
+  **1 test exécuté, 1 échec**.
+- La branche T-011 est empilée sur le commit T-010 `d7dae15` sans fusion ni
+  demande de review, conformément à l'instruction utilisateur.
+- État : `T-011 = red`, `active_task = T-011`. Aucun code de production T-011
+  n'existait lors de cette preuve RED.
+
+---
+
+### T-011 · green · 2026-08-03T11:36:27Z
+
+- Production minimale : `sdd_job_execution.py` compose le bridge GitHub S-002
+  avec des adaptateurs idempotents pour branche, worktree, session, issue enfant
+  et PR brouillon.
+- La reprise lit d'abord l'enveloppe durable. Un échec ne journalise que son type
+  et ne supprime aucune ressource déjà créée.
+- Contrat publié dans `job-execution-contract.md` sans exposer de nettoyage ou
+  fusion automatique.
+- Vérifications : **7/7 T-011**, **8/8 bridge GitHub**, **9/9 orchestrateur** et
+  **31/31 runtime** verts.
+- État : `T-011 = green`, `active_task = T-011`.
+
+---
+
+### T-011 · refactor · 2026-08-03T11:37:49Z
+
+- Les phases locales Git/Hermes et distante GitHub sont extraites dans
+  `_ensure_local_surfaces` et `_create_github_surfaces`. L'ordre, les arguments
+  idempotents et la frontière de journalisation restent inchangés.
+- Vérifications après refactor : **7/7 T-011**, **8/8 bridge GitHub** et
+  `git diff --check` verts.
+- État : `T-011 = refactor`, `active_task = T-011`.
+
+---
+
+### T-011 · simplify · 2026-08-03T11:38:32Z
+
+- Passe `clarity-over-cleverness` : responsabilités nommées, retours anticipés,
+  constantes métier et zéro ligne Python supérieure à 100 caractères.
+- Aucun paramètre mort, branche de nettoyage, chemin absolu, transcript brut,
+  secret, donnée personnelle ou contenu métier n'est transmis au journal.
+- L'API de production ne contient aucune surface de force-push, reset,
+  suppression de branche/worktree ou fusion.
+- Issue d'exécution créée : `#80`. Branche :
+  `agent/build-t011-job-envelope`. PR empilée : `#81`, basée sur la branche
+  T-010 jusqu'à son intégration.
+- État : `T-011 = simplify`, `active_task = T-011`.
+
+---
+
+### T-011 · done · 2026-08-03T11:39:27Z
+
+- Les sept Test-IDs T-011-T1 à T-011-T7 couvrent les huit AC de la tâche dans
+  sept tests comportementaux déterministes.
+- Vérification finale : **7/7 T-011 en 0,018 s**, **8/8 bridge en 0,011 s**,
+  **9/9 orchestrateur en 6,313 s**, **31/31 runtime en 16,181 s** et **6/6
+  documentation en 1,986 s** ; `git diff --check` est vert.
+- La branche, le worktree, la session, l'issue et la PR sont isolés et
+  récupérables par clé de job ; aucune ressource n'est supprimée sur échec.
+- État final : `T-011 = done`, `active_task = null`.
+
+---
