@@ -73,7 +73,8 @@
   linté sans erreur ; JSON valide et `git diff --check` vert.
 - Le cache Python généré sous `hermes/e2e/__pycache__/` a été supprimé.
 - Issue d'exécution : `#110`. Branche :
-  `agent/build-t025-e2e-parallel`. Aucun reviewer, merge, VPS ou déploiement.
+  `agent/build-t025-e2e-parallel`. PR empilée : `#111`, base
+  `agent/plan-s007-e2e-090`. Aucun reviewer, merge, VPS ou déploiement.
 - État final : `T-025 = done`, `active_task = null`.
 
 ---
