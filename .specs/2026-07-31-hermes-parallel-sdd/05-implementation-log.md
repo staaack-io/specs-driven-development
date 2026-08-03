@@ -71,6 +71,19 @@
 
 ---
 
+### T-015 · done · 2026-08-03T12:56:57Z
+
+- Vérification finale dans l'environnement CI épinglé : **301 tests exécutés
+  sur 305 découverts**, 4 skips déclarés, zéro échec ; **10 skills Hermes**
+  validés ; **8 documents** lintés avec `markdownlint-cli2@0.18.1`, zéro erreur.
+- Les huit Test-IDs T-015-T1 à T-015-T8 sont couverts par le garde, le contrat
+  statique et l'audit source S-004. `git diff --check` et l'état JSON sont verts.
+- PR empilée créée : `#89`, base `agent/plan-s004-code-simplify`, sans reviewer
+  sollicité et sans fusion automatique. Issue `#88`, commit `0fe57c6`.
+- État final : `T-015 = done`, `active_task = null`.
+
+---
+
 ## T-001 — Porter le contrat onboard puis publier sa copie exacte
 
 ### T-001 · red · 2026-08-01T11:50:48Z

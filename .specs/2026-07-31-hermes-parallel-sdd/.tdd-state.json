@@ -1,6 +1,6 @@
 {
   "feature_id": "2026-07-31-hermes-parallel-sdd",
-  "active_task": "T-015",
+  "active_task": null,
   "tasks": {
     "T-001": {
       "phase": "done",
@@ -384,8 +384,8 @@
       ]
     },
     "T-015": {
-      "phase": "simplify",
-      "status": "in_progress",
+      "phase": "done",
+      "status": "done",
       "dependencies": [
         "T-009"
       ],
@@ -402,7 +402,7 @@
       "kanban_id": null,
       "issue": null,
       "branch": null,
-      "pr": null,
+      "pr": 89,
       "red_at": "2026-08-03T12:43:39Z",
       "red_test_signature": "hermes.skills.sdd-code-simplify.scripts.test_code_simplify_guard.CodeSimplifyGuardTest.test_t015_t2_accepts_exact_arguments_and_rejects_unsafe_targets",
       "red_failure_excerpt": "AssertionError: T-015-T1: code_simplify_guard.py must publish the command guard; Ran 5 tests, FAILED (failures=5)",
