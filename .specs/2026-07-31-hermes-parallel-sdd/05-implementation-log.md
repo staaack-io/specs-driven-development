@@ -86,6 +86,21 @@
 
 ---
 
+## T-018 — Convertir `/sdd-validate` et le fan-in des rapports
+
+### T-018 · red · 2026-08-03T13:23:16Z
+
+- Test minimal ajouté :
+  `PublicationContractTests.test_t_018_t1_validation_guard_is_published`.
+- Commande :
+  `PYTHONDONTWRITEBYTECODE=1 python3 hermes/skills/sdd-validate/scripts/test_validation_guard.py -v`.
+- Résultat : **échec attendu** — `AssertionError: False is not true :
+  T-018-T1: /sdd-validate guard is absent`; **1 test exécuté, 1 échec**.
+- État : `T-018 = red`, `active_task = T-018`. Aucun fichier de production
+  n'avait été créé lors de cette preuve RED.
+
+---
+
 ## T-015 — Convertir `/sdd-code-simplify` dans la source Hermes
 
 ### T-015 · red · 2026-08-03T12:43:39Z
@@ -1394,5 +1409,65 @@
 - PR empilée créée : `#85`, base `agent/build-t012-wave-fan-in`, sans reviewer
   sollicité. L'issue `#84`, le commit `df9a245` et les preuves locales y sont
   liés.
+
+---
+
+### T-018 · green · 2026-08-03T13:27:42Z
+
+- Le garde applique les préconditions harness/tâches/résultats, refuse les
+  bypass, route Spring et React/Next.js depuis les sources modifiées et compose
+  `runtime.global_lock` autour de chacune des quatre gates lourdes.
+- Le fan-in n'accepte que des résultats spécialisés structurés ; les rôles ne
+  reçoivent aucun handle partagé et le writer est borné à
+  `07-validation-report.md` et `07a-traceability.md`.
+- Les enums sont fermés à `approve|request-changes` et `PASS|FAIL`; le catalogue
+  AC-210–217 pointe vers des méthodes de test exécutables existantes.
+- Vérifications : **8/8 tests du garde** et **4/4 contrats du skill** verts.
+- État : `T-018 = green`, `active_task = T-018`.
+
+---
+
+### T-018 · refactor · 2026-08-03T13:30:00Z
+
+- La lecture de fraîcheur accepte le schéma réel du harness
+  (`started_at`, `gates`) ainsi que le schéma unitaire explicite, puis normalise
+  le résultat en `PASS|FAIL`.
+- La collecte des preuves remplace les chemins du dépôt et les signatures de
+  tokens par des marqueurs expurgés avant le fan-in.
+- Le writer des deux rapports est désormais lui aussi enfermé dans le verrou
+  global canonique, sans changer sa surface autorisée.
+- Vérifications après refactor : **9/9 garde**, **4/4 contrat skill** et
+  **47/47 tests GitHub, runtime transactionnel et wave synthesizer** verts.
+- État : `T-018 = refactor`, `active_task = T-018`.
+
+---
+
+### T-018 · simplify · 2026-08-03T13:32:42Z
+
+- Passe `clarity-over-cleverness` : chaque frontière reste une fonction courte
+  et nommée par son intention (`validate_preconditions`, `route_validators`,
+  `execute_heavy_gates`, `fan_in`, `write_reports`).
+- Aucun mode spéculatif, abstraction à implémentation unique, shell libre ou
+  option morte n'a été conservé. Les quatre gates utilisent une boucle
+  explicite dans un ordre stable.
+- Vérifications : **9/9 garde**, **4/4 contrat skill**, validation syntaxique,
+  **11 skills intégrés validés**, **8 documents Markdown sans erreur** et
+  `git diff --check` vert.
+- État : `T-018 = simplify`, `active_task = T-018`.
+
+---
+
+### T-018 · done · 2026-08-03T13:33:34Z
+
+- T-018 couvre T-018-T1 à T-018-T8 et AC-143 à AC-146 ainsi que le catalogue
+  exécutable AC-210 à AC-217.
+- Preuves finales : **13/13 tests propres au skill**, **47/47 tests GitHub et
+  transactionnels**, **11 skills intégrés validés**, **8 documents lintés**,
+  JSON d'état valide et `git diff --check` vert.
+- Aucun reviewer ni review n'a été sollicité ; aucun commit, push, PR, merge,
+  accès VPS ou déploiement n'a été exécuté.
+- État final : `T-018 = done`, `active_task = null`.
+- Issue d'exécution : `#93`. Branche : `agent/build-t018-sdd-validate`, sans
+  reviewer sollicité. La PR reste à créer après le commit validé.
 
 ---
