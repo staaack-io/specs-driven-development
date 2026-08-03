@@ -14,6 +14,13 @@ import unittest
 MODULE_PATH = Path(__file__).with_name("guard.py")
 
 
+def repository_root() -> Path:
+    for ancestor in Path(__file__).resolve().parents:
+        if (ancestor / "hermes/runtime").is_dir():
+            return ancestor
+    raise AssertionError("repository root with hermes/runtime is unavailable")
+
+
 def load_guard():
     if not MODULE_PATH.is_file():
         raise AssertionError("T-017-T1: guard.py must publish /sdd-test")
@@ -199,7 +206,7 @@ class TestGuardTest(unittest.TestCase):
 
     def test_t017_t8_catalog_links_every_ac_to_an_executable_runtime_test(self) -> None:
         guard = load_guard()
-        repository = Path(__file__).resolve().parents[4]
+        repository = repository_root()
         catalog = guard.validate_runtime_catalog(repository)
         self.assertEqual(
             {f"AC-{number}" for number in range(196, 210)}, set(catalog)
