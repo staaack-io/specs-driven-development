@@ -4,6 +4,82 @@
 
 ---
 
+## T-027 — Étendre le runner jetable de onboard à ship
+
+### T-027 · red · 2026-08-03T15:42:22Z
+
+- **Commande :** `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python -m unittest` sur les huit méthodes `test_t027_t*` de `RunnerTest`.
+- **Résultat :** FAIL attendu — 8 tests exécutés, 1 échec et 6 erreurs.
+- **Extrait :** `KeyError: 'lifecycle'`, `KeyError: 'evidence_order'`,
+  `KeyError: 'task_envelopes'`, `KeyError: 'barrier'`, `KeyError: 'resume'` et
+  présence du chemin temporaire absolu dans le JSON final.
+- État : `T-027 = red`, `active_task = T-027`. Aucun fichier de production
+  T-027 n'avait été modifié avant cette preuve rouge.
+
+---
+
+### T-027 · green · 2026-08-03T15:50:29Z
+
+- Le runner traverse désormais onboard, wire-harness, spec, spec-review,
+  epic-plan/plan, build, simplify, test, validate, review et ship dans sa racine
+  sentinellée.
+- Les scénarios exécutables T-025 et T-026 sont lancés avant les commandes
+  dépendantes. Leurs enveloppes issue/carte/branche/worktree/session/PR et leur
+  barrière fusion observée + go sont agrégées sans lancer de merge.
+- Un échec conserve le run et publie une reprise `--resume-run` explicite. Le
+  rapport final contient uniquement le nom du run et des preuves relatives,
+  sans secret ni chemin absolu.
+- **Vérification :** `python hermes/e2e/test_run_sdd_e2e.py -v` — **22/22
+  tests verts** en 104,239 s.
+- État : `T-027 = green`, `active_task = T-027`.
+
+---
+
+### T-027 · refactor · 2026-08-03T15:54:19Z
+
+- La création du dépôt parallèle, le chargement des scénarios et la
+  normalisation des enveloppes sont isolés derrière des fonctions nommées ; le
+  runner principal reste l'unique orchestration du flux.
+- `--resume-run` valide la sentinelle et la racine autorisée avant de lire une
+  preuve conservée. L'erreur persistée remplace les chemins du run, du projet,
+  de la racine temporaire et du binaire par `<redacted-path>`.
+- **Vérification après refactor :** **22/22 tests du runner verts** en
+  101,877 s ; le test direct de reprise est vert en 0,732 s.
+- État : `T-027 = refactor`, `active_task = T-027`.
+
+---
+
+### T-027 · simplify · 2026-08-03T15:55:00Z
+
+- Passe `clarity-over-cleverness` : le flux reste linéaire, les phases métier
+  sont nommées dans `LIFECYCLE`, les scénarios gardent leurs modules canoniques
+  et aucun second ordonnanceur n'est introduit.
+- La reprise utilise des retours explicites `already-passed` ou
+  `preserved-for-retry`; aucune option de merge, réseau, VPS ou déploiement
+  n'est présente.
+- Le README décrit le même ordre et les mêmes limites que l'exécutable.
+- **Vérification :** la suite ciblée demeure verte à **22/22** après cette
+  passe ; `git diff --check` est vert.
+- État : `T-027 = simplify`, `active_task = T-027`.
+
+---
+
+### T-027 · done · 2026-08-03T16:00:55Z
+
+- T-027-T1 à T-027-T8 couvrent AC-155, AC-218 et AC-226 : cycle onboard→ship,
+  racine sentinellée, preuves T-025/T-026 ordonnées, enveloppes complètes,
+  barrière sans merge, reprise explicite et rapport relatif expurgé.
+- Preuves finales : **387 tests Hermes exécutés sur 391 découverts**, quatre
+  skips historiques déclarés, zéro échec ; **14 skills** validés ; **2
+  documents Markdown** lintés sans erreur ; JSON valide et
+  `git diff --check` vert.
+- Issue d'exécution : `#112`. Branche :
+  `agent/build-t027-e2e-full-flow`, composée localement avec T-026 au-dessus de
+  T-025. Aucun reviewer, merge, réseau métier, VPS ou déploiement.
+- État final : `T-027 = done`, `active_task = null`.
+
+---
+
 ## T-025 — Prouver deux writers full-stack réellement concurrents
 
 ### T-025 · red · 2026-08-03T15:22:52Z
@@ -76,6 +152,7 @@
   `agent/build-t025-e2e-parallel`. PR empilée : `#111`, base
   `agent/plan-s007-e2e-090`. Aucun reviewer, merge, VPS ou déploiement.
 - État final : `T-025 = done`, `active_task = null`.
+
 ---
 
 ## T-026 — Prouver attente, échec isolé et reprise transactionnelle

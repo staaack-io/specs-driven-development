@@ -9,6 +9,7 @@ import dataclasses
 import datetime as dt
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -28,6 +29,20 @@ MIN_PROFILE_VERSION = (0, 4, 7)
 RUN_PREFIX = "sdd-hermes-e2e-"
 SENTINEL = ".sdd-hermes-e2e-run.json"
 AUTOMATED_ACTOR = "automated-e2e"
+LIFECYCLE = (
+    "onboard",
+    "wire-harness",
+    "spec",
+    "spec-review",
+    "epic-plan",
+    "plan",
+    "build",
+    "code-simplify",
+    "test",
+    "validate",
+    "review",
+    "ship",
+)
 FEATURE_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$")
 SESSION_RE = re.compile(r"(?m)^session_id:\s*([A-Za-z0-9_.:-]+)\s*$")
 TASK_HEADING_RE = re.compile(r"(?m)^###\s+(T-\d{3})\b[^\n]*$")
@@ -259,6 +274,108 @@ def write_fixture(project: Path) -> None:
         target.write_text(content, encoding="utf-8")
 
 
+def load_scenario(filename: str, module_name: str):
+    module_path = Path(__file__).with_name(filename)
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    if spec is None or spec.loader is None:
+        raise E2EError(f"Scénario E2E introuvable: {filename}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def initialize_parallel_repository(root: Path) -> None:
+    root.mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(
+        ["git", "-C", str(root), "config", "user.email", "e2e@example.invalid"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(root), "config", "user.name", "Hermes E2E"],
+        check=True,
+    )
+    for relative in (
+        "fixture/backend/src/main/java/example/Greeting.java",
+        "fixture/frontend/app/page.tsx",
+        "fixture/shared/release.txt",
+    ):
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("initial\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+    subprocess.run(
+        ["git", "-C", str(root), "commit", "-qm", "initialize parallel fixture"],
+        check=True,
+    )
+
+
+def normalized_envelope(envelope: dict[str, object], *, card: str) -> dict[str, object]:
+    return {
+        "issue": envelope["issue"],
+        "card": card,
+        "branch": envelope["branch"],
+        "worktree": envelope["worktree"],
+        "session": envelope.get("session", envelope.get("session_id")),
+        "pr": envelope["pr"],
+    }
+
+
+def run_local_scenarios(run_dir: Path) -> dict[str, object]:
+    scenarios = run_dir / "scenarios"
+    parallel_root = scenarios / "parallel"
+    recovery_failure_root = scenarios / "recovery-failure"
+    recovery_timeout_root = scenarios / "recovery-timeout"
+    initialize_parallel_repository(parallel_root)
+    recovery_failure_root.mkdir(parents=True)
+    recovery_timeout_root.mkdir(parents=True)
+
+    parallel_module = load_scenario("parallel_scenario.py", "_sdd_full_flow_parallel")
+    recovery_module = load_scenario("recovery_scenario.py", "_sdd_full_flow_recovery")
+    parallel = parallel_module.run_parallel_scenario(parallel_root)
+    recovery_failure = recovery_module.run_recovery_scenario(
+        recovery_failure_root, injection="failure"
+    )
+    recovery_timeout = recovery_module.run_recovery_scenario(
+        recovery_timeout_root, injection="timeout"
+    )
+
+    task_envelopes = {
+        str(writer["task_id"]): normalized_envelope(
+            writer["envelope"], card=str(writer["envelope"]["card"])
+        )
+        for writer in parallel["writers"]
+    }
+    for task_id, writer in recovery_failure["writers"].items():
+        task_envelopes[str(task_id)] = normalized_envelope(
+            writer["envelope"], card=f"card-{str(task_id).lower()}"
+        )
+
+    evidence = {
+        "parallel": parallel,
+        "recovery_failure": recovery_failure,
+        "recovery_timeout": recovery_timeout,
+    }
+    logs_dir = run_dir / "logs"
+    for name, payload in evidence.items():
+        (logs_dir / f"scenario-{name}.json").write_text(
+            json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+        )
+    return {
+        "task_envelopes": task_envelopes,
+        "barrier": {
+            **recovery_failure["admissibility"],
+            "merge_commands": recovery_failure["merge_commands"],
+        },
+        "evidence": [
+            "logs/scenario-parallel.json",
+            "logs/scenario-recovery_failure.json",
+            "logs/scenario-recovery_timeout.json",
+        ],
+    }
+
+
 def project_snapshot(project: Path) -> dict[str, str]:
     snapshot: dict[str, str] = {}
     for path in sorted(project.rglob("*")):
@@ -362,7 +479,7 @@ def run_plan_oneshot(
     logs_dir: Path,
     timeout: float,
 ) -> str:
-    usage_file = logs_dir / "06-sdd-plan-usage.json"
+    usage_file = logs_dir / "09-sdd-plan-usage.json"
     prompt = (
         f"/sdd-plan {feature_id}\n\n"
         "Contexte du harness automatisé : ce processus utilise le canal stateless `hermes -z` de Hermes 0.19.0. "
@@ -379,7 +496,7 @@ def run_plan_oneshot(
         "-z",
         prompt,
     ]
-    run_command(argv, cwd=project, timeout=timeout, logs_dir=logs_dir, step="06-sdd-plan")
+    run_command(argv, cwd=project, timeout=timeout, logs_dir=logs_dir, step="09-sdd-plan")
     try:
         usage = json.loads(usage_file.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -414,7 +531,7 @@ def export_transcript(
         "jsonl",
         "--redact",
     ]
-    run_command(argv, cwd=project, timeout=timeout, logs_dir=logs_dir, step=f"07-export-{index:02d}")
+    run_command(argv, cwd=project, timeout=timeout, logs_dir=logs_dir, step=f"16-export-{index:02d}")
     if not output.is_file() or not output.read_text(encoding="utf-8").strip():
         raise E2EError(f"Export de session vide pour {session_id}")
     return output
@@ -545,6 +662,40 @@ def validate_preserved_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def resume_preserved_run(args: argparse.Namespace) -> int:
+    if args.dry_run or args.cleanup_on_success or args.validate_run:
+        raise E2EError(
+            "--resume-run est incompatible avec --dry-run, --cleanup-on-success et --validate-run"
+        )
+    temp_root = validated_temp_root(args.temp_root)
+    supplied = Path(args.resume_run).expanduser()
+    candidate = supplied if supplied.is_absolute() else temp_root / supplied
+    run_dir = validate_cleanup_target(candidate, temp_root)
+    logs_dir = run_dir / "logs"
+    failure = logs_dir / "failure.json"
+    result = logs_dir / "result.json"
+    if result.is_file():
+        status = "already-passed"
+        evidence = "logs/result.json"
+    elif failure.is_file():
+        status = "preserved-for-retry"
+        evidence = "logs/failure.json"
+    else:
+        raise E2EError("Run préservé sans résultat ni preuve d'échec")
+    print(
+        json.dumps(
+            {
+                "status": status,
+                "run_dir": run_dir.name,
+                "evidence": evidence,
+                "llm_calls": 0,
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
 def dry_run_plan(args: argparse.Namespace) -> None:
     feature_id = args.feature_id or f"{dt.date.today().isoformat()}-service-state-e2e"
     commands = [
@@ -562,6 +713,8 @@ def dry_run_plan(args: argparse.Namespace) -> None:
 
 
 def execute(args: argparse.Namespace) -> int:
+    if args.resume_run:
+        return resume_preserved_run(args)
     if args.validate_run:
         return validate_preserved_run(args)
     if args.dry_run:
@@ -603,6 +756,13 @@ def execute(args: argparse.Namespace) -> int:
             session_ids.append(session_id)
             assert_write_boundary(project, baseline)
 
+            session_id = chat_turn(hermes_bin, args.profile, "/sdd-onboard", resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="03-sdd-onboard")
+            session_ids.append(session_id)
+            assert_write_boundary(project, baseline)
+            session_id = chat_turn(hermes_bin, args.profile, "/sdd-wire-harness", resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="04-sdd-wire-harness")
+            session_ids.append(session_id)
+            assert_write_boundary(project, baseline)
+
             spec_prompt = (
                 f"/sdd-spec Utilise exactement le feature-id `{feature_id}`. "
                 "Source: scénario local fourni dans cette conversation, sans ticket externe. "
@@ -612,7 +772,7 @@ def execute(args: argparse.Namespace) -> int:
                 "Les erreurs réseau affichent exactement `Service state unavailable`. Aucun autre comportement n'est dans le périmètre. "
                 f"Ce scénario est automatisé: toute décision ultérieure doit être attribuée à `{AUTOMATED_ACTOR}`, jamais à un humain."
             )
-            session_id = chat_turn(hermes_bin, args.profile, spec_prompt, resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="03-sdd-spec")
+            session_id = chat_turn(hermes_bin, args.profile, spec_prompt, resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="05-sdd-spec")
             session_ids.append(session_id)
             assert_write_boundary(project, baseline)
             spec = project / ".specs" / feature_id / "01-spec.md"
@@ -624,7 +784,7 @@ def execute(args: argparse.Namespace) -> int:
                 f"Le prochain tour de décision proviendra de l'acteur de test `{AUTOMATED_ACTOR}`. "
                 "S'il répond approve, consigne ce nom exact comme reviewer; ce n'est pas une approbation humaine."
             )
-            session_id = chat_turn(hermes_bin, args.profile, review_prompt, resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="04-sdd-spec-review")
+            session_id = chat_turn(hermes_bin, args.profile, review_prompt, resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="06-sdd-spec-review")
             session_ids.append(session_id)
             assert_write_boundary(project, baseline)
             review = project / ".specs" / feature_id / "02-spec-review.md"
@@ -632,14 +792,33 @@ def execute(args: argparse.Namespace) -> int:
 
             # Deliberately a separate process and conversation turn. Do not append
             # metadata here: the review guard requires the exact direct response.
-            session_id = chat_turn(hermes_bin, args.profile, "approve", resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="05-explicit-approval")
+            session_id = chat_turn(hermes_bin, args.profile, "approve", resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="07-explicit-approval")
             session_ids.append(session_id)
             assert_write_boundary(project, baseline)
             validate_final_review(review)
 
+            session_id = chat_turn(hermes_bin, args.profile, f"/sdd-epic-plan {feature_id}", resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step="08-sdd-epic-plan")
+            session_ids.append(session_id)
+            assert_write_boundary(project, baseline)
+
             plan_session_id = run_plan_oneshot(hermes_bin, args.profile, feature_id, project=project, logs_dir=logs_dir, timeout=args.timeout)
             session_ids.append(plan_session_id)
             assert_write_boundary(project, baseline)
+
+            scenario_evidence = run_local_scenarios(run_dir)
+
+            dependent_commands = (
+                ("build", f"/sdd-build T-001", "10-sdd-build"),
+                ("code-simplify", "/sdd-code-simplify", "11-sdd-code-simplify"),
+                ("test", f"/sdd-test {feature_id}", "12-sdd-test"),
+                ("validate", f"/sdd-validate {feature_id}", "13-sdd-validate"),
+                ("review", f"/sdd-review {feature_id}", "14-sdd-review"),
+                ("ship", f"/sdd-ship {feature_id}", "15-sdd-ship"),
+            )
+            for _name, prompt, step in dependent_commands:
+                session_id = chat_turn(hermes_bin, args.profile, prompt, resume=session_id, project=project, logs_dir=logs_dir, timeout=args.timeout, step=step)
+                session_ids.append(session_id)
+                assert_write_boundary(project, baseline)
 
             unique_ids = list(dict.fromkeys(session_ids))
             transcript_paths = [
@@ -653,8 +832,7 @@ def execute(args: argparse.Namespace) -> int:
 
             result = {
                 "status": "passed",
-                "run_dir": str(run_dir),
-                "project": str(project),
+                "run_dir": run_dir.name,
                 "profile": args.profile,
                 "profile_version": version_text(profile_version),
                 "hermes_version": version_text(hermes_version),
@@ -662,6 +840,29 @@ def execute(args: argparse.Namespace) -> int:
                 "approval_actor": AUTOMATED_ACTOR,
                 "approval_is_human": False,
                 "session_ids": unique_ids,
+                "lifecycle": list(LIFECYCLE),
+                "evidence_order": [
+                    "onboard",
+                    "wire-harness",
+                    "spec",
+                    "spec-review",
+                    "epic-plan",
+                    "plan",
+                    "parallel-and-recovery",
+                    "build",
+                    "code-simplify",
+                    "test",
+                    "validate",
+                    "review",
+                    "ship",
+                ],
+                **scenario_evidence,
+                "evidence": [
+                    *scenario_evidence["evidence"],
+                    f"project/.specs/{feature_id}/01-spec.md",
+                    f"project/.specs/{feature_id}/03-design.candidate.md",
+                    f"project/.specs/{feature_id}/04-tasks.candidate.md",
+                ],
                 "checks": {
                     "exact_session_resume": True,
                     "approval_separate_turn": True,
@@ -675,11 +876,15 @@ def execute(args: argparse.Namespace) -> int:
             success = True
             print(json.dumps(result, indent=2))
         except BaseException as exc:
+            redacted_error = str(exc)
+            for sensitive_path in (run_dir, project, temp_root, Path(hermes_bin)):
+                redacted_error = redacted_error.replace(str(sensitive_path), "<redacted-path>")
             failure = {
                 "status": "failed",
-                "error": str(exc),
-                "run_dir": str(run_dir),
+                "error": redacted_error,
+                "run_dir": run_dir.name,
                 "preserved": True,
+                "resume": ["--resume-run", run_dir.name],
                 "approval_actor": AUTOMATED_ACTOR,
                 "approval_is_human": False,
             }
@@ -703,6 +908,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--temp-root", help="Racine autorisée pour mktemp (défaut: TMPDIR système)")
     parser.add_argument("--feature-id", help="Feature-id déterministe; défaut basé sur la date locale")
     parser.add_argument("--validate-run", help="Revalider hors LLM un run E2E préservé et marqué")
+    parser.add_argument("--resume-run", help="Inspecter explicitement un run E2E conservé sans appel LLM")
     parser.add_argument("--plan-transcript", help="Transcript session-*.jsonl exact du plan pour --validate-run")
     parser.add_argument("--cleanup-on-success", action="store_true", help="Supprimer le bac à sable uniquement après succès complet")
     parser.add_argument("--dry-run", action="store_true", help="Afficher les appels sans exécuter Hermes ni créer de bac à sable")
