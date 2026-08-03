@@ -532,7 +532,7 @@
       "kanban_id": null,
       "issue": 96,
       "branch": "agent/build-t019-s005-audit",
-      "pr": null,
+      "pr": 97,
       "red_at": "2026-08-03T13:41:55Z",
       "red_test_signature": "hermes.scripts.test_sdd_s005_contract.SddS005ContractTest.test_t019_t6_help_and_docs_publish_both_commands_as_installed",
       "red_failure_excerpt": "AssertionError: /sdd-test <feature-id> [--gap] absent from installed help; Ran 6 tests, FAILED (failures=1)",

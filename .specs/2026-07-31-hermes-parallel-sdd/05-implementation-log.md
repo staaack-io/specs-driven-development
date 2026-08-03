@@ -82,6 +82,7 @@
 - Les sept Test-IDs couvrent le manifeste, les commandes, le DAG, les scopes,
   la capacité, la publication et les interdictions de sécurité.
 - Issue d'exécution : `#96`. Branche : `agent/build-t019-s005-audit`.
+  PR empilée sur T-018 : `#97`.
 - Aucun reviewer n'est demandé ; aucune fusion ni opération VPS n'est exécutée.
 - État final : `T-019 = done`, `active_task = null`.
 
