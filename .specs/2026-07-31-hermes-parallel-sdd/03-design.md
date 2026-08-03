@@ -1205,3 +1205,156 @@ recouvrir les AC S-004 ou S-006.
 - [x] Les scopes T-017/T-018 sont disjoints et le writer commun est T-019.
 - [x] Sécurité, rollback, fan-in, données et stack non applicable sont décrits.
 - [x] Aucune question ouverte ni nouvel ADR n'est requis.
+
+## Conception détaillée : S-006 — `/sdd-review`, `/sdd-ship`, profil 0.8.0
+
+> Cette section prolonge S-001 à S-005 sans les réécrire. Elle couvre
+> exactement AC-017, AC-018, AC-148 à AC-154, AC-235 et AC-261 à AC-263.
+
+### S-006 Inputs
+
+- Spécification et revue approuvées, sans `Q-NNN` ouverte.
+- S-005 fournit le plan de test, le harness validé, les rapports communs et la
+  traçabilité consommés en lecture seule par les deux nouvelles commandes.
+- Sources fonctionnelles : `.agents/skills/review/SKILL.md`,
+  `.agents/skills/ship/SKILL.md`, `spring-code-review-rubric`,
+  `shipping-and-launch` et les deux templates Codex correspondants.
+- Le dépôt de framework Python n'ajoute ni Spring applicatif, React, OpenAPI,
+  persistance ou migration; ces stacks restent des cibles inspectées.
+
+### S-006 Architecture Overview
+
+`sdd-review` analyse le diff et les artefacts disponibles. Il délègue les
+lectures Spring et React/Next.js à des rôles sans handle d'écriture, consolide
+leurs constats structurés, puis un writer unique publie `08-code-review.md`.
+Son verdict est informatif : il ne bloque ni commit ni PR.
+
+`sdd-ship` lit les artefacts approuvés, classe les préconditions, prépare
+retour arrière, observabilité, flags et notes, puis publie uniquement
+`09-ship-plan.md`. Le garde ne reçoit ni shell, ni réseau, ni credential, ni
+client VPS. Il peut afficher une commande sous forme de donnée expurgée, mais
+ne peut jamais l'exécuter.
+
+Les deux skills sont développables en parallèle sur des scopes disjoints.
+L'ordre de fusion reste strict : la PR `sdd-review` précède `sdd-ship`. Un audit
+source unique installe ensuite les commandes dans l'aide et prouve les 13 AC.
+Aucune personne n'est sollicitée pour reviewer les PR de migration; le terme
+review désigne ici exclusivement la commande SDD livrée.
+
+### S-006 ADRs
+
+- ADR-001 à ADR-005 restent applicables pour l'isolation, les writers et les
+  transactions d'artefacts partagés.
+- Aucun nouvel ADR : l'ordre review avant ship et l'absence de déploiement sont
+  imposés directement par AC-149, AC-153 et AC-235.
+
+### S-006 Component Map
+
+| Frontière | Composant | Responsabilité | Tâche |
+|---|---|---|---|
+| Revue publique | `hermes/skills/sdd-review/**` | routage, lectures spécialisées, fan-in et rapport unique | T-021 |
+| Préparation publique | `hermes/skills/sdd-ship/**` | portes, rollback, observabilité, flags et notes sans exécution | T-022 |
+| Audit source | `hermes/scripts/test_sdd_s006_contract.py` et docs | manifeste exact, ordre, publication et no-deploy | T-023 |
+| Distribution | profil Hermes 0.8.0 | copie exacte, tests, version, rollback et barrières | T-024 |
+
+### S-006 Module Boundaries
+
+- Les rôles de revue lisent le diff et retournent des constats structurés;
+  seul le garde principal écrit le rapport unique.
+- `sdd-review` écrit exclusivement `.specs/<feature>/08-code-review.md`.
+- `sdd-ship` écrit exclusivement `.specs/<feature>/09-ship-plan.md` après
+  toutes les préconditions; aucun plan partiel n'est publié lors d'un échec.
+- Chaque publication utilise `validate_worker_changes` puis un remplacement
+  atomique du runtime canonique.
+- Les logs et rapports expurgent secrets, tokens, chemins absolus, données
+  personnelles et contenu métier non requis.
+
+```text
+T-018 validate ─┬─> T-021 /sdd-review ─┐
+T-009 runtime ──┘                       ├─> T-023 audit source
+                 └─> T-022 /sdd-ship ──┘
+
+T-020 profil 0.7.0 ─┐
+                     ├─> T-024 profil 0.8.0
+T-023 audit source ──┘
+```
+
+T-022 est empilée ou retargetée pour ne jamais fusionner avant T-021.
+
+### S-006 Data and Report Model
+
+| Objet | Champs principaux | Producteur | Règles |
+|---|---|---|---|
+| Constat spécialisé | stack, sévérité, fichier, ligne, preuve, correction | rôle Spring ou React | lecture seule, vocabulaire fermé, aucune duplication |
+| Rapport de revue | inputs, rubric, findings, waivers, verdict | fan-in review | un seul fichier atomique; verdict informatif |
+| Porte de livraison | nom, source, résultat, notes | garde ship | toutes `PASS` avant publication |
+| Plan de livraison | flag, migration, observabilité, rollback, cohortes, notes | writer ship | toutes sections remplies; commande seulement affichée |
+
+Aucune entité JPA, table ou migration n'est ajoutée. Les deux Markdown sont les
+seules sorties durables de S-006.
+
+### S-006 API and Security Posture
+
+- Aucun endpoint HTTP ou contrat OpenAPI n'est ajouté.
+- Les références Git et feature IDs sont validées comme données; aucune chaîne
+  utilisateur ne devient une commande shell.
+- Le garde ship ne possède aucune fonction d'exécution, connexion distante,
+  écriture VPS, merge ou déploiement.
+- Les liens symboliques, chemins hors dépôt et artefacts hors scope sont
+  refusés avant toute écriture.
+
+### S-006 Test Strategy
+
+1. T-021 commence par l'absence de `sdd-review`, puis couvre arguments,
+   routage, délégation sans handle, fan-in, writer unique et verdict informatif.
+2. T-022 commence par l'absence de `sdd-ship`, puis couvre préconditions,
+   rollback, observabilité, flags, notes et preuve structurelle no-deploy.
+3. T-023 manifeste exactement 13 AC, vérifie les scopes disjoints, l'ordre de
+   fusion et l'installation des deux commandes sans accès VPS.
+4. T-024 exécute les mêmes suites depuis le layout profil et prouve la parité
+   exacte avant toute publication 0.8.0.
+
+### S-006 Detailed AC Reconciliation
+
+| Groupe | Producteur primaire | Preuve prévue |
+|---|---|---|
+| AC-150, AC-151 | T-021 | routage Spring/React, fan-in et rapport unique |
+| AC-152, AC-153, AC-235, AC-261 à AC-263 | T-022 | plan complet et absence exécutable de déploiement |
+| AC-148, AC-149 | T-023 | audit DAG, scopes et ordre review avant ship |
+| AC-017, AC-018, AC-154 | T-024 | parité, profil 0.8.0 et gate de publication |
+
+La réconciliation contient 2 + 6 + 2 + 3 = 13 producteurs primaires, sans
+recouvrir les AC S-005 ou S-007.
+
+### S-006 Risks and Rollback
+
+| Risque | Réduction | Retour arrière |
+|---|---|---|
+| deux rôles écrivent le rapport | délégation sans handle et fan-in unique | rejeter les résultats et conserver l'ancien rapport |
+| une revue technique devient une gate humaine | verdict explicitement informatif | retirer le skill sans bloquer les opérations Git |
+| ship exécute la commande affichée | aucune primitive d'exécution ou réseau | refuser le plan et retirer le skill |
+| plan partiel publié après précondition FAIL | validation complète avant remplacement atomique | conserver le plan précédent intact |
+| profil divergent ou hors ordre | parité et dépendances T-020/T-023 | fermer la PR 0.8.0 et conserver 0.7.0 |
+
+### S-006 Open Questions
+
+- (aucune)
+
+### S-006 Resolved Questions
+
+- **Décision autonome — quatre tâches :** séparer les commandes, l'audit et la
+  distribution préserve leurs scopes, dépôts et retours arrière.
+- **Décision autonome — revue non humaine :** `/sdd-review` reste une commande
+  du produit; aucune demande, attente ou approbation de reviewer n'est ajoutée
+  aux PR de migration.
+- **Décision autonome — sécurité par absence de capacité :** `/sdd-ship` ne
+  reçoit aucune primitive d'exécution de déploiement, plutôt que de filtrer une
+  liste fragile de commandes dangereuses.
+
+### S-006 Design Sign-off
+
+- [x] Les 13 AC possèdent un producteur primaire unique.
+- [x] Le DAG est acyclique et l'ordre review avant ship est explicite.
+- [x] Les scopes T-021/T-022 sont disjoints et les writers uniques sont nommés.
+- [x] Sécurité, rollback, fan-in, données et stacks N/A sont décrits.
+- [x] Aucune question ouverte ni nouvel ADR n'est requis.

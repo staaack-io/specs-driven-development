@@ -594,6 +594,126 @@
         "README.md",
         ".github/workflows/ci.yml"
       ]
+    },
+    "T-021": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-018", "T-009"],
+      "test_ids": [
+        "T-021-T1", "T-021-T2", "T-021-T3", "T-021-T4",
+        "T-021-T5", "T-021-T6", "T-021-T7", "T-021-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/skills/sdd-review/SKILL.md",
+        "hermes/skills/sdd-review/references/delegation-contract.md",
+        "hermes/skills/sdd-review/references/review-contract.md",
+        "hermes/skills/sdd-review/references/role-spring-code-reviewer.md",
+        "hermes/skills/sdd-review/references/role-react-nextjs-code-reviewer.md",
+        "hermes/skills/sdd-review/templates/code-review.template.md",
+        "hermes/skills/sdd-review/scripts/review_guard.py",
+        "hermes/skills/sdd-review/scripts/test_review_guard.py",
+        "hermes/skills/sdd-review/scripts/test_skill_contract.py"
+      ]
+    },
+    "T-022": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-018", "T-009"],
+      "test_ids": [
+        "T-022-T1", "T-022-T2", "T-022-T3", "T-022-T4",
+        "T-022-T5", "T-022-T6", "T-022-T7", "T-022-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/skills/sdd-ship/SKILL.md",
+        "hermes/skills/sdd-ship/references/delegation-contract.md",
+        "hermes/skills/sdd-ship/references/shipping-contract.md",
+        "hermes/skills/sdd-ship/templates/ship-plan.template.md",
+        "hermes/skills/sdd-ship/scripts/ship_guard.py",
+        "hermes/skills/sdd-ship/scripts/test_ship_guard.py",
+        "hermes/skills/sdd-ship/scripts/test_skill_contract.py"
+      ]
+    },
+    "T-023": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-021", "T-022"],
+      "test_ids": [
+        "T-023-T1", "T-023-T2", "T-023-T3",
+        "T-023-T4", "T-023-T5", "T-023-T6"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/scripts/test_sdd_s006_contract.py",
+        "hermes/skills/sdd-help/SKILL.md",
+        "hermes/README.md",
+        "docs/artifact-contract.md",
+        "docs/codex-migration.md"
+      ]
+    },
+    "T-024": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": ["T-020", "T-023"],
+      "test_ids": [
+        "T-024-T1", "T-024-T2", "T-024-T3", "T-024-T4",
+        "T-024-T5", "T-024-T6", "T-024-T7", "T-024-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "scripts/test_validate_distribution.py",
+        "scripts/test_sdd_s006_contract.py",
+        "skills/sdd-review/SKILL.md",
+        "skills/sdd-review/references/delegation-contract.md",
+        "skills/sdd-review/references/review-contract.md",
+        "skills/sdd-review/references/role-spring-code-reviewer.md",
+        "skills/sdd-review/references/role-react-nextjs-code-reviewer.md",
+        "skills/sdd-review/templates/code-review.template.md",
+        "skills/sdd-review/scripts/review_guard.py",
+        "skills/sdd-review/scripts/test_review_guard.py",
+        "skills/sdd-review/scripts/test_skill_contract.py",
+        "skills/sdd-ship/SKILL.md",
+        "skills/sdd-ship/references/delegation-contract.md",
+        "skills/sdd-ship/references/shipping-contract.md",
+        "skills/sdd-ship/templates/ship-plan.template.md",
+        "skills/sdd-ship/scripts/ship_guard.py",
+        "skills/sdd-ship/scripts/test_ship_guard.py",
+        "skills/sdd-ship/scripts/test_skill_contract.py",
+        "skills/sdd-help/SKILL.md",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/workflows/ci.yml"
+      ]
     }
   }
 }
