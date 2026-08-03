@@ -828,3 +828,215 @@ Aucun autre SLO de latence, débit ou consommation n'est introduit.
 - [x] Chaque AC S-003 est relié à un producteur primaire et à un Test-ID planifié.
 - [x] Checklist `design-review.md` relue le 2026-08-03.
 - [x] Première tâche build : `/sdd-build 2026-07-31-hermes-parallel-sdd T-009`.
+
+## Conception détaillée : S-004 — `/sdd-code-simplify`, profil 0.6.1
+
+> Cette section prolonge les conceptions S-001 à S-003 sans les réécrire. Elle
+> couvre uniquement `AC-014` et `AC-139`. La tranche convertit le comportement
+> Codex existant de `code-simplify` en commande Hermes puis le distribue ; elle
+> n'ajoute aucun comportement de simplification.
+
+### S-004 Inputs
+
+- Révision de `01-spec.md` : SHA-256
+  `71fd818b8d9e30931ac5203bd3099ec5ecceb6475461b4d494e72674f640a7b6`.
+- Révision de `02-spec-review.md` : SHA-256
+  `c64ffd8f8af312a50da04a066ee47874a310654753630224a5184a8d5a0e50f2`,
+  verdict `approve`, zéro question ouverte.
+- Conception Epic approuvée : SHA-256
+  `f17fced20d9a0f3dc1c9c82732d1a6cb1cb755ebcf52cf06696d9b552c82430b`.
+- Roadmap Epic approuvée : SHA-256
+  `793454ebaec09cc6c8f7eb05110db35ac0f5f112ebb8b55399d93a6f39494f99`.
+- Barrière d'entrée : T-009 est `done`, donc le chantier source S-004 peut
+  progresser dans le second slot prévu par la roadmap. La publication T-016
+  attend néanmoins T-014 afin que le profil 0.6.0 précède 0.6.1.
+- Source fonctionnelle : `.agents/skills/code-simplify/SKILL.md` et
+  `.agents/skills/clarity-over-cleverness/SKILL.md` définissent déjà les
+  entrées, refus, catégories de réécriture et preuves à conserver.
+
+#### S-004 Inputs from detect-stack.sh
+
+- Résultat observé le 2026-08-03 :
+  `{"error":"pom.xml introuvable","searched":"pom.xml"}`.
+- La topologie applicative Spring/React, OpenAPI, base de données, migration et
+  ArchUnit reste sans objet selon Q-006. La cible est le framework Python et
+  les documents de skills Hermes.
+
+### S-004 Architecture Overview
+
+La source canonique ajoute `hermes/skills/sdd-code-simplify`, composé d'un
+contrat de commande, d'une checklist de clarté embarquée, d'un contrat de
+délégation et d'un garde Python déterministe. Le garde valide une cible
+explicite sous `src/main/**`, refuse une cible de test ou hors périmètre, et
+compose les primitives du runtime v2 pour protéger le lease et l'empreinte des
+fichiers ; il ne devient ni ordonnanceur ni moteur de réécriture. Le skill
+charge le rôle existant chargé de la clarté, exige une suite verte avant toute
+écriture, conserve la suite verte après chaque fichier et produit le résumé
+prévu par le comportement Codex existant. Le contrat source prouve la commande
+et actualise l'aide avant que T-016 copie exactement la surface dans le profil
+0.6.1. La publication exige uniquement CI, tests et contrats verts, puis le go
+explicite avant fusion ; aucune review humaine ou attente de review n'est une
+porte de S-004.
+
+### S-004 ADRs
+
+- ADR-001 à ADR-005 restent applicables pour l'ordonnancement Hermes, la
+  capacité, l'isolation, l'écrivain unique et la compatibilité d'état.
+- Aucun ADR supplémentaire : convertir fidèlement un skill existant et copier
+  sa source canonique dans le profil sont des décisions imposées par la tranche,
+  sans alternative architecturale significative nouvelle.
+
+### S-004 Component Map
+
+| Frontière | Composant | Responsabilité | Tâche |
+|---|---|---|---|
+| Commande publique | `hermes/skills/sdd-code-simplify/SKILL.md` | Exposer `/sdd-code-simplify <path> [--dry-run]`, les lectures, refus et preuves de fin | T-015 |
+| Contrats embarqués | `hermes/skills/sdd-code-simplify/references/clarity-checklist.md`, `delegation-contract.md` | Conserver la checklist de clarté et borner les écritures du rôle | T-015 |
+| Garde déterministe | `hermes/skills/sdd-code-simplify/scripts/code_simplify_guard.py` | Valider arguments et cible, exiger le vert initial et protéger scope/empreinte via le runtime v2 | T-015 |
+| Contrats source | tests du skill et `hermes/scripts/test_sdd_s004_contract.py` | Prouver le comportement, l'aide installée et la couverture exacte des deux AC | T-015 |
+| Distribution | profil Hermes 0.6.1 | Copier la commande sans différence, exécuter ses tests, versionner et conserver le rollback 0.6.0 | T-016 |
+
+### S-004 Module Boundaries
+
+- **Skill source** — `hermes/skills/sdd-code-simplify/**` est la seule source
+  de la commande. Il peut importer `hermes.runtime.sdd_runtime_guard`, mais ne
+  copie aucune primitive de lease, fingerprint ou validation de scope.
+- **Rôle interne** — le rôle reçoit seulement la cible normalisée, le mode
+  `dry-run`, la checklist et la commande de test validée. Il n'obtient aucun
+  handle vers `04-tasks.md`, `.tdd-state.json` ou `05-implementation-log.md`.
+- **Documentation et audit** — `sdd-help`, le README Hermes et la documentation
+  de migration publient la commande comme installée uniquement après son
+  contrat source. L'audit S-004 ne modifie pas le skill.
+- **Profil** — `skills/sdd-code-simplify/**` est une copie exacte de la source ;
+  T-016 est l'unique writer du dépôt profil pour 0.6.1.
+
+```text
+T-009 done
+  -> T-015 source `/sdd-code-simplify`
+
+T-014 profil 0.6.0 ─┐
+                     ├─> T-016 profil 0.6.1
+T-015 source ────────┘
+```
+
+### S-004 Entity Relationship Model
+
+| Entité conceptuelle | Rôle | Attributs principaux | Relations et cardinalités | Persistance |
+|---|---|---|---|---|
+| Invocation de simplification | Demande utilisateur bornée | cible relative, `dry-run` | une invocation cible exactement un fichier ou un dossier ; un dossier résout un ou plusieurs fichiers de production | aucune base ; arguments en mémoire |
+| Fichier cible | Unité atomique de réécriture ou d'ignorance | chemin normalisé, empreinte, résultat | une invocation concerne 1..* fichiers ; chaque fichier produit exactement un résultat `simplified` ou `ignored` | worktree du job uniquement |
+| Preuve de test | Préserve le comportement | argv structurés, code retour, sortie expurgée | une invocation possède exactement une preuve verte initiale et une preuve après chaque fichier traité | journal local du job |
+| Résumé de clarté | Résultat observable | fichiers, catégories, tests, régressions | une invocation produit exactement un résumé ; sans feature active il est écrit dans un fichier `clarity-pass-<date>.md` | journal prévu par le skill existant |
+
+Il n'existe aucune entité JPA, relation persistée, table ou cascade dans S-004.
+
+### S-004 OpenAPI Sketch
+
+Sans objet : `/sdd-code-simplify` est une commande Hermes locale et n'ajoute ni
+ne modifie aucun endpoint HTTP.
+
+### S-004 Data Model + Migrations
+
+- Tables ou collections touchées : aucune.
+- Outil de migration : aucun ; le détecteur ne trouve pas de projet Maven et
+  aucun changement de schéma n'est prévu.
+- État v2 : lu par le runtime pour le scope et le lease, sans évolution de
+  schéma dans cette tranche.
+- Réversibilité : retrait de la commande source ou retour du profil de 0.6.1 à
+  0.6.0, sans conversion ni suppression d'état.
+
+### S-004 Security Posture
+
+- Authentification et autorisation HTTP : sans objet ; aucun endpoint.
+- Validation : le garde accepte un chemin littéral relatif sous `src/main/**`,
+  refuse `src/test/**`, glob, lien symbolique et sortie du dépôt, et valide
+  `--dry-run` avant toute écriture.
+- Isolation : la commande détient le lease du scope exact et compare
+  l'empreinte hors périmètre après chaque intervention.
+- Confidentialité : argv, sorties de tests et diagnostics sont expurgés selon
+  Q-008 ; aucun secret, token, donnée personnelle, chemin absolu ou contenu
+  métier n'entre dans un artefact versionné.
+- Secrets : aucun secret nouveau ; la commande ne reçoit ni ne stocke de
+  credential.
+
+### S-004 Test Strategy
+
+1. T-015 commence par un contrat rouge prouvant l'absence de la commande. Les
+   tests du skill couvrent ensuite la validation de cible, `--dry-run`, le vert
+   initial, l'ordre fichier par fichier, le retour au contenu antérieur en cas
+   de régression et le résumé final.
+2. Le garde est testé avec un rôle et un runner de tests injectés ; aucun test
+   ne modifie un projet réel ni n'exécute une gate lourde externe.
+3. Le contrat source vérifie que l'aide déplace `/sdd-code-simplify` de la
+   roadmap vers les commandes installées et que le manifeste S-004 contient
+   exactement AC-014 et AC-139.
+4. T-016 vérifie depuis la disposition profil la parité sans différence, les
+   mêmes tests, la version 0.6.1, le changelog et les métadonnées. La fusion
+   reste impossible sans CI/tests/contrats verts et go explicite.
+
+### S-004 Detailed AC Reconciliation
+
+| AC | Producteur primaire | Preuves principales |
+|---|---|---|
+| AC-014 | T-016 | commande installée dans le profil 0.6.1, parité et tests de disposition ; T-015 fournit et prouve secondairement la source canonique |
+| AC-139 | T-016 | barrière T-014/T-015, version 0.6.1, parité, tests de profil, gate technique et go explicite |
+
+Les deux AC ont T-016 comme producteur observable de publication ; T-015 est le
+prérequis source traçable d'AC-014. Aucun critère de S-003 ou S-005 n'est
+absorbé par cette tranche.
+
+### S-004 Risks + Rollback
+
+| Risque | Probabilité | Impact | Réduction | Retour arrière |
+|---|---|---|---|---|
+| Une passe change le comportement | moyenne | régression fonctionnelle | suite verte initiale et après chaque fichier, retour atomique du fichier en échec | restaurer le contenu antérieur du fichier et le marquer `ignored` |
+| Une cible sort de `src/main/**` | faible | écriture hors autorisation | normalisation, refus des tests, globs, symlinks et chemins externes | refuser avant lease et conserver le worktree intact |
+| Le rôle touche un artefact partagé | faible | incohérence de fan-in | contexte sans handle partagé, scope lease et fingerprint | arrêter le job, conserver sa preuve locale, ne pas publier l'événement |
+| Le profil 0.6.1 diverge de la source | moyenne | commande installée non prouvée | copie exacte, comparaison sans différence et mêmes tests | fermer/annuler la PR profil et conserver 0.6.0 |
+| 0.6.1 est publié avant 0.6.0 | faible | ordre de migration invalide | dépendance T-016 sur T-014 et T-015 | bloquer la publication 0.6.1 jusqu'à 0.6.0 fusionné |
+
+### S-004 Non-Functional Requirements
+
+- Aucune nouvelle exigence de latence, débit, observabilité ou performance.
+- Les contraintes Epic existantes restent applicables : deux writers, trois
+  analyses en lecture seule et une seule gate lourde à la fois.
+
+### S-004 Open Questions
+
+- (aucune)
+
+### S-004 Resolved Questions
+
+- **Décision autonome — fidélité au comportement existant :** la commande
+  Hermes reprend les entrées, refus, checklist et preuves déjà définis par les
+  skills Codex `code-simplify` et `clarity-over-cleverness`. Justification : ce
+  sont les seules sources de comportement disponibles et la roadmap interdit
+  d'étendre S-004.
+- **Décision autonome — deux tâches :** séparer la source canonique T-015 de la
+  distribution T-016. Justification : les dépôts et rollbacks diffèrent, et la
+  publication 0.6.1 doit dépendre explicitement de 0.6.0.
+- **Décision autonome — porte sans review :** pour T-015 et T-016, la gate de
+  publication signifie CI, tests et contrats verts, puis go explicite avant
+  fusion. Aucune demande, attente, approbation ou fil de review n'est planifié,
+  conformément à la dernière instruction utilisateur qui remplace ces gates.
+- Les Q-001 à Q-010 et ADR-001 à ADR-005 restent résolus ; aucune Q-NNN
+  supplémentaire n'est nécessaire.
+
+### S-004 Design Review
+
+- [x] Carte des composants Python/Hermes, frontières et interaction présentes.
+- [x] Spring applicatif, OpenAPI, persistance, migrations et ArchUnit explicitement N/A.
+- [x] Le modèle conceptuel et ses cardinalités sont explicites.
+- [x] Sécurité des chemins, confidentialité, scope et secrets documentés.
+- [x] Le DAG est acyclique et impose 0.6.0 avant 0.6.1.
+- [x] Chaque risque possède une réduction et un retour arrière 0.6.0.
+- [x] AC-014 et AC-139 possèdent chacun un producteur primaire et des preuves.
+- [x] Aucun comportement absent de la spécification ou du skill existant n'est introduit.
+- [x] Aucune question ouverte ni décision nécessitant un nouvel ADR.
+
+### S-004 Sign-off
+
+- [x] Les artefacts Epic approuvés sont les entrées de la tranche.
+- [x] Chaque AC S-004 est relié à une tâche et à des Test-IDs planifiés.
+- [x] Checklist `design-review.md` relue le 2026-08-03.
+- [x] Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-015`.

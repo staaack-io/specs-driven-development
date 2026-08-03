@@ -382,6 +382,84 @@
         "README.md",
         ".github/workflows/ci.yml"
       ]
+    },
+    "T-015": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": [
+        "T-009"
+      ],
+      "test_ids": [
+        "T-015-T1",
+        "T-015-T2",
+        "T-015-T3",
+        "T-015-T4",
+        "T-015-T5",
+        "T-015-T6",
+        "T-015-T7",
+        "T-015-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "hermes/skills/sdd-code-simplify/SKILL.md",
+        "hermes/skills/sdd-code-simplify/references/clarity-checklist.md",
+        "hermes/skills/sdd-code-simplify/references/delegation-contract.md",
+        "hermes/skills/sdd-code-simplify/scripts/code_simplify_guard.py",
+        "hermes/skills/sdd-code-simplify/scripts/test_code_simplify_guard.py",
+        "hermes/skills/sdd-code-simplify/scripts/test_skill_contract.py",
+        "hermes/scripts/test_sdd_s004_contract.py",
+        "hermes/skills/sdd-help/SKILL.md",
+        "hermes/README.md",
+        "docs/codex-migration.md"
+      ]
+    },
+    "T-016": {
+      "phase": "pending",
+      "status": "pending",
+      "dependencies": [
+        "T-014",
+        "T-015"
+      ],
+      "test_ids": [
+        "T-016-T1",
+        "T-016-T2",
+        "T-016-T3",
+        "T-016-T4",
+        "T-016-T5",
+        "T-016-T6",
+        "T-016-T7",
+        "T-016-T8"
+      ],
+      "kanban_id": null,
+      "issue": null,
+      "branch": null,
+      "pr": null,
+      "red_at": null,
+      "red_test_signature": null,
+      "red_failure_excerpt": null,
+      "green_at": null,
+      "files_in_scope": [
+        "scripts/test_validate_distribution.py",
+        "scripts/test_sdd_s004_contract.py",
+        "skills/sdd-code-simplify/SKILL.md",
+        "skills/sdd-code-simplify/references/clarity-checklist.md",
+        "skills/sdd-code-simplify/references/delegation-contract.md",
+        "skills/sdd-code-simplify/scripts/code_simplify_guard.py",
+        "skills/sdd-code-simplify/scripts/test_code_simplify_guard.py",
+        "skills/sdd-code-simplify/scripts/test_skill_contract.py",
+        "skills/sdd-help/SKILL.md",
+        "distribution.yaml",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/workflows/ci.yml"
+      ]
     }
   }
 }
