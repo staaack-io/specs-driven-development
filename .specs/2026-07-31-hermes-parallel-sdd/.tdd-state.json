@@ -606,7 +606,7 @@
       "kanban_id": null,
       "issue": 100,
       "branch": "agent/build-t021-sdd-review",
-      "pr": null,
+      "pr": 102,
       "red_at": "2026-08-03T14:28:34Z",
       "red_test_signature": "test_review_guard.ReviewGuardTests",
       "red_failure_excerpt": "AssertionError: False is not true : SKILL.md must publish /sdd-review; AssertionError: review_guard.py must publish the /sdd-review guard; Ran 8 tests; FAILED (failures=8)",

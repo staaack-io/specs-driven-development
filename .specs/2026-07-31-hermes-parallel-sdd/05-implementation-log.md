@@ -68,6 +68,7 @@
   l'ordre `validate → lock → write` et l'absence de token, e-mail ou chemin.
 - État final : `T-021 = done`, `active_task = null`. Issue : `#100`. Aucun
   reviewer humain, aucune fusion, opération VPS ou déploiement.
+- PR empilée : `#102`, base `agent/plan-s006-review-ship` (`#99`).
 
 ---
 
