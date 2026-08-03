@@ -84,6 +84,10 @@ Chaque artefact part du modèle correspondant sous `.codex/templates/` :
 `src/test/**` qu'il reçoit explicitement. `/sdd-validate` attend les tâches
 `done`; ses validateurs spécialisés restent lecteurs et son fan-in est l'unique
 writer de `07-validation-report.md` et `07a-traceability.md`.
+`/sdd-review` délègue uniquement des lectures spécialisées ; son garde principal
+est l'unique writer de `08-code-review.md`. `/sdd-ship` est l'unique writer de
+`09-ship-plan.md` et ne possède aucune capacité shell, réseau, fusion ou
+déploiement.
 
 ## Fichier `.tdd-state.json`
 
@@ -205,8 +209,10 @@ humaine soit observée.
   `03-epic-design.md` et `03a-epic-roadmap.md`.
 - Commencer `04-tasks.md` tant que `03-design.md` contient un `Q-NNN`
   ouvert.
-- Faire modifier `08-code-review.md` par un autre agent que
-  `spring-code-reviewer`.
+- Faire modifier `08-code-review.md` par un lecteur délégué ou par un autre
+  writer que le garde principal de `/sdd-review`.
+- Faire exécuter par `/sdd-ship` la commande de livraison qu'il affiche comme
+  donnée dans `09-ship-plan.md`.
 
 ## Déclenchement du mode Epic
 

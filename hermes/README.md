@@ -21,7 +21,11 @@ Les skills suivants sont prêts à être copiés dans la distribution
 - `sdd-plan` — conception et tâches avec délégation interne à l'architecte
   Spring ou React/Next.js ;
 - `sdd-build` — cycle TDD mono-tâche, admission parallèle bornée, enveloppes
-  isolées et fan-in transactionnel après autorisation humaine observée.
+  isolées et fan-in transactionnel après autorisation humaine observée ;
+- `sdd-review` — lectures spécialisées déléguées et publication atomique de
+  l'unique `08-code-review.md`, sans solliciter de reviewer humain ;
+- `sdd-ship` — préparation des gates, du rollback, de l'observabilité, des
+  feature flags et des notes dans `09-ship-plan.md`, sans jamais déployer.
 
 Les hooks ne font volontairement pas partie de ce lot. Ils seront activés après
 leur conversion au protocole Hermes et la réussite de tests de blocage.
@@ -56,6 +60,10 @@ cas de régression.
 `/sdd-test <feature-id> [--gap]` renforce ensuite uniquement les tests et le
 plan de test. `/sdd-validate [<feature-id>]` sérialise les gates lourdes, agrège
 les validateurs spécialisés et publie seulement les deux rapports communs.
+`/sdd-review [<feature-id>] [--base <ref>]` consolide des lectures spécialisées
+sans reviewer humain. `/sdd-ship [<feature-id>] [--base <ref>]` prépare un plan
+de livraison ; toute commande de livraison reste une donnée affichée et n'est
+jamais exécutée.
 
 ## Rôles internes et délégation
 

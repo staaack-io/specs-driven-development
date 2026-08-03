@@ -129,8 +129,8 @@ La migration Hermes conserve les étapes utilisateur, avec un préfixe explicite
 | `$code-simplify` | `/sdd-code-simplify` | converti |
 | `$test` | `/sdd-test` | converti |
 | `$validate` | `/sdd-validate` | converti |
-| `$review` | `/sdd-review` | feuille de route |
-| `$ship` | `/sdd-ship` | feuille de route |
+| `$review` | `/sdd-review` | converti |
+| `$ship` | `/sdd-ship` | converti |
 
 Les fichiers TOML Codex ne sont pas copiés tels quels dans Hermes. Chaque rôle
 nécessaire devient une référence autonome embarquée dans le skill orchestrateur.
@@ -150,6 +150,11 @@ simplification régresse.
 `06-test-plan.md`. `/sdd-validate [<feature-id>]` attend le harness et les
 tâches terminées, sérialise les gates lourdes, puis un fan-in unique écrit les
 rapports de validation et de traçabilité avec un résultat `PASS` ou `FAIL`.
+`/sdd-review [<feature-id>] [--base <ref>]` délègue des lectures Spring et
+React/Next.js, puis son writer unique publie `08-code-review.md` sans solliciter
+de reviewer humain. `/sdd-ship [<feature-id>] [--base <ref>]` prépare gates,
+rollback, observabilité, feature flags et notes dans `09-ship-plan.md` ; il
+n'exécute jamais la commande de livraison affichée.
 
 Pour `/sdd-onboard`, les rôles `spring-onboarding` et
 `react-nextjs-onboarding` sont des lecteurs parallélisables. L'agent principal
