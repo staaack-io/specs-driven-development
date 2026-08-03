@@ -798,21 +798,24 @@
       ]
     },
     "T-028": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-027"],
       "test_ids": [
         "T-028-T1", "T-028-T2", "T-028-T3",
         "T-028-T4", "T-028-T5", "T-028-T6"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 114,
+      "branch": "agent/build-t028-s007-audit",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T16:05:04Z",
+      "red_test_signature": "hermes.scripts.test_sdd_s007_contract.SddS007ContractTest",
+      "red_failure_excerpt": "T-028-T4: dependency proof marker absent; T-028-T6: S-007 onboard→ship publication and safety wording absent; Ran 6 tests, FAILED (failures=4)",
+      "green_at": "2026-08-03T16:09:18Z",
+      "refactor_at": "2026-08-03T16:10:27Z",
+      "simplify_at": "2026-08-03T16:11:44Z",
+      "done_at": "2026-08-03T16:22:17Z",
       "files_in_scope": [
         "hermes/scripts/test_sdd_s007_contract.py",
         "hermes/skills/sdd-help/SKILL.md",

@@ -43,6 +43,11 @@ route et ne doivent pas être présentées comme installées avant leur conversi
 Les rôles restent des références internes embarquées dans les skills. Le nom
 interne `sdd-roles` n'est pas une commande publique `/sdd-roles`.
 
+L'audit S-007 vérifie que cet inventaire forme le parcours onboard→ship
+complet. Toutes les commandes prévues sont installées ; le parcours local
+produit des preuves expurgées, sans reviewer humain et sans fusion ni
+déploiement.
+
 ## Avec un argument
 
 1. Normaliser l'argument en retirant un éventuel préfixe `/`.
