@@ -71,6 +71,7 @@
   identique à HEAD et seul `T-030` a suivi le cycle de cette branche.
 - Issue d'exécution : `#119`. Branche : `agent/build-t030-vps-policy`, prévue
   sur `agent/plan-s008-vps-pilot-100`, sans reviewer ni merge.
+- PR empilée : `#121`, base `agent/plan-s008-vps-pilot-100`, sans reviewer.
 - Aucune primitive VPS, gateway, SSH, réseau, déploiement ou publication n'a
   été appelée. État final : `T-030 = done`, `active_task = null`.
 

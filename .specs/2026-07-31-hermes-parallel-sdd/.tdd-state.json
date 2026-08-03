@@ -878,7 +878,7 @@
       "kanban_id": null,
       "issue": 119,
       "branch": "agent/build-t030-vps-policy",
-      "pr": null,
+      "pr": 121,
       "red_at": "2026-08-03T16:49:25Z",
       "red_test_signature": "hermes.operations.test_vps_pilot_policy.VpsPilotPolicyTest.test_t030_t1_accepts_a_compliant_structured_policy",
       "red_failure_excerpt": "ModuleNotFoundError: No module named 'hermes.operations.vps_pilot_policy'; Ran 1 test; FAILED (errors=1)",
