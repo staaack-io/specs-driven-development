@@ -166,8 +166,8 @@
       ]
     },
     "T-009": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": [
         "T-008"
       ],
@@ -183,13 +183,13 @@
         "T-009-T9"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 76,
+      "branch": "agent/build-t009-sdd-build",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T07:20:50Z",
+      "red_test_signature": "hermes.skills.sdd-build.scripts.test_skill_contract.SkillContractTest.test_t009_t4_t8_t9_guard_composes_canonical_runtime_primitives",
+      "red_failure_excerpt": "AssertionError: build_guard.py must call every canonical runtime primitive; missing validate_state, acquire_scope_lease, validate_red_gate, repository_fingerprint, validate_worker_changes, append_job_event, release_scope_lease; Ran 1 test in 0.003s; FAILED (failures=1)",
+      "green_at": "2026-08-03T07:27:17Z",
       "files_in_scope": [
         "hermes/skills/sdd-build/scripts/test_build_guard.py",
         "hermes/skills/sdd-build/scripts/test_skill_contract.py",
