@@ -771,3 +771,146 @@
 - État final : `T-008 = done`, `active_task = null`.
 
 ---
+
+## T-009 — Orchestrer `/sdd-build` mono-tâche et ses preuves
+
+### T-009 · red · 2026-08-03T07:13:58Z
+
+- Tests ajoutés uniquement dans
+  `hermes/skills/sdd-build/scripts/test_build_guard.py` et
+  `hermes/skills/sdd-build/scripts/test_skill_contract.py` : **15 méthodes**
+  couvrent T-009-T1 à T-009-T9 sans réseau, runtime externe ou écriture de
+  production.
+- Commande ciblée :
+  `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest hermes/skills/sdd-build/scripts/test_build_guard.py -k test_t009_t1_public_arguments_are_validated_before_mutation`.
+- Résultat : **échec attendu**, code retour `1`, **1/1 test rouge en 0,001 s**.
+- Extrait expurgé :
+
+  ```text
+  FAIL: test_t009_t1_public_arguments_are_validated_before_mutation
+  T-009-T1: malformed public arguments fail before mutation.
+  Traceback (most recent call last):
+    test_build_guard.py, line 138, in test_t009_t1_public_arguments_are_validated_before_mutation
+      guard = load_guard()
+    test_build_guard.py, line 38, in load_guard
+      raise AssertionError(
+  AssertionError: build_guard.py must implement the /sdd-build sequential guard
+  Ran 1 test in 0.001s
+  FAILED (failures=1)
+  ```
+
+- La suite RED complète a cartographié **20 échecs/subtests attendus** : le
+  garde, le skill et les six références de contrat/rôles n'existent pas encore.
+- État : `T-009 = red`, `active_task = T-009`. Aucune production n'a été créée
+  avant cette preuve durable.
+
+### T-009 · red-triangulation · 2026-08-03T07:20:50Z
+
+- La relecture du premier GREEN a révélé que le garde réutilisait des
+  validateurs mais n'appelait pas encore les primitives runtime imposées par
+  la conception. Un test AST comportemental a été ajouté sans modifier la
+  production.
+- Commande ciblée :
+  `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest hermes/skills/sdd-build/scripts/test_skill_contract.py -k test_t009_t4_t8_t9_guard_composes_canonical_runtime_primitives`.
+- Résultat : **échec attendu**, code retour `1`, **1/1 test rouge en 0,003 s**.
+- Écart exact : appels absents à `validate_state`, `acquire_scope_lease`,
+  `validate_red_gate`, `repository_fingerprint`, `validate_worker_changes`,
+  `append_job_event` et `release_scope_lease`.
+- État maintenu : `T-009 = red`, `active_task = T-009`. Le premier GREEN n'est
+  pas retenu comme porte de progression tant que cette composition canonique
+  n'est pas prouvée.
+
+---
+
+### T-009 · green · 2026-08-03T07:27:17Z
+
+- Le skill `/sdd-build <feature-id> <T-NNN>` publie un cœur injecté et une
+  façade canonique `run_runtime_task`. La façade valide l'état v2, acquiert le
+  lease exact, protège l'empreinte hors scope, journalise les quatre phases,
+  applique la porte RED avant GREEN, contrôle les changements et libère le
+  lease dans un `finally`.
+- Les sept primitives prévues sont composées sans duplication :
+  `validate_state`, `acquire_scope_lease`, `validate_red_gate`,
+  `repository_fingerprint`, `validate_worker_changes`, `append_job_event` et
+  `release_scope_lease`.
+- Les quatre contrats de rôles séparent test-engineer et implementer pour
+  Spring et React/Next.js. Les rôles ne reçoivent aucun handle vers
+  `04-tasks.md`, `.tdd-state.json` ou `05-implementation-log.md`.
+- Preuve comportementale sur dépôt Git jetable : cycle complet, quatre
+  événements vérifiés, refus hors scope et artefact partagé, lease libéré après
+  échec puis reprise réussie : **1/1 vert en 6,067 s**.
+- Suite T-009 inchangée : **17/17 tests verts en 5,980 s** (`real 6,08 s`).
+- Régression runtime partagée : **31/31 tests verts en 17,952 s**
+  (`real 18,07 s`). `git diff --check` est vert.
+- État : `T-009 = green`, `active_task = T-009`.
+
+---
+
+### T-009 · refactor · 2026-08-03T07:30:52Z
+
+- Refactor interne limité à `build_guard.py` : contrat de tâche typé,
+  validation des fichiers modifiés centralisée et construction uniforme des
+  événements de phase.
+- Les sept contournements de typage ont été supprimés ; les scopes état et
+  délégation portent désormais des noms explicites. L'API publique et les sept
+  appels runtime canoniques restent inchangés.
+- Deux boucles intermédiaires sont restées vertes : **17/17 en 5,584 s**, puis
+  **17/17 en 5,719 s**.
+- Vérification indépendante après refactor : **17/17 T-009 en 6,421 s** et
+  **31/31 runtime en 17,805 s**. `git diff --check` est vert.
+- État : `T-009 = refactor`, `active_task = T-009`.
+
+---
+
+### T-009 · simplify · 2026-08-03T07:39:36Z
+
+- Passe `clarity-over-cleverness` limitée à `build_guard.py` : phase RED
+  nommée, gardes anticipées, wrappers d'exception redondants retirés, état
+  intermédiaire inutile supprimé et writer durable rendu explicite.
+- Aucun ternaire imbriqué, option morte, paramètre inutilisé,
+  `type: ignore`, ligne supérieure à 100 caractères ou abstraction parallèle
+  T-010 n'est introduit.
+- Après la dernière micro-passe : **17/17 T-009 en 6,313 s** et **31/31 runtime
+  en 18,237 s**.
+- Porte skills pertinente exécutée sur les dix fichiers de tests suivis :
+  **115/115 verts en 49,589 s** ; vérification indépendante finale :
+  **115/115 en 54,808 s** (`real 55,12 s`).
+- Le runner global optionnel a validé 112 cas, avec quatre cas conditionnels
+  ignorés, puis s'est arrêté sur l'absence locale de `markdown_it`. Aucune
+  dépendance n'a été ajoutée et aucune réussite globale n'est revendiquée.
+- `git diff --check` est vert.
+
+### T-009 · done · 2026-08-03T07:39:36Z
+
+- Les neuf Test-IDs T-009-T1 à T-009-T9 sont couverts par **17 tests** et les
+  quatre phases RED, GREEN, REFACTOR et SIMPLIFY sont consignées.
+- Les fichiers modifiés restent strictement dans le scope T-009 : deux tests,
+  un garde, un skill et six références de contrat/rôles, plus les deux
+  artefacts partagés écrits par l'agent principal.
+- Issue d'exécution : `#76`. Branche : `agent/build-t009-sdd-build`.
+- État final : `T-009 = done`, `active_task = null`.
+
+---
+
+### T-009 · ci-correction · 2026-08-03T07:47:02Z
+
+- PR `#77`, premier run `30794572000` : documentation verte en **39 s** ;
+  tests/contrats Hermes rouges en **53 s**.
+- Cause exacte : le runner isolé retire la racine du dépôt de `sys.path` ;
+  l'import de package `hermes.runtime` échouait avec `ModuleNotFoundError`
+  avant l'exécution des tests T-009.
+- Correctif borné à `build_guard.py` : résolution sûre du runtime partagé dans
+  les dispositions source `hermes/skills/...` et profil `skills/...`, refus des
+  chemins symboliques et réutilisation du même module vérifié pour conserver
+  l'identité de `GuardError` entre chargements isolés.
+- Reproduction avant correction depuis le dossier du test : **10 tests,
+  12 erreurs** sur l'import manquant. Après correction : **10/10 tests du garde
+  en 6,637 s** et **7/7 contrats en 0,007 s**.
+- Runner Hermes exact hors sandbox : E2E **14/14**, bridge **8/8**, runtime
+  **31/31**, parité **5/5**, runner **37/37** avec quatre skips, onboarding
+  **1/1**, profil runtime **4/4**, S-002 **6/6** et docs **6/6** verts. Il
+  s'arrête ensuite uniquement sur `markdown_it` absent localement ; cette étape
+  était **32/32 verte en CI** avant le test T-009. Aucune dépendance ajoutée.
+- `git diff --check` reste vert ; état TDD maintenu `done`.
+
+---
