@@ -4,6 +4,73 @@
 
 ---
 
+## T-028 — Auditer les commandes et les onze AC de S-007
+
+### T-028 · red · 2026-08-03T16:05:04Z
+
+- Le contrat `hermes/scripts/test_sdd_s007_contract.py` couvre T-028-T1 à
+  T-028-T6 : manifeste des onze AC, inventaire des commandes, DAG, preuves E2E,
+  enveloppes d'exécution et barrières de sécurité.
+- Commande : `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python hermes/scripts/test_sdd_s007_contract.py`.
+- Résultat : **échec attendu**, 6 tests exécutés, 4 échecs. Les documents ne
+  publient pas encore S-007 comme parcours onboard→ship complet et le marqueur
+  explicite de preuve de dépendance manque dans l'audit.
+- État : `T-028 = red`, `active_task = T-028`. Aucun document de publication
+  n'avait été modifié avant cette preuve.
+
+---
+
+### T-028 · green · 2026-08-03T16:09:18Z
+
+- L'aide expose les quatorze commandes installées et identifie le parcours
+  S-007 complet sans conserver de commande prévue.
+- Le README et les contrats documentent le DAG, les six familles de preuves,
+  les enveloppes issue/carte/branche/worktree/session/PR et les barrières de
+  sécurité du runner jetable.
+- Vérification ciblée : **6/6 tests S-007** verts en 0,023 s.
+- État : `T-028 = green`, `active_task = T-028`.
+
+---
+
+### T-028 · refactor · 2026-08-03T16:10:27Z
+
+- Les chemins des scénarios et des documents publiés sont regroupés dans des
+  constantes déclaratives pour rendre les frontières de l'audit immédiatement
+  visibles et éviter la répétition.
+- Vérification après refactor : **6/6 tests S-007** verts en 0,021 s et
+  `git diff --check` vert.
+- État : `T-028 = refactor`, `active_task = T-028`.
+
+---
+
+### T-028 · simplify · 2026-08-03T16:11:44Z
+
+- Passe `clarity-over-cleverness` : le contrat garde un test par responsabilité
+  T-028, un manifeste primaire déclaratif et des marqueurs de preuve nommés.
+- Les ajouts documentaires utilisent les mêmes termes du domaine pour le DAG,
+  le lifecycle et les barrières ; aucune abstraction ou option spéculative
+  n'est ajoutée.
+- État : `T-028 = simplify`, `active_task = T-028`.
+
+---
+
+### T-028 · done · 2026-08-03T16:22:17Z
+
+- T-028-T1 à T-028-T6 couvrent AC-225 et relient exactement les onze AC S-007
+  à un producteur primaire parmi T-025 à T-029.
+- Preuves finales : **6/6 contrat S-007**, **393 tests Hermes exécutés sur 397
+  découverts**, 4 skips historiques déclarés, **14 skills validés** et **5
+  documents Markdown** lintés sans erreur.
+- Le contrat confirme les preuves exécutables de concurrence, capacité,
+  conflit, dépendance, échec et fan-in, ainsi que l'enveloppe complète de chaque
+  tâche. JSON d'état et `git diff --check` sont verts.
+- Issue d'exécution : `#114`. Branche : `agent/build-t028-s007-audit`, empilée
+  sur `agent/build-t027-e2e-full-flow`, sans reviewer humain, fusion, VPS ou
+  déploiement. PR empilée : `#115`.
+- État final : `T-028 = done`, `active_task = null`.
+
+---
+
 ## T-027 — Étendre le runner jetable de onboard à ship
 
 ### T-027 · red · 2026-08-03T15:42:22Z

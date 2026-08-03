@@ -89,6 +89,20 @@ est l'unique writer de `08-code-review.md`. `/sdd-ship` est l'unique writer de
 `09-ship-plan.md` et ne possède aucune capacité shell, réseau, fusion ou
 déploiement.
 
+## Audit E2E S-007
+
+S-007 vérifie le parcours onboard→ship complet dans une racine temporaire
+portant une sentinelle. T-025 et T-026 peuvent produire en parallèle leurs
+preuves task-local disjointes ; T-027 agrège ensuite le cycle et T-028 publie
+l'audit source avant la distribution. L'ordre séquentiel T-027 → T-028 → T-029
+est obligatoire.
+
+Les preuves exécutables couvrent chevauchement, capacité, conflit, dépendance,
+échec, timeout, reprise et fan-in. Chaque tâche possède une issue, une carte,
+une branche, un worktree, une session et une PR. Les artefacts publiés restent
+relatifs et expurgés, sans reviewer humain et sans fusion ni déploiement ; aucun
+secret ou accès VPS n'est requis.
+
 ## Fichier `.tdd-state.json`
 
 `$build` maintient ce fichier d’exécution. Le hook Codex historique

@@ -160,3 +160,15 @@ Pour `/sdd-onboard`, les rôles `spring-onboarding` et
 `react-nextjs-onboarding` sont des lecteurs parallélisables. L'agent principal
 reste le seul écrivain et publie les cinq fichiers globaux avec un verrou, un
 journal, un marqueur de commit et un token de comparaison-et-échange.
+
+## Candidat local S-007
+
+S-007 achève le parcours Hermes onboard→ship. Le runner local traverse les
+quatorze commandes installées, matérialise pour chaque tâche son issue, sa
+carte, sa branche, son worktree, sa session et sa PR, puis agrège les preuves de
+concurrence, capacité, conflit, dépendance, échec, reprise et fan-in atomique.
+
+Le scénario demeure un audit dans un dépôt jetable : ses sorties sont relatives
+et expurgées, sans reviewer humain et sans fusion ni déploiement. Il ne contacte
+aucun VPS, ne consomme aucun secret et n'autorise pas la publication du profil
+stable.

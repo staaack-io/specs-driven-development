@@ -22,6 +22,10 @@ Les skills suivants sont prêts à être copiés dans la distribution
   Spring ou React/Next.js ;
 - `sdd-build` — cycle TDD mono-tâche, admission parallèle bornée, enveloppes
   isolées et fan-in transactionnel après autorisation humaine observée ;
+- `sdd-code-simplify` — simplification bornée d'un fichier avec restauration en
+  cas de régression ;
+- `sdd-test` — ajout des tests transverses et publication du plan de test ;
+- `sdd-validate` — gates sérialisées et publication des rapports de validation ;
 - `sdd-review` — lectures spécialisées déléguées et publication atomique de
   l'unique `08-code-review.md`, sans solliciter de reviewer humain ;
 - `sdd-ship` — préparation des gates, du rollback, de l'observabilité, des
@@ -64,6 +68,18 @@ les validateurs spécialisés et publie seulement les deux rapports communs.
 sans reviewer humain. `/sdd-ship [<feature-id>] [--base <ref>]` prépare un plan
 de livraison ; toute commande de livraison reste une donnée affichée et n'est
 jamais exécutée.
+
+## Parcours E2E S-007
+
+S-007 fournit un parcours local onboard→ship complet dans un dépôt jetable. Il
+exécute les preuves de chevauchement et de capacité de deux writers, sérialise
+un conflit de scope, injecte échec et timeout, puis prouve la reprise et le
+fan-in atomique. Chaque tâche conserve une issue, une carte, une branche, un
+worktree, une session et une PR distincts.
+
+Le rapport ne conserve que des chemins relatifs et des données expurgées. Ce
+parcours s'exécute sans reviewer humain et sans fusion ni déploiement ; il
+n'accède à aucun VPS et ne reçoit aucun secret.
 
 ## Rôles internes et délégation
 
