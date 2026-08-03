@@ -95,8 +95,8 @@ class SkillContractTest(unittest.TestCase):
         self.assertNotIn("/sdd-onboard", roadmap)
         self.assertIn("/sdd-build", installed)
         self.assertNotIn("/sdd-build", roadmap)
-        self.assertNotIn("/sdd-code-simplify", installed)
-        self.assertIn("/sdd-code-simplify", roadmap)
+        self.assertIn("/sdd-code-simplify", installed)
+        self.assertNotIn("/sdd-code-simplify", roadmap)
 
 
 if __name__ == "__main__":

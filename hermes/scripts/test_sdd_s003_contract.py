@@ -436,7 +436,8 @@ class SddS003ContractTest(unittest.TestCase):
         installed, _, planned = help_text.partition("Signaler séparément")
         self.assertIn("`/sdd-build <feature-id> <T-NNN>`", installed)
         self.assertNotIn("`/sdd-build", planned)
-        self.assertIn("`/sdd-code-simplify`", planned)
+        self.assertIn("`/sdd-code-simplify <path> [--dry-run]`", installed)
+        self.assertNotIn("`/sdd-code-simplify", planned)
         self.assertRegex(
             CODEX_MIGRATION.read_text(encoding=UTF8),
             r"\| `\$build` \| `/sdd-build` \| converti \|",

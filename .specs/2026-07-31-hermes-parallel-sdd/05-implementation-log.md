@@ -4,6 +4,73 @@
 
 ---
 
+## T-015 — Convertir `/sdd-code-simplify` dans la source Hermes
+
+### T-015 · red · 2026-08-03T12:43:39Z
+
+- Les tests comportementaux couvrent la forme exacte de la commande, les
+  cibles dangereuses, la baseline, l'isolation par fichier, les preuves et le
+  mode `--dry-run`.
+- Commande :
+  `python3 hermes/skills/sdd-code-simplify/scripts/test_code_simplify_guard.py`.
+- Résultat attendu : **5 tests exécutés, 5 échecs**, tous causés par l'absence
+  de `code_simplify_guard.py`. Aucun fichier de production n'a été créé ou
+  modifié avant cette preuve.
+- État : `T-015 = red`, `active_task = T-015`.
+
+---
+
+### T-015 · green · 2026-08-03T12:48:38Z
+
+- Le garde accepte uniquement `<path> [--dry-run]`, résout des fichiers
+  concrets sous `src/main/**` et refuse arguments inconnus, tests, globs,
+  symlinks, chemins externes ou absents avant écriture.
+- La baseline est obligatoire. En écriture, le garde compose le lease,
+  l'empreinte et la validation de scope du runtime v2 ; chaque régression
+  restaure uniquement le fichier courant.
+- Le rôle ne peut ni modifier un autre fichier pendant la passe courante, ni
+  écrire en `--dry-run`. Les preuves conservent les argv structurés et
+  expurgent secrets et chemins absolus.
+- Vérification ciblée : **7/7 tests du garde**, **4/4 contrats du skill** et
+  **2/2 contrats source S-004** verts ; compilation Python verte.
+- État : `T-015 = green`, `active_task = T-015`.
+
+---
+
+### T-015 · refactor · 2026-08-03T12:49:31Z
+
+- L'acquisition du lease et la première empreinte sont désormais dans le même
+  bloc protégé : une erreur d'empreinte libère toujours le lease.
+- Un test de récupération dédié prouve cette libération. Les snapshots nommés
+  rendent explicite la restauration de toutes les écritures collatérales sans
+  modifier le comportement nominal.
+- Vérification après refactor : **8/8 garde**, **4/4 contrat du skill**,
+  **2/2 contrat S-004** et `git diff --check` verts.
+- État : `T-015 = refactor`, `active_task = T-015`.
+
+---
+
+### T-015 · simplify · 2026-08-03T12:49:47Z
+
+- Passe `clarity-over-cleverness` : validation, baseline, lease, traitement
+  fichier par fichier et résumé restent des phases linéaires aux noms directs.
+  Aucun helper ou niveau d'abstraction supplémentaire ne simplifierait le flux.
+- Les neuf catégories de clarté sont embarquées une seule fois dans la
+  checklist ; le rôle reçoit une référence et non une copie du comportement.
+- Aucun appel shell, commit, fusion ou demande de review n'existe dans le
+  périmètre. Aucune ligne Python du changement ne dépasse 100 caractères.
+- État : `T-015 = simplify`, `active_task = T-015`.
+- Correction de régression : le runner complet a détecté que le contrat
+  portable `sdd-onboard` classait encore `/sdd-code-simplify` comme planifiée.
+  Son assertion est alignée sur S-004 et ajoutée explicitement au scope T-015.
+- Le même runner a ensuite exposé l'assertion historique équivalente dans
+  l'audit S-003. Elle vérifie désormais que la commande exacte est installée,
+  sans modifier les 51 producteurs primaires de S-003.
+- Issue d'exécution créée : `#88`. Branche :
+  `agent/build-t015-code-simplify`, sans reviewer sollicité.
+
+---
+
 ## T-001 — Porter le contrat onboard puis publier sa copie exacte
 
 ### T-001 · red · 2026-08-01T11:50:48Z

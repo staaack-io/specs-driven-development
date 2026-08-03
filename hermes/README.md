@@ -50,7 +50,9 @@ lieu de réimplémenter ces invariants.
 | 8 | Préparer la livraison, facultatif | `/sdd-ship` |
 
 `/sdd-help` et `/sdd-status` sont des commandes méta disponibles à tout moment.
-`/sdd-code-simplify` reste planifiée séparément pour S-004.
+`/sdd-code-simplify <path> [--dry-run]` applique maintenant la passe de clarté
+fichier par fichier, avec baseline verte, lease exact et restauration locale en
+cas de régression.
 
 ## Rôles internes et délégation
 
