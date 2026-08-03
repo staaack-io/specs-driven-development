@@ -1135,7 +1135,8 @@
 - Aucune demande de review, fusion, boucle concurrente, suppression ou commande
   Git destructive n'est exposée.
 - Issue d'exécution créée : `#82`. Branche :
-  `agent/build-t012-wave-fan-in`.
+  `agent/build-t012-wave-fan-in`. PR empilée : `#83`, basée sur la branche
+  T-011 jusqu'à son intégration.
 - État : `T-012 = simplify`, `active_task = T-012`.
 
 ---

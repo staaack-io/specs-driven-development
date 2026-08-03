@@ -286,7 +286,7 @@
       "kanban_id": null,
       "issue": 82,
       "branch": "agent/build-t012-wave-fan-in",
-      "pr": null,
+      "pr": 83,
       "red_at": "2026-08-03T11:43:56Z",
       "red_test_signature": "hermes.runtime.test_sdd_wave_synthesizer.WaveSynthesizerTest.test_t012_t1_completed_wave_has_one_synthesis_surface",
       "red_failure_excerpt": "AssertionError: T-012-T1: sdd_wave_synthesizer.py must implement wave synthesis; Ran 1 test in 0.000s; FAILED (failures=1)",
