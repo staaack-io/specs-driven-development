@@ -22,6 +22,13 @@ sys.modules[SPEC.name] = guard
 SPEC.loader.exec_module(guard)
 
 
+def repository_root() -> Path:
+    for ancestor in Path(__file__).resolve().parents:
+        if (ancestor / "hermes/runtime").is_dir():
+            return ancestor
+    raise AssertionError("repository root with hermes/runtime is unavailable")
+
+
 class FakeRuntime:
     def __init__(self) -> None:
         self.events: list[str] = []
@@ -67,7 +74,7 @@ class ValidationGuardTests(unittest.TestCase):
         """T-018-T1: the public validation guard must exist."""
 
         self.assertTrue(MODULE_PATH.is_file())
-        expected_root = Path(__file__).resolve().parents[4]
+        expected_root = repository_root()
         self.assertEqual(expected_root, guard.discover_repo_root(MODULE_PATH))
 
     def test_t_018_t2_requires_harness_done_tasks_and_fresh_unbypassed_results(self) -> None:
@@ -227,7 +234,7 @@ class ValidationGuardTests(unittest.TestCase):
         """T-018-T8: GitHub and transactional criteria reference real test methods."""
 
         self.assertEqual({f"AC-{number}" for number in range(210, 218)}, set(guard.PROOF_CATALOG))
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = repository_root()
         for ac_id, proof in guard.PROOF_CATALOG.items():
             with self.subTest(ac_id=ac_id):
                 proof_path = repo_root / proof.path
