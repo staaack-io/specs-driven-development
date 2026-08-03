@@ -474,7 +474,7 @@
       "kanban_id": null,
       "issue": 92,
       "branch": "agent/build-t017-sdd-test",
-      "pr": null,
+      "pr": 94,
       "red_at": "2026-08-03T13:23:05Z",
       "red_test_signature": "hermes.skills.sdd-test.scripts.test_test_guard.TestGuardTest.test_t017_t1_guard_is_published",
       "red_failure_excerpt": "AssertionError: T-017-T1: test_guard.py must publish /sdd-test; Ran 1 test in 0.000s; FAILED (failures=1)",

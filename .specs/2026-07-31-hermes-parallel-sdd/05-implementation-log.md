@@ -71,7 +71,8 @@
   fusion ou VPS n'a été touché.
 - État final : `T-017 = done`, `active_task = null`.
 - Issue d'exécution : `#92`. Branche : `agent/build-t017-sdd-test`, sans
-  reviewer sollicité. La PR reste à créer après le commit validé.
+  reviewer sollicité. PR empilée : `#94`, base
+  `agent/plan-s005-test-validate`, sans fusion automatique.
 
 ---
 
