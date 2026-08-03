@@ -442,7 +442,7 @@
       "kanban_id": null,
       "issue": null,
       "branch": null,
-      "pr": null,
+      "pr": 113,
       "red_at": null,
       "red_test_signature": null,
       "red_failure_excerpt": null,

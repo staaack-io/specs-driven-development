@@ -75,7 +75,9 @@
   `git diff --check` vert.
 - Issue d'exécution : `#112`. Branche :
   `agent/build-t027-e2e-full-flow`, composée localement avec T-026 au-dessus de
-  T-025. Aucun reviewer, merge, réseau métier, VPS ou déploiement.
+  T-025. Commit d'implémentation : `ad4f61f`. PR empilée : `#113`, base
+  `agent/build-t025-e2e-parallel`. Aucun reviewer, merge, réseau métier, VPS ou
+  déploiement.
 - État final : `T-027 = done`, `active_task = null`.
 
 ---
