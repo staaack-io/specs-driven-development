@@ -126,6 +126,7 @@ La migration Hermes conserve les étapes utilisateur, avec un préfixe explicite
 | `$wire-harness` | `/sdd-wire-harness` | converti |
 | `$epic-plan` | `/sdd-epic-plan` | converti |
 | `$build` | `/sdd-build` | converti |
+| `$code-simplify` | `/sdd-code-simplify` | converti |
 | `$test` | `/sdd-test` | feuille de route |
 | `$validate` | `/sdd-validate` | feuille de route |
 | `$review` | `/sdd-review` | feuille de route |
@@ -141,7 +142,9 @@ retourne son analyse ; il ne devient pas une commande utilisateur et ne doit pas
 RED→GREEN→REFACTOR→SIMPLIFY. Sa forme `--parallel` confie l'admission à Hermes
 Kanban, limite les writers à deux et isole chaque job. Le runtime ne fusionne
 aucune PR : il observe le go explicite et les fusions réalisées ailleurs avant
-le fan-in transactionnel. `/sdd-code-simplify` reste sur la feuille de route.
+le fan-in transactionnel. `/sdd-code-simplify <path> [--dry-run]` conserve
+ensuite une baseline verte et restaure seulement le fichier dont la
+simplification régresse.
 
 Pour `/sdd-onboard`, les rôles `spring-onboarding` et
 `react-nextjs-onboarding` sont des lecteurs parallélisables. L'agent principal

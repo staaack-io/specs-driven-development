@@ -910,6 +910,8 @@ Première tâche : `/sdd-build 2026-07-31-hermes-parallel-sdd T-009`.
   - `hermes/skills/sdd-code-simplify/scripts/test_code_simplify_guard.py`
   - `hermes/skills/sdd-code-simplify/scripts/test_skill_contract.py`
   - `hermes/scripts/test_sdd_s004_contract.py`
+  - `hermes/skills/sdd-onboard/scripts/test_skill_contract.py`
+  - `hermes/scripts/test_sdd_s003_contract.py`
   - `hermes/skills/sdd-help/SKILL.md`
   - `hermes/README.md`
   - `docs/codex-migration.md`
