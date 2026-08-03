@@ -81,6 +81,18 @@ Le rapport ne conserve que des chemins relatifs et des données expurgées. Ce
 parcours s'exécute sans reviewer humain et sans fusion ni déploiement ; il
 n'accède à aucun VPS et ne reçoit aucun secret.
 
+## Audit local S-008
+
+S-008 ajoute une politique VPS pure, un dry-run inerte et un contrat source qui
+prouve 57/57 critères pour la tranche et 286/286 pour l'Epic. Le fan-in T-032
+reste une lecture locale : il ne sollicite aucun reviewer humain et n'exécute
+aucune fusion, aucun SSH, aucun gateway et aucun déploiement.
+
+Les opérations T-033 à T-038 restent bloquées et séquentielles. Une mise à jour
+VPS exige le profil 0.9.0 fusionné et publié, une gate verte, des credentials
+disponibles et un go explicite. Ces preuves ne sont ni supposées ni produites
+par l'audit local.
+
 ## Rôles internes et délégation
 
 Un rôle interne n'est pas une nouvelle étape ni une commande à mémoriser. C'est

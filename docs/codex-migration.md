@@ -172,3 +172,17 @@ Le scénario demeure un audit dans un dépôt jetable : ses sorties sont relativ
 et expurgées, sans reviewer humain et sans fusion ni déploiement. Il ne contacte
 aucun VPS, ne consomme aucun secret et n'autorise pas la publication du profil
 stable.
+
+## Audit local S-008
+
+La tranche S-008 sépare strictement les contrats locaux des opérations externes.
+T-030 et T-031 produisent, dans deux scopes relatifs disjoints, la politique VPS
+pure et le dry-run inerte. T-032 vérifie ensuite 57/57 critères pour S-008 et la
+partition primaire 286/286 de l'Epic.
+
+Cet audit ne sollicite aucun reviewer humain et n'exécute aucune fusion, aucun
+SSH, aucun gateway et aucun déploiement. T-033 à T-038 restent `pending` et
+`external-blocked` jusqu'à leurs preuves propres. La première mise à jour VPS
+exige notamment le profil 0.9.0 fusionné et publié, une gate verte, les
+credentials disponibles et un go explicite ; une PR ouverte ou une CI verte ne
+constitue jamais cette autorisation.

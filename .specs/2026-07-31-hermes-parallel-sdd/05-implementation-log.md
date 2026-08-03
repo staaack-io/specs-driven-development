@@ -2248,3 +2248,86 @@
   champs `pr` de T-014 et T-027 sont restaurés à `null`.
 
 ---
+
+## T-032 — Auditer S-008 et la traçabilité 286/286
+
+### T-032 · red · 2026-08-03T17:11:39Z
+
+- **Command:**
+  `PYTHONDONTWRITEBYTECODE=1 /private/tmp/hermes-t013-venv/bin/python hermes/scripts/test_sdd_s008_contract.py`
+- **Result:** FAIL attendu — **7 tests exécutés**, 1 échec et 2 erreurs.
+- **Excerpt:** `T-032-T1/T5/T7: hermes/operations/vps-pilot-runbook.md is
+  absent; Ran 7 tests, FAILED (failures=1, errors=2)`.
+- Le contrat rouge couvre T-032-T1 à T-032-T7 : producteurs S-008 57/57,
+  partition Epic 286/286, DAG local à deux writers puis séquence externe,
+  barrière 0.9.0 fusionnée/publiée + gate verte + go explicite, scopes relatifs
+  disjoints, inertie de l'audit et métadonnées réconciliées.
+- La correction locale préexistante est conservée et désormais protégée par
+  non-régression : `T-016.pr = null` et `T-027.pr = 113`. Le contrat contrôle
+  également les issues, branches et PR de T-030 et T-031.
+- État : `T-032 = red`, `active_task = T-032`. Aucun runbook ou document de
+  production T-032 n'avait été modifié avant cette preuve rouge.
+
+---
+
+### T-032 · green · 2026-08-03T17:16:57Z
+
+- Le runbook local documente les preuves 57/57 et 286/286, la vague locale à
+  deux writers, le fan-in T-032 et la séquence externe bloquée T-033→T-038.
+- `hermes/README.md` et `docs/codex-migration.md` publient la frontière S-008 :
+  aucune autorité externe n'est déduite de l'audit.
+- Test ciblé : **7/7 tests verts**.
+- Suite complète : **415/419 tests Hermes exécutés**, **4 skips historiques**.
+- Aucun reviewer humain, fusion, SSH, gateway, déploiement ou accès VPS n'a été
+  exécuté. État : `T-032 = green`, `active_task = T-032`.
+
+---
+
+### T-032 · refactor · 2026-08-03T17:17:36Z
+
+- L'aplatissement des groupes de producteurs primaires porte désormais un nom
+  explicite et les longues déclarations d'AC sont présentées par blocs lisibles.
+- Aucun comportement, inventaire ou oracle n'a changé.
+- Vérification ciblée après refactorisation : **7/7 tests verts**.
+- État : `T-032 = refactor`, `active_task = T-032`.
+
+---
+
+### T-032 · simplify · 2026-08-03T17:18:03Z
+
+- La tranche S-008 de la partition Epic utilise une compréhension nommée et
+  directe de l'inventaire primaire ; aucun helper spéculatif ni option morte.
+- Le runbook conserve une séquence et des barrières lisibles, sans commande à
+  copier-coller ni capacité d'exécution.
+- Vérification ciblée après simplification : **7/7 tests verts**.
+- État : `T-032 = simplify`, `active_task = T-032`.
+
+---
+
+### T-032 · done · 2026-08-03T17:23:11Z
+
+- T-032-T1 à T-032-T7 couvrent AC-232 et verrouillent exactement 57/57 AC
+  S-008 ainsi que la partition primaire Epic 286/286 sans trou ni doublon.
+- Preuves finales : **7/7 tests ciblés**, **415/419 tests Hermes exécutés**,
+  **4 skips historiques**, **14 skills validés**, JSON, compilation Python,
+  Markdown et `git diff --check` verts.
+- La correction de métadonnées reste prouvée : `T-016.pr = null`,
+  `T-027.pr = 113`, `T-030.pr = 121` et `T-031.pr = 120`.
+- T-033 à T-038 restent `pending` et `external-blocked`. Aucun reviewer humain,
+  fusion, SSH, gateway, déploiement, accès VPS ou publication n'a eu lieu.
+- État final : `T-032 = done`, `active_task = null`.
+- Issue d'exécution : `#122`. Branche : `agent/build-t032-s008-audit`, sans
+  reviewer sollicité.
+
+---
+
+### T-032 · publication · 2026-08-03T17:25:00Z
+
+- Commit principal : `799f0dd`. PR empilée : `#123`, base
+  `agent/build-t030-vps-policy`, sans reviewer.
+- La branche compose localement T-031 afin que l'audit lise les deux producteurs
+  T-030/T-031 ; elle ne fusionne aucune branche.
+- Issue `#122` liée. Les checks CI de la PR sont attendus sans déclencher aucune
+  opération VPS, gateway ou déploiement.
+
+---
