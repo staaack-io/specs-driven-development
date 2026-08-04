@@ -106,6 +106,17 @@
 
 ---
 
+### T-035 · CI correction · 2026-08-04T09:35:40Z
+
+- Le premier run CI a échoué sur l'oracle de métadonnées : l'édition de
+  liaison PR avait ciblé par erreur le premier champ `pr: null` (T-016) au lieu
+  de T-035.
+- Correction monotone : `T-016.pr` est restauré à `null` et `T-035.pr` vaut
+  `130`. Aucune preuve, gate, carte, branche, worktree ou ressource VPS n'est
+  modifiée et aucun nouveau dispatch n'est exécuté.
+
+---
+
 ## T-034 — Préparer les clones, Issues, projets et boards
 
 ### T-034 · red · 2026-08-04T08:11:43Z
