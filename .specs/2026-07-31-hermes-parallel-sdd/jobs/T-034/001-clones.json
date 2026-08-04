@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task_id": "T-034",
+  "test_ids": [
+    "T-034-T1",
+    "T-034-T2",
+    "T-034-T3"
+  ],
+  "result": "PASS",
+  "admission": {
+    "explicit_go": true,
+    "github_authenticated": true,
+    "profile_version": "0.9.0",
+    "ssh_batch_strict": true
+  },
+  "repositories": [
+    {
+      "name": "specs-driven-development",
+      "repository": "staaack-io/specs-driven-development",
+      "issues_enabled": true,
+      "clone_label": "workspaces/specs-driven-development",
+      "clone_action": "created",
+      "clean": true,
+      "branch": "main",
+      "remote_matches": true
+    },
+    {
+      "name": "super-lily",
+      "repository": "staaack-io/super-lily",
+      "issues_enabled": true,
+      "clone_label": "workspaces/super-lily",
+      "clone_action": "created",
+      "clean": true,
+      "branch": "main",
+      "remote_matches": true
+    }
+  ],
+  "git_transport": {
+    "initial_clone_protocol": "ssh",
+    "initial_clone_result": "github-key-unavailable",
+    "clone_fallback": "https-with-gh-credential-helper",
+    "token_exposed": false,
+    "github_cli_protocol_after": "ssh"
+  },
+  "redaction": {
+    "token": "absent",
+    "credential": "absent",
+    "transcript": "absent",
+    "absolute_path": "absent",
+    "personal_data": "absent",
+    "business_content": "absent"
+  }
+}

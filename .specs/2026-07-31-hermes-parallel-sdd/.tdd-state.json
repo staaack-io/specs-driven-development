@@ -982,23 +982,28 @@
       ]
     },
     "T-034": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-033"],
       "test_ids": [
         "T-034-T1", "T-034-T2", "T-034-T3",
         "T-034-T4", "T-034-T5", "T-034-T6"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 126,
+      "branch": "agent/build-t034-vps-projects",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-04T08:11:43Z",
+      "red_test_signature": "T-034-T1..T-034-T6 external evidence admission",
+      "red_failure_excerpt": "Expected T-034 evidence files are absent before authorized VPS execution (exit 1)",
+      "green_at": "2026-08-04T08:17:16Z",
+      "refactor_at": "2026-08-04T08:18:02Z",
+      "simplify_at": "2026-08-04T08:19:10Z",
+      "done_at": "2026-08-04T08:22:46Z",
+      "commit": null,
+      "ci": "pending",
       "admission": "external-blocked",
-      "authorization_status": "explicit-go-and-session-pending",
+      "authorization_status": "explicit-go-complete",
       "files_in_scope": [
         ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-034/001-clones.json",
         ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-034/002-boards.json"
