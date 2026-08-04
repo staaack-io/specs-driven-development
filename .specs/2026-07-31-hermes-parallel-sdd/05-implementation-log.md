@@ -4,6 +4,99 @@
 
 ---
 
+## T-035 — Valider deux jobs sandbox réels
+
+### T-035 · red · 2026-08-04T09:15:34Z
+
+- **Command:** vérification locale de la présence des deux preuves sandbox
+  T-035 attendues.
+- **Result:** FAIL attendu (exit 1).
+- **Excerpt:** `001-sandbox-dispatch.json` et
+  `002-sandbox-diagnostics.json` sont absents avant l'exécution externe
+  autorisée.
+- Admission confirmée : T-034 est `done`, sa CI est verte, les clones et boards
+  isolés sont prouvés, et le go explicite de dispatch réel a été reçu.
+- Les plafonds restent `max_workers=2` et `max_heavy_gates=1`. Le gateway
+  permanent, tout déploiement, toute suppression de preuve et tout dispatch
+  supplémentaire restent interdits.
+- État : `T-035 = red`, `active_task = T-035`. Aucune mutation distante T-035
+  n'avait été exécutée avant cette preuve rouge.
+
+---
+
+### T-035 · green · 2026-08-04T09:20:51Z
+
+- Le dry-run distant board-explicite a annoncé exactement deux spawns sans
+  exécuter de job. Le dispatch réel unique, borné par `--max 2` et la limite
+  par profil à deux, a ensuite lancé exactement deux cartes `staaack`.
+- Les writers A et B ont travaillé dans deux branches, worktrees et chemins
+  disjoints. Leurs exécutions de 41 s et 40 s se chevauchent pendant 39 s ;
+  chacune termine `completed` avec `git diff --check = PASS`.
+- Les statistiques finales indiquent deux cartes `done`; les diagnostics JSON
+  sont vides. Aucun gateway, déploiement, commit, push, PR ou merge n'a été
+  exécuté par les workers.
+- État : `T-035 = green`, `active_task = T-035`.
+
+---
+
+### T-035 · refactor · 2026-08-04T09:23:40Z
+
+- Les preuves séparent admission, capacité, dispatch, jobs, chevauchement,
+  diagnostics, ressources, conservation et sécurité au lieu de conserver un
+  transcript distant.
+- Les chemins VPS sont remplacés par des labels relatifs. Les deux identifiants
+  de carte et les horodatages suffisent à relier les runs sans exposer session,
+  credential, contenu métier ou chemin absolu.
+- Vérifications : contrat S-008 **7/7**, politique VPS **7/7**, dry-run
+  **8/8**, JSON, expurgation et `git diff --check` verts.
+- État : `T-035 = refactor`, `active_task = T-035`. Issue liée : `#129`.
+
+---
+
+### T-035 · simplify · 2026-08-04T09:24:18Z
+
+- Passe `clarity-over-cleverness` : les objets JSON utilisent les termes du
+  domaine (`dispatch`, `jobs`, `parallelism`, `resources`, `conservation`) et
+  des booléens directs, sans option morte ni abstraction spéculative.
+- La divergence de CLI 0.19 est rendue explicite dans la preuve : la borne
+  effective repose sur `dispatch --max 2` et la limite par profil à deux ; les
+  clés de configuration prescrites restent enregistrées sans être prises comme
+  unique preuve de capacité.
+- Les worktrees, branches, changements, logs et journaux restent conservés. Le
+  gateway est arrêté et aucun nettoyage ou déploiement n'est déclenché.
+- État : `T-035 = simplify`, `active_task = T-035`.
+
+---
+
+### T-035 · done · 2026-08-04T09:30:45Z
+
+- T-035-T1 à T-035-T6 couvrent AC-184 à AC-186, AC-229, AC-230 et
+  AC-265 : dry-run Super Lily, deux spawns réels au maximum, surveillance
+  `staaack`, stats, diagnostics JSON, ressources et conservation.
+- Les deux jobs terminent `completed` avec **39 s de chevauchement**, deux
+  worktrees et branches disjoints, et `git diff --check = PASS`. Le board
+  termine avec `done=2`, `running=0`, `ready=0` et zéro diagnostic actif.
+- Ressources : **3909 MiB** de RAM totale, minimum observé **1263 MiB**
+  disponible, minimum **3129 MiB** de swap libre, et zéro événement OOM
+  détecté. Aucune gate lourde n'a été lancée ; le plafond de une est respecté.
+- Conservation : cartes, branches, worktrees, changements, logs, journaux et
+  sessions restent présents ; aucun archivage ou nettoyage n'a été exécuté.
+- Gates locales : contrat S-008 **7/7**, politique VPS **7/7**, dry-run
+  **8/8**, scénarios parallèle **7/7**, récupération **8/8**, E2E direct
+  **22/22** en 117,638 s, **14 skills** validés, docs **6/6**, JSON,
+  expurgation et `git diff --check` verts.
+- Le runner canonique a interrompu uniquement le fichier E2E à sa limite fixe
+  de 120 s après 16 tests affichés ; le même fichier, exécuté intégralement sans
+  changer les tests ni les seuils, a terminé **22/22 vert**. La CI reste
+  l'oracle final de la campagne complète.
+- Aucun token, credential, transcript, chemin absolu, donnée personnelle ou
+  contenu métier n'est versionné. Aucun reviewer, gateway, déploiement, commit,
+  push, PR ou merge n'a été exécuté par les workers sandbox.
+- État final : `T-035 = done`, `active_task = null`. Issue `#129`, branche
+  `agent/build-t035-sandbox-dispatch`.
+
+---
+
 ## T-034 — Préparer les clones, Issues, projets et boards
 
 ### T-034 · red · 2026-08-04T08:11:43Z

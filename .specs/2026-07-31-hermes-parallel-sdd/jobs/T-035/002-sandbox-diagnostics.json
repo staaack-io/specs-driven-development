@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "task_id": "T-035",
+  "test_ids": [
+    "T-035-T4",
+    "T-035-T5",
+    "T-035-T6"
+  ],
+  "result": "PASS",
+  "board_stats": {
+    "board": "super-lily",
+    "done": 2,
+    "running": 0,
+    "ready": 0,
+    "assignee": "staaack",
+    "assignee_done": 2
+  },
+  "diagnostics": {
+    "format": "json",
+    "active_count": 0,
+    "errors": 0,
+    "critical": 0
+  },
+  "resources": {
+    "memory_total_mib": 3909,
+    "minimum_observed_available_mib": 1263,
+    "minimum_observed_swap_free_mib": 3129,
+    "kernel_oom_events": 0,
+    "oom_observed": false,
+    "heavy_gate_peak": 0,
+    "heavy_gate_limit": 1
+  },
+  "conservation": {
+    "cards_retained": true,
+    "branches_retained": true,
+    "worktrees_retained": true,
+    "worker_changes_retained": true,
+    "logs_retained": true,
+    "run_journals_retained": true,
+    "sessions_recorded": true,
+    "archived": false,
+    "cleanup_performed": false,
+    "work_lost": false
+  },
+  "safety": {
+    "gateway_running": false,
+    "gateway_installed_by_task": false,
+    "system_service_used": false,
+    "sudo_used": false,
+    "deployment_performed": false,
+    "commit_performed_by_workers": false,
+    "push_performed_by_workers": false,
+    "pull_request_created_by_workers": false,
+    "merge_performed": false
+  },
+  "redaction": {
+    "token": "absent",
+    "credential": "absent",
+    "transcript": "absent",
+    "absolute_path": "absent",
+    "personal_data": "absent",
+    "business_content": "absent"
+  }
+}
