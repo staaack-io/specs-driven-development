@@ -2415,6 +2415,7 @@
   personnelle ou contenu métier n'est versionné. Aucun reviewer, gateway ou
   déploiement n'a été sollicité ou exécuté.
 - État final : `T-033 = done`, `active_task = null`. Issue `#124`, branche
-  `agent/build-t033-vps-profile`; SHA et PR à renseigner après publication.
+  `agent/build-t033-vps-profile`; commit principal `a96e3b2`, PR à renseigner
+  après publication.
 
 ---

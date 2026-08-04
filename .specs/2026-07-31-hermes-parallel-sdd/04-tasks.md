@@ -1729,7 +1729,7 @@ admet T-025 et T-026 lorsque T-024 est terminée.
 - **Portes :** explicit-go, credentials, release-gate, gh-auth-status, installed-version, redaction ; une seule gate lourde.
 - **Retour arrière :** restaurer 0.9.0 et conserver toutes les preuves ; ne supprimer aucun état ou worktree.
 - **Notes :** rester `pending` tant que le go ou les credentials manquent. Aucune review humaine n'est demandée.
-- **Résultat :** `done` ; SHA : `pending`.
+- **Résultat :** `done` ; SHA : `a96e3b28085262eeb27795f58b1b217d770ea485`.
 
 ### T-034 : Préparer les clones, Issues, projets et boards
 
