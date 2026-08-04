@@ -913,7 +913,7 @@
       "simplify_at": "2026-08-03T16:53:56Z",
       "done_at": "2026-08-03T17:00:04Z",
       "commit": "97cc119e476e4014e529146ea75f901541215a37",
-      "ci": "pending",
+      "ci": "success",
       "admission": "local-authorized",
       "files_in_scope": [
         "hermes/operations/vps_pilot_dry_run.py",
