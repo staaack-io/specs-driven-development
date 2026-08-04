@@ -2331,3 +2331,110 @@
   opération VPS, gateway ou déploiement.
 
 ---
+
+## T-033 — Préparer GitHub CLI et mettre à jour le profil VPS
+
+### T-033 · red · 2026-08-03T18:11:36Z
+
+- **Command:** vérification locale de l'identité SSH puis de la présence des
+  deux preuves T-033 attendues.
+- **Result:** FAIL attendu (exit 1).
+- **Excerpt:** `001-vps-prerequisites.json` et `002-profile-version.json` sont
+  absents avant l'exécution externe autorisée.
+- Admission confirmée : PR profil #58 fusionnée, deux checks obligatoires
+  verts, manifeste `distribution.yaml` de `main` à la version `0.9.0`, go
+  explicite reçu et identité SSH disponible.
+- Aucun token, credential, transcript, chemin absolu distant ou contenu métier
+  n'est consigné.
+- État : `T-033 = red`, `active_task = T-033`.
+
+---
+
+### T-033 · green · 2026-08-04T06:40:30Z
+
+- La connexion SSH batch stricte a atteint uniquement la cible attendue avec
+  l'identité unique, `IdentitiesOnly` et la vérification stricte de clé hôte.
+- GitHub CLI `2.97.0` est authentifié par le device/web flow officiel ; le
+  protocole Git actif est `ssh` et les scopes requis `repo`, `read:org` et
+  `workflow` sont présents. Aucun token n'a été fourni à une commande ou
+  conservé dans une preuve.
+- Le profil `staaack` est passé de `0.5.0` à `0.9.0` en conservant la
+  configuration et les données utilisateur. Le test distant de version exacte
+  retourne `PASS`.
+- Les deux preuves JSON task-local sont matérialisées ; aucune opération de
+  gateway ou de déploiement n'a été exécutée.
+- État : `T-033 = green`, `active_task = T-033`.
+
+---
+
+### T-033 · refactor · 2026-08-04T06:41:28Z
+
+- **Décision autonome :** `test_sdd_s008_contract.py` entre dans le scope
+  T-033 parce que son oracle T-032-T4 figeait toutes les tâches externes à
+  `pending`, rendant impossible leur exécution planifiée. La correction autorise
+  uniquement un préfixe `done`, au plus une tâche active, puis un suffixe
+  `pending`; les dépendances et `external-blocked` restent obligatoires.
+- Les faits d'admission, GitHub CLI, SSH, version de profil et expurgation sont
+  séparés en objets nommés ; les listes de scopes avant/après sont ordonnées
+  et les chemins sensibles sont remplacés par des labels relatifs.
+- La validation déterministe prouve que les trois scopes requis sont un
+  sous-ensemble des scopes actifs, que Git utilise SSH et que la version
+  installée vaut exactement `0.9.0`.
+- Les deux preuves restent vertes et le scan de secrets, transcripts et chemins
+  absolus ne retourne aucun résultat.
+- État : `T-033 = refactor`, `active_task = T-033`.
+
+---
+
+### T-033 · simplify · 2026-08-04T07:50:33Z
+
+- La progression externe se lit directement : préfixe terminé, tâche active
+  unique, puis suffixe en attente. Aucun helper spéculatif ni nouvel état
+  intermédiaire n'est introduit.
+- Les preuves utilisent des noms métier explicites et uniquement des valeurs
+  structurées expurgées. Les codes device, credentials, transcripts, chemins
+  absolus, données personnelles et contenus métier sont absents.
+- Test ciblé du contrat S-008 : **7/7 tests verts**.
+- État : `T-033 = simplify`, `active_task = T-033`.
+
+---
+
+### T-033 · done · 2026-08-04T07:58:32Z
+
+- T-033-T1 à T-033-T6 couvrent AC-161, AC-162, AC-164 à AC-168,
+  AC-240 et AC-264 : admission 0.9.0, GitHub CLI, device/web flow, protocole
+  SSH, scopes requis, connexion SSH stricte, versions avant/après et preuves
+  expurgées.
+- Preuves finales : profil VPS `0.5.0` → `0.9.0`, test de version installée
+  `PASS`, GitHub CLI authentifié, protocole Git `ssh`, scopes actifs incluant
+  `repo`, `read:org` et `workflow`.
+- Gates : contrat S-008 **7/7**, politique VPS **7/7**, dry-run **8/8**,
+  runner CI canonique **415/419 tests exécutés** avec **4 skips historiques**,
+  **14 skills validés**, JSON, expurgation et `git diff --check` verts.
+- Aucun token, credential, code 2FA, transcript, chemin absolu, donnée
+  personnelle ou contenu métier n'est versionné. Aucun reviewer, gateway ou
+  déploiement n'a été sollicité ou exécuté.
+- État final : `T-033 = done`, `active_task = null`. Issue `#124`, branche
+  `agent/build-t033-vps-profile`; commit principal `a96e3b2`, PR à renseigner
+  après publication.
+
+---
+
+### T-033 · publication · 2026-08-04T08:01:00Z
+
+- Commits : `a96e3b2` (preuves et contrat) puis `0b41739` (traçabilité).
+- PR ready `#125` vers `main`, sans reviewer sollicité ; issue liée `#124`.
+- Les checks CI source sont attendus sans fusion automatique, gateway ou
+  déploiement.
+
+---
+
+### T-033 · CI · 2026-08-04T08:04:00Z
+
+- PR `#125` : **2/2 checks verts** sur le commit `d6a29ae`.
+- `Hermes tests and skill contracts` : `PASS` en 1 min 15 s.
+- `Documentation and diff` : `PASS` en 11 s.
+- Aucun reviewer n'a été demandé ; aucune fusion, gateway ou opération de
+  déploiement n'a été exécutée.
+
+---

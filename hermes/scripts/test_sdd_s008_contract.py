@@ -139,17 +139,29 @@ class SddS008ContractTest(unittest.TestCase):
         self.assertEqual(286, len(occurrences), "a primary AC must occur in one slice")
 
     def test_t032_t4_dag_has_two_local_writers_then_external_sequence(self) -> None:
-        tasks = loaded_state()["tasks"]
+        state = loaded_state()
+        tasks = state["tasks"]
         self.assertEqual(["T-029"], tasks["T-030"]["dependencies"])
         self.assertEqual(["T-029"], tasks["T-031"]["dependencies"])
         self.assertEqual(["T-030", "T-031"], tasks["T-032"]["dependencies"])
+        active_task = state["active_task"]
+        pending_suffix_started = False
         previous = "T-032"
         for task_id in EXTERNAL_TASKS:
             with self.subTest(task_id=task_id):
-                self.assertEqual([previous], tasks[task_id]["dependencies"])
-                self.assertEqual("pending", tasks[task_id]["phase"])
-                self.assertEqual("pending", tasks[task_id]["status"])
-                self.assertEqual("external-blocked", tasks[task_id]["admission"])
+                task = tasks[task_id]
+                self.assertEqual([previous], task["dependencies"])
+                self.assertEqual("external-blocked", task["admission"])
+                if task["phase"] == "pending":
+                    pending_suffix_started = True
+                    self.assertEqual("pending", task["status"])
+                elif task_id == active_task:
+                    self.assertFalse(pending_suffix_started)
+                    self.assertEqual("in_progress", task["status"])
+                else:
+                    self.assertFalse(pending_suffix_started)
+                    self.assertEqual("done", task["phase"])
+                    self.assertEqual("done", task["status"])
             previous = task_id
 
     def test_t032_t5_vps_update_requires_release_gate_and_explicit_go(self) -> None:

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "task_id": "T-033",
+  "test_ids": [
+    "T-033-T1",
+    "T-033-T2",
+    "T-033-T3",
+    "T-033-T4",
+    "T-033-T6"
+  ],
+  "result": "PASS",
+  "admission": {
+    "profile_pull_request": 58,
+    "profile_pull_request_state": "merged",
+    "publication_checks": {
+      "passed": 2,
+      "required": 2,
+      "result": "PASS"
+    },
+    "published_profile_version": "0.9.0",
+    "explicit_go": true,
+    "credentials_available": true
+  },
+  "github_cli": {
+    "installed": true,
+    "version": "2.97.0",
+    "authenticated": true,
+    "authentication_flow": "device-web",
+    "authorization_step": "complete",
+    "git_protocol_before": "https",
+    "git_protocol_after": "ssh",
+    "required_scopes": [
+      "read:org",
+      "repo",
+      "workflow"
+    ],
+    "scopes_before": [
+      "gist",
+      "read:org",
+      "repo"
+    ],
+    "scopes_after": [
+      "gist",
+      "read:org",
+      "repo",
+      "workflow"
+    ],
+    "required_scopes_present": true,
+    "token_recorded": false
+  },
+  "ssh": {
+    "target": "ubuntu@179.237.107.15",
+    "identity": "hermes-agent",
+    "batch_mode": true,
+    "identities_only": true,
+    "strict_host_key_checking": true,
+    "connection_test": "PASS"
+  },
+  "redaction": {
+    "token": "absent",
+    "credential": "absent",
+    "transcript": "absent",
+    "absolute_path": "absent",
+    "personal_data": "absent",
+    "business_content": "absent"
+  }
+}
