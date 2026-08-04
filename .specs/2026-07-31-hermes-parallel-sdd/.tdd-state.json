@@ -1028,6 +1028,7 @@
       "refactor_at": "2026-08-04T09:23:40Z",
       "simplify_at": "2026-08-04T09:24:18Z",
       "done_at": "2026-08-04T09:30:45Z",
+      "commit": "0a9089bcf330c58524e941d090671d0636b1a011",
       "ci": "pending",
       "admission": "external-blocked",
       "authorization_status": "explicit-go-complete",
