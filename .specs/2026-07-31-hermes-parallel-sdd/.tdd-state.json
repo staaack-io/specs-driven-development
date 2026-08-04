@@ -949,30 +949,36 @@
       ]
     },
     "T-033": {
-      "phase": "pending",
-      "status": "pending",
+      "phase": "done",
+      "status": "done",
       "dependencies": ["T-032"],
       "test_ids": [
         "T-033-T1", "T-033-T2", "T-033-T3",
         "T-033-T4", "T-033-T5", "T-033-T6"
       ],
       "kanban_id": null,
-      "issue": null,
-      "branch": null,
+      "issue": 124,
+      "branch": "agent/build-t033-vps-profile",
       "pr": null,
-      "red_at": null,
-      "red_test_signature": null,
-      "red_failure_excerpt": null,
-      "green_at": null,
+      "red_at": "2026-08-03T18:11:36Z",
+      "red_test_signature": "T-033-T1..T-033-T6 external evidence admission",
+      "red_failure_excerpt": "Expected T-033 evidence files are absent before authorized VPS execution (exit 1)",
+      "green_at": "2026-08-04T06:40:30Z",
+      "refactor_at": "2026-08-04T06:41:28Z",
+      "simplify_at": "2026-08-04T07:50:33Z",
+      "done_at": "2026-08-04T07:58:32Z",
+      "commit": null,
+      "ci": "pending",
       "admission": "external-blocked",
-      "authorization_status": "explicit-go-and-credentials-pending",
+      "authorization_status": "explicit-go-complete",
       "external_preconditions": [
         "profile-0.9.0-merged", "profile-0.9.0-published",
         "publication-gate-green", "explicit-go", "credentials-available"
       ],
       "files_in_scope": [
         ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/001-vps-prerequisites.json",
-        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/002-profile-version.json"
+        ".specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/002-profile-version.json",
+        "hermes/scripts/test_sdd_s008_contract.py"
       ]
     },
     "T-034": {

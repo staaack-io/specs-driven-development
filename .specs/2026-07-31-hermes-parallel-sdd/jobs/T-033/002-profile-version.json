@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "task_id": "T-033",
+  "test_ids": [
+    "T-033-T5",
+    "T-033-T6"
+  ],
+  "result": "PASS",
+  "profile": "staaack",
+  "version_before": "0.5.0",
+  "version_after": "0.9.0",
+  "installed_version_test": "PASS",
+  "configuration_preserved": true,
+  "user_data_untouched": true,
+  "rollback_version": "0.9.0",
+  "redaction": {
+    "token": "absent",
+    "credential": "absent",
+    "transcript": "absent",
+    "absolute_path": "absent",
+    "personal_data": "absent",
+    "business_content": "absent"
+  }
+}

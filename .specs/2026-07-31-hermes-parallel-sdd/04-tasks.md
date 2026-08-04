@@ -1723,11 +1723,13 @@ admet T-025 et T-026 lorsque T-024 est terminée.
 - **Files in scope :**
   - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/001-vps-prerequisites.json`
   - `.specs/2026-07-31-hermes-parallel-sdd/jobs/T-033/002-profile-version.json`
+  - `hermes/scripts/test_sdd_s008_contract.py`
 - **Dépendances :** T-032 et preuve externe que la PR #58 est fusionnée et 0.9.0 publiée
 - **Phases estimées :** admission 30 min ; exécution 60–120 min ; vérification et expurgation 30 min.
 - **Portes :** explicit-go, credentials, release-gate, gh-auth-status, installed-version, redaction ; une seule gate lourde.
 - **Retour arrière :** restaurer 0.9.0 et conserver toutes les preuves ; ne supprimer aucun état ou worktree.
 - **Notes :** rester `pending` tant que le go ou les credentials manquent. Aucune review humaine n'est demandée.
+- **Résultat :** `done` ; SHA : `pending`.
 
 ### T-034 : Préparer les clones, Issues, projets et boards
 
@@ -1889,6 +1891,11 @@ T-029 candidat local
   gateway, pilote, fusion ou publication n'est implicitement autorisée.
 - **Décision autonome — revue :** aucun reviewer humain n'est sollicité ; les
   audits automatiques restent des commandes produit, jamais des demandes à une personne.
+- **Décision autonome — progression externe :** T-033 ajoute le contrat
+  `test_sdd_s008_contract.py` à son périmètre afin que T-032-T4 accepte le
+  préfixe séquentiel des tâches externes déjà terminées et, au plus, la tâche
+  active. Toutes les tâches suivantes doivent rester `pending` et
+  `external-blocked`; le DAG et les barrières d'autorité ne sont pas affaiblis.
 
 ### S-008 Sign-off
 
