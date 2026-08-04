@@ -968,7 +968,7 @@
       "simplify_at": "2026-08-04T07:50:33Z",
       "done_at": "2026-08-04T07:58:32Z",
       "commit": "a96e3b28085262eeb27795f58b1b217d770ea485",
-      "ci": "pending",
+      "ci": "success",
       "admission": "external-blocked",
       "authorization_status": "explicit-go-complete",
       "external_preconditions": [

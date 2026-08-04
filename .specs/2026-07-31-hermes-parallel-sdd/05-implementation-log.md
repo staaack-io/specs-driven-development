@@ -101,6 +101,17 @@
 
 ---
 
+### T-034 · CI · 2026-08-04T08:29:00Z
+
+- PR `#127`, run `30891898395` : **2/2 checks verts**.
+- `Documentation and diff` : `PASS` en 14 s.
+- `Hermes tests and skill contracts` : `PASS` en 1 min 11 s, y compris tous
+  les tests Python et la validation des skills embarqués.
+- Aucun reviewer n'a été demandé ; aucune fusion, gateway ou opération de
+  déploiement n'a été exécutée.
+
+---
+
 ## T-030 — Encoder la politique de conformité VPS
 
 ### T-030 · red · 2026-08-03T16:49:25Z
