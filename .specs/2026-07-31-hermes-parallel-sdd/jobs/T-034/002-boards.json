@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task_id": "T-034",
+  "test_ids": [
+    "T-034-T4",
+    "T-034-T5",
+    "T-034-T6"
+  ],
+  "result": "PASS",
+  "boards": [
+    {
+      "slug": "sdd-framework",
+      "default_workdir_label": "workspaces/specs-driven-development",
+      "action": "created",
+      "archived": false,
+      "isolated_database": true
+    },
+    {
+      "slug": "super-lily",
+      "default_workdir_label": "workspaces/super-lily",
+      "action": "created",
+      "archived": false,
+      "isolated_database": true
+    }
+  ],
+  "projects": [
+    {
+      "slug": "sdd-framework",
+      "primary_clone_label": "workspaces/specs-driven-development",
+      "board": "sdd-framework",
+      "action": "created"
+    },
+    {
+      "slug": "super-lily",
+      "primary_clone_label": "workspaces/super-lily",
+      "board": "super-lily",
+      "action": "reused",
+      "previous_folder_retained": true
+    }
+  ],
+  "idempotence": {
+    "second_pass": "inspection-only",
+    "existing_resources_detected": true,
+    "decision": "reuse",
+    "duplicates_created": false
+  },
+  "redaction": {
+    "token": "absent",
+    "credential": "absent",
+    "transcript": "absent",
+    "absolute_path": "absent",
+    "personal_data": "absent",
+    "business_content": "absent"
+  }
+}

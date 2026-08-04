@@ -4,6 +4,114 @@
 
 ---
 
+## T-034 — Préparer les clones, Issues, projets et boards
+
+### T-034 · red · 2026-08-04T08:11:43Z
+
+- **Command:** vérification de la présence des deux preuves T-034 attendues.
+- **Result:** FAIL attendu (exit 1).
+- **Excerpt:** `FAIL expected: missing 001-clones.json`.
+- Admission confirmée : T-033 est terminée, le profil VPS répond en version
+  `0.9.0`, GitHub CLI est authentifié, Issues est actif sur les deux dépôts et
+  le go explicite T-034 a été reçu.
+- Inspection idempotente : seul le board `default` existe ; le projet
+  `super-lily` existe avec un ancien clone principal hors de `workspaces` ; les
+  deux clones cibles et le projet `sdd-framework` sont absents.
+- Aucun token, credential, transcript, chemin absolu distant ou contenu métier
+  n'est consigné.
+- État : `T-034 = red`, `active_task = T-034`.
+
+---
+
+### T-034 · green · 2026-08-04T08:17:16Z
+
+- Les deux dépôts ont été clonés sous leurs labels `workspaces/...`, avec
+  remotes exacts, branche `main` et worktrees propres. Issues est actif sur
+  Super Lily et sur le framework SDD.
+- La clé GitHub SSH n'étant pas disponible sur le VPS, le clone initial a été
+  refusé sans effet ; le helper officiel `gh` a ensuite authentifié les clones
+  HTTPS sans exposer de token. Le protocole GitHub CLI a été rétabli à `ssh`.
+- Les boards isolés `sdd-framework` et `super-lily` ont été créés avec leurs
+  workdirs exacts. Le projet `sdd-framework` a été créé ; le projet
+  `super-lily` existant a été réutilisé, rattaché au nouveau clone principal et
+  à son board sans supprimer son ancien dossier.
+- La seconde passe en lecture seule retourne `PASS` pour admission, Issues,
+  clones, boards, projets et isolation, puis `REUSE` pour l'idempotence.
+- Tests structurés des deux JSON : **PASS** ; contrat S-008 : **7/7 verts**.
+- État : `T-034 = green`, `active_task = T-034`.
+
+---
+
+### T-034 · refactor · 2026-08-04T08:18:02Z
+
+- Les preuves séparent admission et clones dans `001-clones.json`, puis boards,
+  projets et idempotence dans `002-boards.json` ; chaque Test-ID possède ainsi
+  une frontière explicite sans transcript brut.
+- Les chemins distants sont remplacés par des labels relatifs `workspaces/...`.
+  Les remotes sont nommés par leur dépôt public, sans URL de credential.
+- L'ancien dossier du projet Super Lily est conservé et signalé, tandis que le
+  clone demandé devient le principal : aucune ressource existante n'est
+  supprimée ou recréée.
+- Tests structurés des deux JSON : **PASS** ; contrat S-008 : **7/7 verts**.
+- État : `T-034 = refactor`, `active_task = T-034`.
+
+---
+
+### T-034 · simplify · 2026-08-04T08:19:10Z
+
+- Passe `clarity-over-cleverness` : les preuves utilisent des tableaux directs
+  `repositories`, `boards` et `projects`, des actions `created`/`reused` et une
+  décision d'idempotence explicite. Aucun helper, option ou état spéculatif.
+- Les deux ressources portent exactement les slugs du glossaire et les labels
+  de clones attendus ; le fallback Git documente uniquement le résultat et le
+  mécanisme public, jamais un secret ou une commande brute.
+- Tests structurés des deux JSON : **PASS** ; contrat S-008 : **7/7 verts** ;
+  `git diff --check` : **PASS**.
+- État : `T-034 = simplify`, `active_task = T-034`.
+
+---
+
+### T-034 · done · 2026-08-04T08:22:46Z
+
+- T-034-T1 à T-034-T6 couvrent l'admission, Issues Super Lily, les deux clones
+  propres, les slugs/workdirs exacts, les clones principaux et la réutilisation
+  idempotente des ressources existantes.
+- Preuves finales : admission, Issues, clones, boards, projets et isolation
+  `PASS` ; seconde passe `REUSE` ; contrat S-008 **7/7 vert** ; JSON et
+  `git diff --check` verts.
+- Le runner canonique complet a passé `test_parallel_scenario.py` **7/7** et
+  `test_recovery_scenario.py` **8/8**. Il a ensuite affiché 16 tests réussis
+  pour `test_run_sdd_e2e.py`, puis le superviseur a arrêté ce fichier avec
+  `test child timed out after 120 seconds` (exit 1). Aucune réussite globale
+  n'est revendiquée ; les gates CI restent inchangées.
+- Aucun token, credential, transcript, chemin absolu, contenu métier, reviewer,
+  gateway, déploiement, force-push ou suppression de ressource n'a été produit.
+- État final : `T-034 = done`, `active_task = null`. Issue `#126`, branche
+  `agent/build-t034-vps-projects`; commit principal `332ac18`, PR à renseigner
+  après publication.
+
+---
+
+### T-034 · publication · 2026-08-04T08:27:00Z
+
+- Commits : `332ac183` (preuves et état) puis `34dd454` (traçabilité).
+- PR ready `#127` vers `main`, sans reviewer sollicité ; issue liée `#126`.
+- Les checks CI source sont attendus sans fusion automatique, gateway,
+  déploiement ou démarrage de T-035.
+
+---
+
+### T-034 · CI · 2026-08-04T08:29:00Z
+
+- PR `#127`, run `30891898395` : **2/2 checks verts**.
+- `Documentation and diff` : `PASS` en 14 s.
+- `Hermes tests and skill contracts` : `PASS` en 1 min 11 s, y compris tous
+  les tests Python et la validation des skills embarqués.
+- Aucun reviewer n'a été demandé ; aucune fusion, gateway ou opération de
+  déploiement n'a été exécutée.
+
+---
+
 ## T-030 — Encoder la politique de conformité VPS
 
 ### T-030 · red · 2026-08-03T16:49:25Z
