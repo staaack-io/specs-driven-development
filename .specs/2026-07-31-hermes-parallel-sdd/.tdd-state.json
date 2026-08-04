@@ -959,7 +959,7 @@
       "kanban_id": null,
       "issue": 124,
       "branch": "agent/build-t033-vps-profile",
-      "pr": null,
+      "pr": 125,
       "red_at": "2026-08-03T18:11:36Z",
       "red_test_signature": "T-033-T1..T-033-T6 external evidence admission",
       "red_failure_excerpt": "Expected T-033 evidence files are absent before authorized VPS execution (exit 1)",

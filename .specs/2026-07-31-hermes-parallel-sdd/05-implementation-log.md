@@ -2419,3 +2419,12 @@
   après publication.
 
 ---
+
+### T-033 · publication · 2026-08-04T08:01:00Z
+
+- Commits : `a96e3b2` (preuves et contrat) puis `0b41739` (traçabilité).
+- PR ready `#125` vers `main`, sans reviewer sollicité ; issue liée `#124`.
+- Les checks CI source sont attendus sans fusion automatique, gateway ou
+  déploiement.
+
+---
