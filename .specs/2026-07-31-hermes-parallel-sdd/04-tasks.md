@@ -1773,6 +1773,7 @@ admet T-025 et T-026 lorsque T-024 est terminée.
 - **Portes :** explicit-go, max-two-writers, max-one-heavy-gate, both-jobs-green, no-oom, no-loss.
 - **Retour arrière :** arrêter le dispatch sans archiver les cartes ni supprimer branches, worktrees, logs ou journaux.
 - **Notes :** les writers peuvent se chevaucher ; leurs gates lourdes restent sérialisées. Le gateway permanent reste interdit pendant toute la tâche.
+- **Résultat :** `done` ; SHA : `0a9089bcf330c58524e941d090671d0636b1a011`.
 
 ### T-036 : Installer le gateway utilisateur
 

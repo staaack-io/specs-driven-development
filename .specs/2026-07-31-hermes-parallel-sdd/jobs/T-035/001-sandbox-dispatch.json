@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "task_id": "T-035",
+  "test_ids": [
+    "T-035-T1",
+    "T-035-T2",
+    "T-035-T3"
+  ],
+  "result": "PASS",
+  "admission": {
+    "dependency": "T-034",
+    "dependency_status": "done",
+    "explicit_go": true,
+    "dry_run_replayed": true,
+    "dry_run_board": "super-lily",
+    "dry_run_spawn_count": 2,
+    "dry_run_dispatched": false
+  },
+  "capacity": {
+    "configured_max_spawn": 2,
+    "configured_max_in_progress": 2,
+    "configured_max_in_progress_per_profile": 2,
+    "dispatch_max": 2,
+    "failure_limit": 2,
+    "max_heavy_gates": 1,
+    "observed_peak_writers": 2,
+    "observed_peak_heavy_gates": 0
+  },
+  "dispatch": {
+    "board": "super-lily",
+    "assignee": "staaack",
+    "requested": 2,
+    "spawned": 2,
+    "additional_dispatches": 0,
+    "gateway_running": false
+  },
+  "jobs": [
+    {
+      "card_id": "t_2eb39145",
+      "label": "sandbox-writer-a",
+      "branch": "sdd/t035-sandbox-writer-a",
+      "worktree_label": "super-lily-worktree-a",
+      "changed_path": ".specs/t035-sandbox/writer-a.txt",
+      "started_at_epoch": 1785835209,
+      "completed_at_epoch": 1785835250,
+      "outcome": "completed",
+      "gate": "git diff --check",
+      "gate_result": "PASS"
+    },
+    {
+      "card_id": "t_1031fbf1",
+      "label": "sandbox-writer-b",
+      "branch": "sdd/t035-sandbox-writer-b",
+      "worktree_label": "super-lily-worktree-b",
+      "changed_path": ".specs/t035-sandbox/writer-b.txt",
+      "started_at_epoch": 1785835211,
+      "completed_at_epoch": 1785835251,
+      "outcome": "completed",
+      "gate": "git diff --check",
+      "gate_result": "PASS"
+    }
+  ],
+  "parallelism": {
+    "overlap_observed": true,
+    "overlap_seconds": 39,
+    "writers_exceeded_two": false
+  },
+  "redaction": {
+    "token": "absent",
+    "credential": "absent",
+    "transcript": "absent",
+    "absolute_path": "absent",
+    "personal_data": "absent",
+    "business_content": "absent"
+  }
+}
