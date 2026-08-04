@@ -97,6 +97,15 @@
 
 ---
 
+### T-035 · publication · 2026-08-04T09:34:10Z
+
+- Commits : `0a9089b` (preuves sandbox) puis `461acfe` (traçabilité).
+- PR ready `#130` vers `main`, sans reviewer sollicité ; issue liée `#129`.
+- Les checks CI source sont attendus sans fusion automatique, gateway ou
+  déploiement.
+
+---
+
 ## T-034 — Préparer les clones, Issues, projets et boards
 
 ### T-034 · red · 2026-08-04T08:11:43Z
