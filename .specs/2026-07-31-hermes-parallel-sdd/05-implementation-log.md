@@ -92,6 +92,15 @@
 
 ---
 
+### T-034 · publication · 2026-08-04T08:27:00Z
+
+- Commits : `332ac183` (preuves et état) puis `34dd454` (traçabilité).
+- PR ready `#127` vers `main`, sans reviewer sollicité ; issue liée `#126`.
+- Les checks CI source sont attendus sans fusion automatique, gateway,
+  déploiement ou démarrage de T-035.
+
+---
+
 ## T-030 — Encoder la politique de conformité VPS
 
 ### T-030 · red · 2026-08-03T16:49:25Z
