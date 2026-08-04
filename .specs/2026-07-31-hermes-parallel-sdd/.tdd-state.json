@@ -992,7 +992,7 @@
       "kanban_id": null,
       "issue": 126,
       "branch": "agent/build-t034-vps-projects",
-      "pr": null,
+      "pr": 127,
       "red_at": "2026-08-04T08:11:43Z",
       "red_test_signature": "T-034-T1..T-034-T6 external evidence admission",
       "red_failure_excerpt": "Expected T-034 evidence files are absent before authorized VPS execution (exit 1)",
@@ -1001,7 +1001,7 @@
       "simplify_at": "2026-08-04T08:19:10Z",
       "done_at": "2026-08-04T08:22:46Z",
       "commit": "332ac1837074b9c7c8a3c04945245723318957b4",
-      "ci": "pending",
+      "ci": "success",
       "admission": "external-blocked",
       "authorization_status": "explicit-go-complete",
       "files_in_scope": [

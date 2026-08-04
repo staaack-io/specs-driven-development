@@ -103,12 +103,17 @@
 
 ### T-034 · CI · 2026-08-04T08:29:00Z
 
-- PR `#127`, run `30891898395` : **2/2 checks verts**.
-- `Documentation and diff` : `PASS` en 14 s.
-- `Hermes tests and skill contracts` : `PASS` en 1 min 11 s, y compris tous
-  les tests Python et la validation des skills embarqués.
-- Aucun reviewer n'a été demandé ; aucune fusion, gateway ou opération de
-  déploiement n'a été exécutée.
+- PR `#127`, run final `30892043726` sur le head `49ae31e` : **2/2 checks
+  verts**. `Documentation and diff` réussit en 13 s et `Hermes tests and skill
+  contracts` réussit en 1 min 13 s, y compris tous les tests Python et la
+  validation des skills embarqués.
+- La PR `#127` est fusionnée dans `main` avec le SHA
+  `9b877e3d4f363ae887b187d6a3d255b15244f51a`.
+- Le run `main` post-fusion `30892050408`, déclenché par `push` sur ce SHA,
+  réussit également ses deux jobs : `Hermes tests and skill contracts` et
+  `Documentation and diff`.
+- Aucun reviewer n'a été demandé ; aucune gateway ou opération de déploiement
+  n'a été exécutée. T-035 reste `pending` et n'est pas démarrée.
 
 ---
 
