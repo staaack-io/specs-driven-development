@@ -117,6 +117,20 @@
 
 ---
 
+### T-035 · CI et fusion · 2026-08-04T09:38:20Z
+
+- PR `#130`, run `30896827097` : **2/2 checks verts** sur le head
+  `42cbed2` (`Documentation and diff` et `Hermes tests and skill contracts`).
+- Fusion vers `main` au commit
+  `607679aaab31b19c1764b8552769d91c0671eec8`.
+- Run `main` `30896979316` : **success**. L'état TDD conserve `pr: 130` et
+  porte désormais `ci: success`; la correction de traçabilité n'est pas liée
+  à T-035 comme nouvelle PR d'exécution.
+- T-036 reste `pending` et aucune admission, preuve VPS, carte, branche,
+  worktree, gateway ou ressource distante n'est modifiée.
+
+---
+
 ## T-034 — Préparer les clones, Issues, projets et boards
 
 ### T-034 · red · 2026-08-04T08:11:43Z
