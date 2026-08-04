@@ -1000,7 +1000,7 @@
       "refactor_at": "2026-08-04T08:18:02Z",
       "simplify_at": "2026-08-04T08:19:10Z",
       "done_at": "2026-08-04T08:22:46Z",
-      "commit": null,
+      "commit": "332ac1837074b9c7c8a3c04945245723318957b4",
       "ci": "pending",
       "admission": "external-blocked",
       "authorization_status": "explicit-go-complete",

@@ -87,7 +87,8 @@
 - Aucun token, credential, transcript, chemin absolu, contenu métier, reviewer,
   gateway, déploiement, force-push ou suppression de ressource n'a été produit.
 - État final : `T-034 = done`, `active_task = null`. Issue `#126`, branche
-  `agent/build-t034-vps-projects`; SHA et PR à renseigner après publication.
+  `agent/build-t034-vps-projects`; commit principal `332ac18`, PR à renseigner
+  après publication.
 
 ---
 

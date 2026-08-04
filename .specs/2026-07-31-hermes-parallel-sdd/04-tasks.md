@@ -1751,7 +1751,7 @@ admet T-025 et T-026 lorsque T-024 est terminée.
 - **Portes :** explicit-go, repo-clean, issues-enabled, board-isolation, project-workdir, idempotence.
 - **Retour arrière :** conserver les clones propres ; ne retirer qu'une ressource nouvellement créée et vide, jamais une ressource existante ou contenant du travail.
 - **Notes :** les chemins VPS attendus ne sont conservés dans les preuves que sous forme de labels relatifs expurgés.
-- **Résultat :** `done` ; SHA : à renseigner après commit.
+- **Résultat :** `done` ; SHA : `332ac1837074b9c7c8a3c04945245723318957b4`.
 
 ### T-035 : Valider deux jobs sandbox réels
 
